@@ -70,7 +70,7 @@ test("outbound and returning passes each hit an enemy once, then blade is recove
 
 test("a return tracks the player's current location and never creates overlapping same-owner blades", () => {
   const {world, player, weapons, damage, blade} = setup(100);
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 16; i++) {
     weapons.step(world);
     assert.equal(world.projectiles.size, 1);
     damage.step(world, 0.05);
