@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Client } from "@colyseus/sdk";
+import { Client, Callbacks } from "@colyseus/sdk";
 import { ROOM_TYPE } from "../../packages/shared/dist/index.js";
 
 const client = new Client(process.env.TEST_SERVER_URL || "http://127.0.0.1:2567");
@@ -18,11 +18,18 @@ test("two players see the same server state and departure", { timeout: 20000 }, 
     const a = await client.create(ROOM_TYPE, { nickname: "Alice" });
     rooms.push(a);
     await waitUntil(() => a.state?.players?.size === 1, "creator state");
+    const added = new Set();
+    const removed = new Set();
+    const watchers = Callbacks.get(a);
+    watchers.onAdd("players", (_value, key) => { added.add(key); });
+    watchers.onRemove("players", (_value, key) => { removed.add(key); });
+    await waitUntil(() => added.has(a.sessionId), "initial player callback replay");
     const b = await client.joinById(a.roomId, { nickname: "Bob" });
     rooms.push(b);
     assert.equal(a.roomId, b.roomId);
     assert.notEqual(a.sessionId, b.sessionId);
     await waitUntil(() => a.state?.players?.size === 2 && b.state?.players?.size === 2, "two players");
+    await waitUntil(() => added.has(b.sessionId), "onAdd callback");
     assert.equal(a.state.players.get(a.sessionId)?.nickname, "Alice");
     assert.equal(b.state.players.get(b.sessionId)?.nickname, "Bob");
     assert.equal(a.state.phase, "LOBBY");
@@ -32,6 +39,7 @@ test("two players see the same server state and departure", { timeout: 20000 }, 
     await b.leave();
     rooms.pop();
     await waitUntil(() => a.state?.players?.size === 1, "departure");
+    await waitUntil(() => removed.has(b.sessionId), "onRemove callback");
     assert.equal(a.state.players.get(b.sessionId), undefined);
   } finally {
     await Promise.allSettled(rooms.map(r => r.leave()));
