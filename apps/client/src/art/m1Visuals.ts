@@ -163,8 +163,30 @@ export function updateM1EnemyVisual(
 }
 
 export function createM1Projectile(
-  scene: Phaser.Scene, assetId: "weapon.arcane_bolt" | "weapon.fireball", x: number, y: number
+  scene: Phaser.Scene, assetId: "weapon.arcane_bolt" | "weapon.fireball" | "weapon.spin_blade",
+  x: number, y: number
 ): Phaser.GameObjects.Container {
+  if (assetId === "weapon.spin_blade") {
+    // Native Phaser geometry: recognizable rotating two-blade boomerang,
+    // replacing the static melee slash. It is driven by server projectile x/y.
+    const aura = scene.add.circle(0, 0, 22, 0x825ee0, 0.16)
+      .setStrokeStyle(2, 0xc3a7ff, 0.66);
+    const body = scene.add.graphics();
+    body.fillStyle(0xe8d7ff, 1);
+    body.fillTriangle(-18, -4, -5, -16, 19, -5);
+    body.fillTriangle(18, 4, 5, 16, -19, 5);
+    body.lineStyle(2, 0x9371de, 1);
+    body.lineBetween(-18, -4, 0, 0);
+    body.lineBetween(18, 4, 0, 0);
+    body.fillStyle(0xffffff, 1);
+    body.fillCircle(0, 0, 4);
+    const container = scene.add.container(x, y, [aura, body]).setDepth(1420);
+    const rotation = scene.tweens.add({
+      targets: body, angle: 360, duration: 430, repeat: -1, ease: "Linear"
+    });
+    container.once(Phaser.GameObjects.Events.DESTROY, () => rotation.remove());
+    return container;
+  }
   const key = assetId as M1AssetId;
   let body: Phaser.GameObjects.GameObject;
   if (scene.textures.exists(key)) {
