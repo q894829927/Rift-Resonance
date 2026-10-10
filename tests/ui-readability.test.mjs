@@ -35,7 +35,7 @@ test("player nameplates sit above sprite and health bar at stable readable size"
 
 test("berserker windup preview aligns with authoritative locked direction", () => {
   assert.equal(CHARGE_PREVIEW_LENGTH, 104);
-  assert.equal(CHARGE_PREVIEW_HALF_WIDTH, 46);
+  assert.equal(CHARGE_PREVIEW_HALF_WIDTH, 40); // 24 enemy radius + 16 player radius
   assert.equal(facingAngle(1, 0), 0);
   assert.equal(facingAngle(0, 1), Math.PI / 2);
   assert.equal(facingAngle(0, -1), -Math.PI / 2);
