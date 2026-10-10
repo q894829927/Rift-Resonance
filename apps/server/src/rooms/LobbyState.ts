@@ -49,6 +49,7 @@ export type EnemyNetworkState = SchemaType<typeof EnemyNetworkState>;
 
 export const ProjectileNetworkState = schema({
   weaponId: t.string().default("weapon.fireball"),
+  phase: t.string().default(""),
   x: t.number().default(0),
   y: t.number().default(0)
 }, "RiftProjectileNetworkState");
