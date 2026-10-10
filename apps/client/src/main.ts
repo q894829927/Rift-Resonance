@@ -25,6 +25,10 @@ import {
 import {
   playerNameWorldPoint, PLAYER_NAME_FONT_PX
 } from "./art/m2CombatReadability.js";
+import {
+  retargetProjectileVisual, projectileVisualPosition,
+  type ProjectileVisualTrack
+} from "./art/m2ProjectileInterpolation.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
@@ -215,7 +219,16 @@ class LobbyScene extends Phaser.Scene {
         }
         entity.setAlpha(projectile.phase === "returning" ? 0.88 : 1);
       } else {
-        entity.setPosition(projectile.x, projectile.y);
+        // Fireballs previously snapped straight to the 10Hz server position
+        // every render frame. Keep a per-projectile visual track: a new server
+        // coordinate retargets from the current rendered position, while
+        // subsequent RAF frames advance it smoothly without restarting.
+        const previous = entity.getData("projectileVisualTrack") as ProjectileVisualTrack | undefined;
+        const nowMs = this.time.now;
+        const track = retargetProjectileVisual(previous, projectile.x, projectile.y, nowMs);
+        if (track !== previous) entity.setData("projectileVisualTrack", track);
+        const smooth = projectileVisualPosition(track, nowMs);
+        entity.setPosition(smooth.x, smooth.y);
       }
     }
 
