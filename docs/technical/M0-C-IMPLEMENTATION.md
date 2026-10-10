@@ -16,7 +16,7 @@
 
 本阶段修复：
 - 将画布内部的固定英文标题、中文说明、底部提示搬到 HTML 层，由浏览器原生字体排版。
-- Phaser Scale.RESIZE 使游戏画布的缓冲区随父容器尺寸改变，而不是让固定分辨率画布单纯经 CSS 放大。
+- Phaser Scale.RESIZE 使游戏画布的缓冲区随父容器尺寸改变；expandParent:false 保留 CSS 16:9 父容器高度控制，并避免独立 CSS 宽高属性与 Phaser ScaleManager 互相覆盖。
 - 逻辑世界仍为 960×540；Camera 在 create 与 resize 时计算等比缩放，居中显示，不改变出生点世界坐标。
 - 容器保持 16:9 视觉比例，桌面为游戏画布与房间面板双栏，窄屏自动单栏。画布区域不使用强制变形的 CSS 缩放。
 - 当前 Phaser 4.2.1 的 GameConfig 不支持 resolution 参数；本阶段采用 Scale.RESIZE 避免将固定画布整体放大，并使用 pixelArt 设置像素贴图最近邻采样。超高 DPI 渲染缓冲优化以后单独评估。
