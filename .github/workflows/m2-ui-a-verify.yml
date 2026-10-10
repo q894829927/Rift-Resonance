@@ -32,5 +32,22 @@ jobs:
         run: npm run verify
       - name: Verify UI layout, pixel art and combat readability
         run: node --test tests/ui-layout.test.mjs tests/ui-pixel.test.mjs tests/ui-readability.test.mjs
+      - name: Start Colyseus integration test server
+        run: |
+          npm run start -w @rift/server > /tmp/rift-server.log 2>&1 &
+          echo $! > /tmp/rift-server.pid
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:2567/health > /dev/null; then
+              echo "Colyseus healthy and ready"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          cat /tmp/rift-server.log
+          echo "Colyseus did not become healthy" >&2
+          exit 1
       - name: Verify multiplayer simulation integration
         run: npm run test:integration
+      - name: Print server log on integration failure
+        if: failure()
+        run: cat /tmp/rift-server.log || true
