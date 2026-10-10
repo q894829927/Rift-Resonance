@@ -10,6 +10,7 @@ import {
   startCombatMatch,
   handleCombatPlayerLeft,
   selectCombatUpgrade,
+  rerollCombatUpgrade,
   stepCombatWorld,
   type CombatWorld
 } from "@rift/simulation";
@@ -55,6 +56,10 @@ export class ScaffoldRoom extends Room {
       const choiceId = typeof payload === "object" && payload !== null && "choiceId" in payload
         ? (payload as {choiceId?: unknown}).choiceId : undefined;
       if (typeof choiceId === "string") selectCombatUpgrade(this.world, client.sessionId, choiceId);
+      this.projectState();
+    });
+    this.onMessage("upgrade.reroll", (client) => {
+      rerollCombatUpgrade(this.world, client.sessionId);
       this.projectState();
     });
     this.setFixedTimestep((context) => {
