@@ -71,7 +71,7 @@ button:focus-visible, input:focus-visible {
   gap: 18px; min-width: 0;
 }
 .arena {
-  position: relative; width: 100%; max-width: calc((100dvh - 130px) * 16 / 9);
+  position: relative; width: 100%; max-width: 130dvh;
   justify-self: center; min-width: 0; border: 1px solid #4b3c5f;
   border-radius: 12px; overflow: hidden; isolation: isolate;
   background: #0e121a;
@@ -265,7 +265,7 @@ button:focus-visible, input:focus-visible {
 .game-shell[data-ui-phase="UPGRADING"] .arena,
 .game-shell[data-ui-phase="WON"] .arena,
 .game-shell[data-ui-phase="LOST"] .arena,
-.game-shell[data-ui-phase="RESULT"] .arena { width: min(100%, calc((100dvh - 130px) * 16 / 9)); }
+.game-shell[data-ui-phase="RESULT"] .arena { width: min(100%, 130dvh); }
 .game-shell:not([data-ui-phase="LOBBY"]) .panel { display: none; }
 .game-shell:not([data-ui-phase="LOBBY"]) .lobby-hero { display: none; }
 .game-shell[data-ui-phase="LOBBY"] .match-hud,
@@ -277,9 +277,9 @@ button:focus-visible, input:focus-visible {
 .game-shell[data-ui-phase="LOST"] .match-hud,
 .game-shell[data-ui-phase="RESULT"] .match-hud { opacity: .35; }
 @media (max-width: 1000px) {
-  .game-shell { width: min(100% - 24px, 940px); }
+  .game-shell { width: min(calc(100% - 24px), 940px); }
   .layout { grid-template-columns: minmax(0,1fr); }
-  .arena { max-width: min(100%, calc((100dvh - 140px)*16/9)); }
+  .arena { max-width: min(100%, 130dvh); }
   .panel { width: min(100%, 620px); justify-self: center; }
   .site-footer { padding-bottom: 12px; }
 }
