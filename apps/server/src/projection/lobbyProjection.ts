@@ -116,6 +116,8 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
   }
   target.weaponId = projectile.weaponId;
   target.phase = projectile.returningBlade?.phase ?? "";
+  target.outwardDistance = projectile.returningBlade?.outwardDistance ?? 0;
+  target.maxDistance = projectile.returningBlade?.maxDistance ?? 0;
   target.x = projectile.x;
   target.y = projectile.y;
 }
