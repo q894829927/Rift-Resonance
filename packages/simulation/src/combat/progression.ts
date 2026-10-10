@@ -52,7 +52,7 @@ export function getCombatUpgradeChoices(player: CombatPlayer): readonly CombatUp
       player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS) {
     choices.push({
       id: "upgrade.weapon.spin_blade", kind: "weapon_unlock", label: "获得回旋刃",
-      description: "解锁第二武器：前方扇形近战并击退敌人",
+      description: "解锁第二武器：自动投掷旋转飞刃，飞出后折返并击退敌人",
       nextLevel: 1, weaponId: SPIN_BLADE_WEAPON_ID
     });
   }
@@ -66,7 +66,7 @@ export function getCombatUpgradeChoices(player: CombatPlayer): readonly CombatUp
       label: isFire ? "强化火焰弹" : "强化回旋刃",
       description: level === 1 ? "武器伤害 +20%" :
         isFire ? "命中引发小范围爆炸，额外敌人承受 50% 溅射伤害" :
-        "回旋刃扇形角度扩大 25%",
+        "回旋刃投掷弧线的横向覆盖扩大 25%",
       nextLevel: level + 1, weaponId
     });
   }
