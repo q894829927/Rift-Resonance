@@ -29,7 +29,7 @@ test("every native pixel sprite scale is a positive integer", () => {
     assert.equal(isNativeIntegerScale(value), true);
   }
   assert.equal(isNativeIntegerScale(1.6), false);
-  assert.ok(PIXEL_CHARACTER_SCALE >= 2);
+  assert.equal(PIXEL_CHARACTER_SCALE, 2); // 32px source -> 64 world pixels
   assert.ok(PIXEL_LARGE_ENEMY_SCALE > PIXEL_COMMON_ENEMY_SCALE);
   assert.match(visuals, /setScale\(PIXEL_CHARACTER_SCALE\)/);
   assert.match(visuals, /PIXEL_LARGE_ENEMY_SCALE : PIXEL_COMMON_ENEMY_SCALE/);
