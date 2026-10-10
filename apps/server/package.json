@@ -10,10 +10,10 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@colyseus/schema": "5.0.36",
     "@rift/shared": "0.0.0",
+    "@rift/simulation": "0.0.0",
     "colyseus": "0.18.1"
   },
-  "devDependencies": {
-    "tsx": "4.20.3"
-  }
+  "devDependencies": {"tsx": "4.20.3"}
 }

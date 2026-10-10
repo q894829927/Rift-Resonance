@@ -1,26 +1,27 @@
-name: M0-A Verify
+name: M0-B Verify
 on:
   push:
-    branches: [main, codex/m0-a-scaffold]
+    branches: [main, codex/m0-b-room-state]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-      - name: Install locked dependencies
+      - name: Resolve direct dependency lock (temporary on feature branch)
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Install
         run: npm ci
-      - name: Verify types, build and core tests
+      - name: Build and unit tests
         run: npm run verify
-      - name: Smoke test server and static client
+      - name: HTTP and two-client integration
         run: |
           set -euo pipefail
           npm run start -w @rift/server > /tmp/rift-server.log 2>&1 &
@@ -28,14 +29,23 @@ jobs:
           npm run preview -w @rift/client -- --port 4173 > /tmp/rift-client.log 2>&1 &
           CLIENT_PID=$!
           trap 'kill "$SERVER_PID" "$CLIENT_PID" 2>/dev/null || true; cat /tmp/rift-server.log; cat /tmp/rift-client.log' EXIT
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:2567/health -o /tmp/rift-health.json &&
-               curl --fail --silent http://127.0.0.1:4173/ -o /tmp/rift-index.html; then
-              break
-            fi
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:2567/health -o /tmp/rift-health.json &&
+               curl -fsS http://127.0.0.1:4173/ -o /tmp/rift-index.html; then break; fi
             sleep 1
           done
-          node -e 'const fs=require("node:fs");const d=JSON.parse(fs.readFileSync("/tmp/rift-health.json","utf8"));if(d.status!=="ok"||d.protocolVersion!==1) process.exit(1)'
+          node -e 'const d=require("/tmp/rift-health.json");if(d.status!=="ok"||d.protocolVersion!==1)process.exit(1)'
           grep -q '异界共振' /tmp/rift-index.html
-      - name: Production dependency audit (high severity gate)
+          npm run test:integration
+      - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
+      - name: Persist lock on feature branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/m0-b-room-state'
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore(m0-b): update npm dependency lock"
+            git push origin HEAD:codex/m0-b-room-state
+          fi

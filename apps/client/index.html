@@ -3,10 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>异界共振 · M0-A</title>
+  <title>异界共振 · M0-B</title>
 </head>
 <body>
-  <div id="app"></div>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">RIFT RESONANCE / M0-B</p>
+        <h1>异界共振</h1>
+        <p class="subhead">多人房间与玩家状态同步 · 暂无移动和战斗</p>
+      </div>
+      <span id="connection-badge" class="badge">未连接</span>
+    </header>
+    <div class="layout">
+      <section class="arena" aria-label="玩家实体展示区"><div id="app"></div></section>
+      <aside class="panel">
+        <h2>联机大厅</h2>
+        <label for="nickname">玩家昵称</label>
+        <input id="nickname" maxlength="16" placeholder="2～16 个字符" value="旅行者" autocomplete="nickname"/>
+        <button id="create-room" class="primary">创建新房间</button>
+        <label for="room-id-input">房间 ID</label>
+        <div class="join-row">
+          <input id="room-id-input" placeholder="粘贴好友的房间 ID" spellcheck="false"/>
+          <button id="join-room">加入</button>
+        </div>
+        <section id="room-details" class="details" hidden>
+          <h3>当前房间</h3>
+          <p class="label">房间 ID：<code id="current-room-id"></code></p>
+          <button id="copy-room-id">复制房间 ID</button>
+          <p>人数：<strong id="player-count">0/4</strong></p>
+          <ul id="players" class="player-list" aria-live="polite"></ul>
+          <button id="leave-room" class="danger">退出房间</button>
+        </section>
+        <p id="status" class="status" role="status" aria-live="polite">输入昵称后创建房间，或者按房间 ID 加入。</p>
+        <p class="note">房间 ID 并非密码。M0-B 仅供本地测试，不要直接公开部署。</p>
+      </aside>
+    </div>
+  </main>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
