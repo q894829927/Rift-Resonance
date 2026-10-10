@@ -1,0 +1,1652 @@
+{
+  "schema": 1,
+  "license": "CC0-1.0",
+  "redistributable": true,
+  "mirror_commit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+  "packs": [
+    {
+      "name": "ui-pack-adventure",
+      "official": "https://kenney.nl/assets/ui-pack-adventure",
+      "source_repo": "shorepine/kenney",
+      "source_commit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "source_path": "ui/UI Pack - Adventure",
+      "png_count": 128,
+      "files": [
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/banner_classic_curtain.png",
+          "bytes": 2379,
+          "sha256": "e79862a8197a0d19acb90be9b7eb1c33e67e13acaca2bac65878cecacfc0e5ea"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/banner_hanging.png",
+          "bytes": 2165,
+          "sha256": "ffd8288d6e628cd121680780ae10b11b9d2d007acf5b36d4d36eaf3e675d64af"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/banner_modern.png",
+          "bytes": 475,
+          "sha256": "d3d87876cbfb210db0983fada990ad1be7778f12090bc11d92353021b8e91d25"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/button_brown.png",
+          "bytes": 302,
+          "sha256": "ee6d0103b23c877d28296a3fb620b5cdb340dd2c798134a7ea6317d5467d5053"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/button_brown_close.png",
+          "bytes": 394,
+          "sha256": "c2ad7ed2e7d83237ffe16917617cc1bde15922a9cb0349d790815b538e694ab9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/button_grey.png",
+          "bytes": 263,
+          "sha256": "293b4d8d2b2beee2873f4db6013de80021932bbcb9ab4f4fe5089f0e97f1326e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/button_grey_close.png",
+          "bytes": 373,
+          "sha256": "6853ea11d6fad13f3fd6f0aad568fd07ab0ab24ce93035b697a67bf5d89e72d6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/button_red.png",
+          "bytes": 263,
+          "sha256": "7305fb0dda92ebfa206bc893806b2f637b1b25e51a61faaa7f6c79cf178a9ac7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/button_red_close.png",
+          "bytes": 373,
+          "sha256": "2e94f027bdb88e57c71dd09d90e22c834d1848921d303f2bcbc7d9f43a2a1b8c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_beige_checked.png",
+          "bytes": 508,
+          "sha256": "4142ff51922d945e3338c21ba56fb281b8b4d586eb18926f4a06eb6943cdfa0d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_beige_cross.png",
+          "bytes": 525,
+          "sha256": "e65b55899923c24be19fd2265bbd5d2dd90adc46bc6e5c033b4aebf59a96667b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_beige_empty.png",
+          "bytes": 471,
+          "sha256": "e46c002e4acc659cc402a91c8267280409c4de60c5a3c19b238a53abcbf9765a"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_brown_checked.png",
+          "bytes": 536,
+          "sha256": "cc07d7cc734c05278577610f59a82e0f17ced0eda3a4f7c31536637f5f1a4a63"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_brown_cross.png",
+          "bytes": 545,
+          "sha256": "0ba28112173e96cf657ae09604ada9424f5c0c1c78fc74ce6fa354fdf082b0a1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_brown_empty.png",
+          "bytes": 466,
+          "sha256": "416afd256b505233a353672c505714604bd0743f875122a4d70b50587870cd81"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_grey_checked.png",
+          "bytes": 536,
+          "sha256": "50be08e09ecfe3e21242b69f6ef27c19057e4ebcfcc09f194b0a8b31245c3277"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_grey_cross.png",
+          "bytes": 546,
+          "sha256": "4f5e84055dd438b746ae020070fd9b8b503463ff8e2eff4fb54adf994b3079d3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/checkbox_grey_empty.png",
+          "bytes": 467,
+          "sha256": "842dbf9a58a4f78d9317497c721866b9971219ef7619a5174ee4e51fe8fb813c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_brown.png",
+          "bytes": 885,
+          "sha256": "c3336e1133ee2c470cec8c3dd1a147b07861a8cf5bffde62960f936512152317"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_brown_dark.png",
+          "bytes": 735,
+          "sha256": "96938a0d3bb9e8dfae8e68fdc2dd2049cbb528898d76aacced17c9e0f55c8b63"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_damaged_brown.png",
+          "bytes": 921,
+          "sha256": "d938766bab1d275604f569a07b044f428cc0b48a83954cf8fe702c158134a5d2"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_damaged_brown_dark.png",
+          "bytes": 747,
+          "sha256": "2829f74c8100f16f93cd7514db5c71e0de72f94014476f48c36ddf65af8fb1c5"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_grey.png",
+          "bytes": 865,
+          "sha256": "b32cc4a98924a377901ec065d9eea385fd564277a5d1efd0a3f25b387cc76d0e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_grey_dark.png",
+          "bytes": 713,
+          "sha256": "c4e8694831daf8e2fa06fb55763124bf2997ad71f14e86a73fc425023da07dec"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_grey_green.png",
+          "bytes": 1053,
+          "sha256": "67a7199f7e0d7886d47095ab1a6031eec745dbfdbccb85a59a2e71ddfce94338"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/hexagon_grey_red.png",
+          "bytes": 1052,
+          "sha256": "6159a90183c9feacaaa9c599920de5fa1cb866b3984bd5cba44c2b5d41609822"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_arrow_a.png",
+          "bytes": 303,
+          "sha256": "6ae39cfe5b23d013576b4d9aa08410503ddecacd690fb5d63382b182d5cb1d8b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_arrow_b.png",
+          "bytes": 240,
+          "sha256": "d270c95898d1f3f814aed74baf5198a65823d965634788e19d9da56759dd3a9c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_arrow_c.png",
+          "bytes": 214,
+          "sha256": "de1ce581d743a8b0ab134b7f54d5696c7db951e851f418ffce6eae53e6018feb"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_arrow_d.png",
+          "bytes": 243,
+          "sha256": "7adffd57c9cf6f9b5a1ba4eef7c81536877ab42cd9ffabb70afa2b3b0f0097ab"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_future_e.png",
+          "bytes": 275,
+          "sha256": "b86bd7d702112d7c0ed1017f7d9741e144b805230a320d53854b7ac710b0b919"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_future_n.png",
+          "bytes": 481,
+          "sha256": "532f7050a2de2f22251c4f25e4d947fc979033594eee65b33ad14e70215aae8d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_future_s.png",
+          "bytes": 295,
+          "sha256": "a47ee158d4b9b7634e217d123d83981009c325f976811a534b93fd83bad81b1d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_future_w.png",
+          "bytes": 438,
+          "sha256": "9b73060c24d61b51b44d71409d24bcc84bd2f9b44e4b98507bb30017b6a69d27"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_toon_e.png",
+          "bytes": 329,
+          "sha256": "ad2b161137da81024a9713b6dcb58a139b7ebf5d605d66c7707722163e19c933"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_toon_n.png",
+          "bytes": 407,
+          "sha256": "5b4d028d1d9d11927753ca95e936643535def72d8e90cb98917401080e679e68"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_toon_s.png",
+          "bytes": 508,
+          "sha256": "71728ebf1b2a2c74728f75e140f12ae5f375d515622a676d43b9ba6903803b26"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_compass_toon_w.png",
+          "bytes": 551,
+          "sha256": "251bccd551f2537d9ecef3b378d48e6e3a5f5ecc28dce86e888ec92b610ee4e7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_exclamation_red.png",
+          "bytes": 234,
+          "sha256": "2df41d356f1190bb343835c40f5b1bab538d8aac3cdd7937024569c45621156d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_exclamation_white.png",
+          "bytes": 234,
+          "sha256": "c3eddaf8bc976c2a117edaad4b113b55533760176ac297ffd1ff1ecac8fe5ce1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_exclamation_yellow.png",
+          "bytes": 234,
+          "sha256": "23a454e104e1f3348fbbb7c25a054033f6f23f4d7d0bba145fe341e038a50e54"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_jewel_red.png",
+          "bytes": 301,
+          "sha256": "85e81bc328399f54679182bb2a5940f4e57e8030b9a85c203bedca6568a1505f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_jewel_white.png",
+          "bytes": 306,
+          "sha256": "4aa70c094247bc9d3b57cf1a5455bc19ce8ba7419a2659c0b603d0ea165bc68e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_jewel_yellow.png",
+          "bytes": 306,
+          "sha256": "9cf7787780ec2f967a78c4addea500bcc069f0670efdd53d775115ef02de16ba"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_star_red.png",
+          "bytes": 333,
+          "sha256": "4b47ae1b6d4115953246acda2d147acd9cf316c1a88a73e4bb7ffcfb17d818bd"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_star_white.png",
+          "bytes": 333,
+          "sha256": "b1ea9a099f583307f03b1c9d985304ee826f253dcd66dff89fa1b400bf226028"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_icon_star_yellow.png",
+          "bytes": 333,
+          "sha256": "aa4e6902377fc0da239bf6c8244ac9f8c74ebbcac6fb9837728d630c4150475e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_ring_brown.png",
+          "bytes": 2336,
+          "sha256": "693be5f99deb4edce23848136938f7eea4fed0ffc9b914ef872ce3012411655b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_ring_brown_detail.png",
+          "bytes": 3178,
+          "sha256": "4a56a16f08a2187d725f0bbc13b8cbf5fc66c01c1ad0e4b2cdb8e1c4b0a8735a"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_ring_grey.png",
+          "bytes": 2299,
+          "sha256": "6bb446a738bb898f25061b573209110afe98f33bc94c0ac2d9ff0f40252fa96e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_ring_grey_detail.png",
+          "bytes": 2900,
+          "sha256": "fc4be8ea98980d42fdd52135dee20d3e299093d1141fe31d6f13ae07439d5f76"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/minimap_ring_white.png",
+          "bytes": 2318,
+          "sha256": "816d46d1b221f6908cefbe5bf9c9f132f84ed90a6b2b181f3e6855f40415e0d6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_border_brown.png",
+          "bytes": 621,
+          "sha256": "77c6adf4735ea7cfcfb87df4396a90fba6ea47cdca3dceb79c872af04d113d04"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_border_brown_detail.png",
+          "bytes": 399,
+          "sha256": "2088b4593b2e163d137b559aacfcbc6ab816eeb587d10d8ab6e3a62395913873"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_border_grey.png",
+          "bytes": 273,
+          "sha256": "78aab5cfbdbbeb4b1e202e8518b6d4e9f775e31003d90c896242ddc71a1e2c9f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_border_grey_detail.png",
+          "bytes": 601,
+          "sha256": "d11a11d4ac30428ef460de5364db13853d9b75834cdce1d3edab7dfe97d35f93"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown.png",
+          "bytes": 277,
+          "sha256": "fb166d6c3a55dfd70d361c664df5b0e01811f328a9048455e2c0a285a4fbf1b7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_arrows.png",
+          "bytes": 956,
+          "sha256": "6a2b2de834737cd0b3df20e115bb0b8af42034685221671ccdf0306acbc63635"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_arrows_dark.png",
+          "bytes": 813,
+          "sha256": "249eabda7fb41ccffc39adb7663f6bcb082b8b5096717fc07e273df83cb3dc50"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_arrows_dark_detail.png",
+          "bytes": 952,
+          "sha256": "8e5476083372620b74c746e76949b9e67eee67ad8c70ff4ff4c1de863afcf3de"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_arrows_detail.png",
+          "bytes": 1107,
+          "sha256": "83d67acda024325a5707a2f7f2c9d60c1fd3c2c4eafb7fb3109fbaa49e99f022"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_corners_a.png",
+          "bytes": 655,
+          "sha256": "809ef1cdc355cebce955feb1e235f35e61237146c0fc8ef2158bae531e09b85f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_corners_b.png",
+          "bytes": 783,
+          "sha256": "96565230e3202b40754ba475ae6a6db821dc280497aaf033e3a3981109be03fd"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_damaged.png",
+          "bytes": 432,
+          "sha256": "b97b79fe14fd61ce02476288b36e8e199c64a2394182baefd8ea89be0f08b608"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_damaged_dark.png",
+          "bytes": 360,
+          "sha256": "f8c96c08e60cd93396fc23025edad6d1a4f5b2a363b98e4f8e6f70f21c7eb3bf"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_dark.png",
+          "bytes": 267,
+          "sha256": "929c6cb3c63554919672219febd78483f9ba58a11b0def6badb47f9cdc4e029e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_dark_corners_a.png",
+          "bytes": 494,
+          "sha256": "c4f36240361012c810ccaa9de803654e1597dfd3d59b685dedc7d0ad01296483"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_brown_dark_corners_b.png",
+          "bytes": 709,
+          "sha256": "9b6c2ae991384799bd177975e31bdf14c108cd0c191f8fe68fc14b14558c4857"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey.png",
+          "bytes": 277,
+          "sha256": "bd4f6b9c4f7bc85348b167851b808e49f84c1114d7f61c93027995d6eb2876da"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_blue.png",
+          "bytes": 389,
+          "sha256": "8949398499d38370fa3aad04a8ebd9790ada85daee92536da7c99790b094bcc3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts.png",
+          "bytes": 362,
+          "sha256": "bc7010282af249c174d02bebbd842d44c5294b3c92ef6a202e3121e814373173"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts_blue.png",
+          "bytes": 672,
+          "sha256": "a349f080f220c7baa1e3deac25c3709088b75b2faf0dec31911cb8c4528656c1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts_dark.png",
+          "bytes": 312,
+          "sha256": "310152411ee07600a0b0fd08ec4cf8d7e8fef1f6511c4590ec251da5ceabe80b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts_detail_a.png",
+          "bytes": 621,
+          "sha256": "c8d221f5a146ea0c75fe4543a5cb78d36121b542964fcd0eb8abded6a0af57b3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts_detail_b.png",
+          "bytes": 534,
+          "sha256": "f01585c5e2f04a2614395d922831b344ecd30eb482c86b1bbda9a8608932be48"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts_green.png",
+          "bytes": 672,
+          "sha256": "6447f128a63872c423a9c179270385ba7cffbb2b70fb0907f4b22c26b65ae586"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_bolts_red.png",
+          "bytes": 672,
+          "sha256": "25bf18ed60eaadadb6ea522699829d233cc4b8b698bb7512925b93a50b619b96"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_dark.png",
+          "bytes": 267,
+          "sha256": "e8161d26cd4748126b692b9e92d02f6063cf92d627f6f82b8f8f6f4338a3114e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_green.png",
+          "bytes": 389,
+          "sha256": "24fc549f3f3f6c2d4b584494d9ae1fa44a7011bed9ff42214a8a27c7819ecc28"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_red.png",
+          "bytes": 389,
+          "sha256": "8063e95eb0aecfec00c92fdf217dabc5af587048f00d75320633bd6497c7e0d3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grid_blueprint.png",
+          "bytes": 460,
+          "sha256": "10e029f6529edbb9107f12da2f479b00c85635efadf608bd6d8495e0850888a4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/panel_grid_paper.png",
+          "bytes": 461,
+          "sha256": "efca4d25045cad51e33869aa7b0d2ca401331f0dad008d0c5c780fd32b84a186"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_diagonal_grey_large.png",
+          "bytes": 196,
+          "sha256": "500cb87d1eb1c56418f3fb90c0084792f0b0eb17ca4362dfd05caefb52ac80e4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_diagonal_grey_small.png",
+          "bytes": 168,
+          "sha256": "21a988614ae879bda4824e3c4e88458eff9b8d06ed90ed8b81df9c79bdc143bd"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_diagonal_red_large.png",
+          "bytes": 211,
+          "sha256": "0cddb0857a647be2533d2c020064dc42bfb905b5a8d5adaacebe94cdce19349e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_diagonal_red_small.png",
+          "bytes": 183,
+          "sha256": "1c63a7e2bf42f6420e57cb9ca646250d3cbef59f0db25d1b8376beeadb56d970"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_diagonal_transparent_large.png",
+          "bytes": 213,
+          "sha256": "0c912385d117ebced1647df2241e6ce5dd88451e5b9acf447551c08f2b8f1867"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_diagonal_transparent_small.png",
+          "bytes": 184,
+          "sha256": "1384be9db9f24b3721e15319e1c43d3cc8a9c229e8d1ddf226bb4de7d6089c20"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_grid_blueprint.png",
+          "bytes": 111,
+          "sha256": "a02ac42b799c9235d52ffbf8a47a5e6636dfd513aeda5ab8f35571ae567e6ea3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/pattern_grid_paper.png",
+          "bytes": 111,
+          "sha256": "f268564512a4b6c3115bdaa1b13986d8335957a5c2fbca1589aea9142a9fc33d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_blue.png",
+          "bytes": 379,
+          "sha256": "6d7a4fb21a20f3157f6767514dac139fc8aab39346ab308db3e5511b906f82d6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_blue_border.png",
+          "bytes": 391,
+          "sha256": "fc6ba1af4061a4c159bfb7d12640396c5d44f8e8574c942617351e04d631a4b8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_blue_small.png",
+          "bytes": 377,
+          "sha256": "cd5aad22c7338fccf75720990ceb4e69782a217e96234773adc9f9f4f113aac8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_blue_small_border.png",
+          "bytes": 387,
+          "sha256": "e3541f08c83ca9de640d7f9e6980e713d7b10e7c67927badfd52558943fdf4b6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_green.png",
+          "bytes": 375,
+          "sha256": "b2cfb6eb5189188eca2e6545a4ee1e87c091f4b36a3d696efdfb20eda6406f46"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_green_border.png",
+          "bytes": 391,
+          "sha256": "8f8eb46416eadaac6b0d80034da4678f741da70090f92e4b225d7616570a8193"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_green_small.png",
+          "bytes": 373,
+          "sha256": "f79a225a9eff6f407ac5d08f1747ea17fddf65398e836698cee83fb8fe87f548"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_green_small_border.png",
+          "bytes": 387,
+          "sha256": "bb338770c82b48d6bb197ad340198eeab719a63823d975aa8296008569586bd0"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_red.png",
+          "bytes": 375,
+          "sha256": "87fbc89029e159c282327badad2700ef98971bd40700084f9386677798d003b6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_red_border.png",
+          "bytes": 391,
+          "sha256": "be9b54ce850f7273c8f4f15893bfe2a0fb8ca757cbeed9f20be3ad210d860459"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_red_small.png",
+          "bytes": 372,
+          "sha256": "64154f6b7bc2ecacf0c0f77055f7c4b39a0e45f1415187d4e85c0ea7eedb6b14"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_red_small_border.png",
+          "bytes": 387,
+          "sha256": "20d807a5dbfa08d8a3214c6fc2c28a4b1a74b53ca27b6e1e2a8f21cb7bddabbc"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_transparent.png",
+          "bytes": 322,
+          "sha256": "15abb19477acadd699cd912223382613347ba250df9ad44f5f68c27fd74ab18d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_transparent_small.png",
+          "bytes": 315,
+          "sha256": "ab05b54841b40028f01a701a70cd47e05a714a6970c40f4a884eb9403624ce16"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_white.png",
+          "bytes": 379,
+          "sha256": "b7fdaf1b84c50369a058d51b5177d5bc1b33cfefc053b14705c37aa229f0d3e8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_white_border.png",
+          "bytes": 391,
+          "sha256": "ad323d701da9f0309c94a25c2b79f31edd9547d902fc304bc9941e16e1aa811b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_white_small.png",
+          "bytes": 377,
+          "sha256": "4346d52ea3775ff98fbb733461817232c34946be9390d1fb085f314c728421eb"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/progress_white_small_border.png",
+          "bytes": 387,
+          "sha256": "9fdc650e3eb3bd69adbb9a8331c1dd093ff8e084411b61ffe74cedc1764068b8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_brown.png",
+          "bytes": 1253,
+          "sha256": "fc7c5ada84b1171732378f8770f9ec294c8187496433ce2009130950b48f30f9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_brown_dark.png",
+          "bytes": 1029,
+          "sha256": "e8339701c0c4f2fbcc1f829373123950ad1d4da3bc79d32ea24c750a227ad48b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_damaged_brown.png",
+          "bytes": 1318,
+          "sha256": "ca888d12bc4925351e37a4c858da1d0757faa33d4e0604f0cafaa2849b200656"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_damaged_brown_dark.png",
+          "bytes": 1083,
+          "sha256": "06c20effd9df215b68d39f3a67cd8ce47acfbfe430823dbc6f4847d53059e64c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_grey.png",
+          "bytes": 1218,
+          "sha256": "e4f2ed2939750e1baedb76f2fb94b9408e9f89256e4e03e997e61d9a787a1015"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_grey_dark.png",
+          "bytes": 998,
+          "sha256": "296c674f8ab1329c09afc08439e492f2794ddb8d6c755b1620254faa0f88230a"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_grey_detailed_green.png",
+          "bytes": 1426,
+          "sha256": "b9a193070b334c0be782d91ddfe24ff5f197d7050704cf229465ef394cffde96"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/round_grey_detailed_red.png",
+          "bytes": 1426,
+          "sha256": "1d34f2c1890c47daacf9271304d4e1d7293c6a9d59722684d626ea892d333d90"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_brown.png",
+          "bytes": 250,
+          "sha256": "d236bb3d4ffd9fed7a2a9976c5700e2774cae5104d5557fb10516ac0033e21cf"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_brown_small.png",
+          "bytes": 247,
+          "sha256": "bc1ecad8ee191ceb159659a89b90e704c58159a05f524580e8d73556640c88ea"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_future_grey.png",
+          "bytes": 271,
+          "sha256": "688a3132921def4e16e388ea636c6ca9d3826183b9d42cf0dd2b6665f0188bac"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_future_grey_small.png",
+          "bytes": 264,
+          "sha256": "fc2129e5c60f152f4b552183d6979edeb27e531eccdea07c91e20f2ac8f9d594"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_future_red.png",
+          "bytes": 271,
+          "sha256": "1cb343fe8c7c132f7eb990b74b6174935bf4f5cc52db591a2021346c249dfce1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_future_red_small.png",
+          "bytes": 264,
+          "sha256": "e454c92e8a58c01d1f9f458f62de70a43a84d84aae94cda1700fc634b5ba6cd0"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_future_transparent.png",
+          "bytes": 284,
+          "sha256": "2721d0ea3f47889ea087aeb7092ed951b65bd8ce2a6cea99d60839a5eb5d79cd"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_future_transparent_small.png",
+          "bytes": 268,
+          "sha256": "d36bcab16e255965d8398115a09cc7ed7897d2a5e7063badbba83bd3b0d08745"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_grey.png",
+          "bytes": 250,
+          "sha256": "e31f282d085f5d982b70b35e1c99d8e085f04e051c782647f7036ab6bc408232"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_grey_small.png",
+          "bytes": 247,
+          "sha256": "c76551d68ad2010de9a106ff02ced3f4bb7e4be7951dc429b893609131bf7ff4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_transparent.png",
+          "bytes": 245,
+          "sha256": "7ba8ec775d966d01d984d3c5e11062b157acdb975e09e714dd58f783242271fa"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/ui-pack-adventure/png/scrollbar_transparent_small.png",
+          "bytes": 235,
+          "sha256": "7faac612ccd3ef2793346a2765bbef425bff08b341221cd3ce52fe5c21e360da"
+        }
+      ]
+    },
+    {
+      "name": "particle-pack",
+      "official": "https://kenney.nl/assets/particle-pack",
+      "source_repo": "shorepine/kenney",
+      "source_commit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "source_path": "2d/Particle Pack",
+      "png_count": 80,
+      "files": [
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/circle_01.png",
+          "bytes": 69755,
+          "sha256": "4b2d03683bf0fe4a946567adc3bd86b8ba045da84cee58dc2cf8aef63bbfaa06"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/circle_02.png",
+          "bytes": 43380,
+          "sha256": "8a2112a6a5610c7cdcbfe8af0a5162b42dfb3431c63f494743945337b7981e51"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/circle_03.png",
+          "bytes": 72952,
+          "sha256": "ed6c6f082e666c16bcaca89f15aefb55df9bf69450090518bcae1d3d61f82936"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/circle_04.png",
+          "bytes": 59557,
+          "sha256": "742da1a1b96b93ae446700f6085385d1f62844352da870c89427307b7b7cf03b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/circle_05.png",
+          "bytes": 65336,
+          "sha256": "925b8ac284436f74f9cadf0ecd058da1c08fba65c098e4e34fd220603022f02e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/dirt_01.png",
+          "bytes": 47313,
+          "sha256": "6827a0a32a293ec9570fb98d63963b8dd6e6aaba9e1096afad932e93a378bea9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/dirt_02.png",
+          "bytes": 54060,
+          "sha256": "fcecc70b561f80568b3391c3dc1180126d86ce4fbd4d1b01518e6045203e10a3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/dirt_03.png",
+          "bytes": 114937,
+          "sha256": "427d6dcad5a8d16b8143d412a5a48ce859716150a074ea5bb36eca577c0ae541"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/fire_01.png",
+          "bytes": 99891,
+          "sha256": "9727a9743ac6ab8dd4dd79f5fc5b0266290efae45f4d4452279eb5e4bcf3a978"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/fire_02.png",
+          "bytes": 88453,
+          "sha256": "e2677330b0668033b0744276da74de605164aa5d58203bf251a8ec84e62c2108"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flame_01.png",
+          "bytes": 54099,
+          "sha256": "92a70bcb90b1e21c57b2dae42843135703b2e988abee97433f84c3119723d144"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flame_02.png",
+          "bytes": 68498,
+          "sha256": "7afff66979a5a30319d4fa491b13a9027223ebbdadfa38fae4ae76e31d05d9c5"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flame_03.png",
+          "bytes": 49857,
+          "sha256": "366678a08a7d22ebb87baa7b42005aaaeb0fd51ab751f2d4e7c9edfa61a33e38"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flame_04.png",
+          "bytes": 70731,
+          "sha256": "71deb274feea6ae5e6bb82c802a6e4d22f168397aa36b7a9e89de863948f3cf5"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flame_05.png",
+          "bytes": 13395,
+          "sha256": "4c5cc587260010e4bb58b03cc2561ca0e96409e7db25ea4183cd3fb1d0237dc8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flame_06.png",
+          "bytes": 15971,
+          "sha256": "fc95ac4d0e61b22d079aeb5feabf2914d380858ad95852e5b1638ad820526948"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/flare_01.png",
+          "bytes": 42886,
+          "sha256": "254f5bd4f0548612bf29305d27899efdee8cb8d8306292761ebbddebd3e57935"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/light_01.png",
+          "bytes": 93470,
+          "sha256": "caedcc5df5bcac4470244d2520d6a64b45b20c1ccf4d918da516c55e3fa365a6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/light_02.png",
+          "bytes": 93415,
+          "sha256": "f1bdb57478703fec539f7b8eeceb494c4a23664652b296389f310104be80cfe0"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/light_03.png",
+          "bytes": 100114,
+          "sha256": "b68627734d08aab3eaf3f94718521553628c75aace1de6c74de28501c1a4c147"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/magic_01.png",
+          "bytes": 81687,
+          "sha256": "398479ea280c8161d0b6d509ca97eefb27e989c7832b404abcb65faae3e922ff"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/magic_02.png",
+          "bytes": 86500,
+          "sha256": "6443e90834abcae4c3848d7ebca99ff0d9fcad19a07f49f77ad64710a3e39b36"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/magic_03.png",
+          "bytes": 58093,
+          "sha256": "c2ef5fe86cd2fd08e5b9768389ab6580b346c391db3c7c09fc9b0a63e00ec4ce"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/magic_04.png",
+          "bytes": 50082,
+          "sha256": "8255a4a3bd9209a0d3a45f0636524ff0d2953adc7d6819041703107379ab63ba"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/magic_05.png",
+          "bytes": 74794,
+          "sha256": "92fb8c7a1d9bc14e052526c0505502c3e5b37d27502fa3d36d2c80b4565b62ef"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/muzzle_01.png",
+          "bytes": 81811,
+          "sha256": "08f650f6a615b65024b48d8da32178158d74307d7c235f214f0c075b7aa688b9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/muzzle_02.png",
+          "bytes": 58365,
+          "sha256": "96164063353cc0386b3d3ad0d64b9be6c369e1d5d8510f84fcf33604b4729084"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/muzzle_03.png",
+          "bytes": 57240,
+          "sha256": "579983452d263ebeca78080714b6dd55a0f95fca7452f309e91a9d466de6c058"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/muzzle_04.png",
+          "bytes": 62593,
+          "sha256": "2acbc729b7bf38330b7e829cb0b13dcf922fec4b163f7eb2965b7b2932f89aeb"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/muzzle_05.png",
+          "bytes": 54088,
+          "sha256": "bc2d012c3bee75e668cc7800f965692b47af6edd6d3584081089a70abbe30a47"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/scorch_01.png",
+          "bytes": 60598,
+          "sha256": "ea72697696638786ccd4795a346d177b1b6a904331b5536a7e85a7ed927b93a5"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/scorch_02.png",
+          "bytes": 74485,
+          "sha256": "b36daaabbe0480b74e1e8d6b0b2e9a2d01974109b42b8a39c430af7739a953a1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/scorch_03.png",
+          "bytes": 91921,
+          "sha256": "531956355c8adcf6fbe0111788e68630c4b16209f9d7a6136978361a308202ec"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/scratch_01.png",
+          "bytes": 65462,
+          "sha256": "7dc0b16a5240738273684bfdf423eefd8a135356af1fee759217cdd560a4a935"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/slash_01.png",
+          "bytes": 25465,
+          "sha256": "cb4787978122bb863866a1681af22a7dec39a4566f08c400f233740eb1d3730c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/slash_02.png",
+          "bytes": 38224,
+          "sha256": "a79a9e297790e6126b78d41015a3045cda3f1863b421c88321d2442ed6f9032e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/slash_03.png",
+          "bytes": 16634,
+          "sha256": "c77e40ef75084e880f2ea69acf70af4419518f489acda00d29b668a64805608e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/slash_04.png",
+          "bytes": 17889,
+          "sha256": "1beed6d30b8b3fc0874cca12f57de073360f0b11fc6f4cd99a24b7e033784c47"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_01.png",
+          "bytes": 97452,
+          "sha256": "e8724c219e8d35859167fc0a7e207e13c72ccf0c29704909b9bb3d3dc71c6cf7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_02.png",
+          "bytes": 96825,
+          "sha256": "c405cc0ceb31a239dfd873fffdfdfe3ff2056eebd5fcc77dfba1d9fdfed585c7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_03.png",
+          "bytes": 39737,
+          "sha256": "a71f8abcac64f8d73a94625cc9a10033dbeafa7eaea750560cba0daa73fe8752"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_04.png",
+          "bytes": 97568,
+          "sha256": "2db2f69874cdb1e5203f2f86803d5debde30402590cf50a810afaba882184616"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_05.png",
+          "bytes": 83445,
+          "sha256": "e88c8416bd8da1b3f9f19e615dcebdf42f71045799cb4c41f545cb16dd835e35"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_06.png",
+          "bytes": 62156,
+          "sha256": "d988b03bb46797be913333f06b26ff2aad55ec082cfb7d3d18ce86ccb71559b5"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_07.png",
+          "bytes": 77838,
+          "sha256": "f7419fa4f11e346d0fb36a17ecbf616083c6962633c7847d92119c994ed9b4e4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_08.png",
+          "bytes": 90424,
+          "sha256": "eae1d92c205a2654254281d470ee70cce86cf4e8e849db29e4d5edff0f67c695"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_09.png",
+          "bytes": 87963,
+          "sha256": "7c66cf05c52aefb1f3e37c54917289a11d9268a995dbc4effc8ca80242a4122b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/smoke_10.png",
+          "bytes": 90497,
+          "sha256": "35d1082a87de7558aeeab210fecb43997c958e162ede896587d1930f66e6ae67"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_01.png",
+          "bytes": 95070,
+          "sha256": "5902da3a324cad0a4b5a88ce1e3c9cc18fee50922c358ce93d8c9f1ad7708f0a"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_02.png",
+          "bytes": 101613,
+          "sha256": "f7c5f1f849657eed79fd7b663be5a57829450a1e4fdc4a062049a05b9a406e89"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_03.png",
+          "bytes": 79574,
+          "sha256": "90f322bebe5facea2f60afe88d98dd80a21479ed3212e605d61e88a896f3e1db"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_04.png",
+          "bytes": 83811,
+          "sha256": "3cba35b80a97c12283a8ecd41780a0412194de14562cbffc7f04e9157183f772"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_05.png",
+          "bytes": 64808,
+          "sha256": "9624ea2017b8b2767a9d3b82e978b7fdf5154d83e6756cd919da51447bb97138"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_06.png",
+          "bytes": 46347,
+          "sha256": "fe6d473393d3b9350c7a654b7cb5fbd343766b5b5b11d3e4aba476832d4a6d3f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/spark_07.png",
+          "bytes": 40968,
+          "sha256": "216101e7b54c627b4aa780649a21f0ef9146d2566f52699284d091ef00825a26"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_01.png",
+          "bytes": 42118,
+          "sha256": "3ba3999c944a0767677449412d306c1f230daa1743b31f929533cf77a22ecf5d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_02.png",
+          "bytes": 49897,
+          "sha256": "a0b7624a2e6f6825a3e93ddec685728c4d3de03b77bbf2a2e425b7a6d3d0215b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_03.png",
+          "bytes": 56622,
+          "sha256": "dac75aa35e5191de1917ec076d47f3b43a47b80d9aae6eefffb920c5ceba3601"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_04.png",
+          "bytes": 30613,
+          "sha256": "6485ac16c773663bd39346f3bedae04465ac14c661eb47cc5cfa935cdbf6c2ec"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_05.png",
+          "bytes": 62216,
+          "sha256": "1e8ab968178e507824ab28353c0ffffa918ae3adbcf89513d3db50a17b7bc8a2"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_06.png",
+          "bytes": 35453,
+          "sha256": "65d3ff5aa87ec0770c11fe1293fdc70cdc5ccf0eabc2e2fd6a1ead922051035e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_07.png",
+          "bytes": 32369,
+          "sha256": "d3bc9b8f1960baab452e8a5e816b9edeee4420dbed5ddd7ebe174519860a451a"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_08.png",
+          "bytes": 26479,
+          "sha256": "05f24d1ee76c1464074cbca58155e4be517fefd34a7001bb012561647cc3dec3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/star_09.png",
+          "bytes": 50142,
+          "sha256": "4255985e312a0058dc0c4f8b5befc902da17e6be5e5252007f3c7b02bb150157"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/symbol_01.png",
+          "bytes": 9088,
+          "sha256": "3eb3988f3e80acf3fda9df07733f49c3585eafa7d6a7ce5b31765fe180dd6d9c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/symbol_02.png",
+          "bytes": 7608,
+          "sha256": "1582e947d6793ec74fafabe587750af1b2655d1cd4ffe65bce1967c85b362ba8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_01.png",
+          "bytes": 38406,
+          "sha256": "34de69bc3f665b23fe9bed15f388efd8e8e4dc1a99f2fc5db9ba8715c525711f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_02.png",
+          "bytes": 39395,
+          "sha256": "8c224d6d4544d8437bce5ee51452957b31f5479e337c5f432dc1b55b1e2f9685"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_03.png",
+          "bytes": 42254,
+          "sha256": "a8c05800698cd502c3416a1f2335292544d52b3c8624c3c829a534c52b364860"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_04.png",
+          "bytes": 47104,
+          "sha256": "ca69d82709295663ef1d9fcd90d346319fef5389a15dd63e3b71b4527e620cd8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_05.png",
+          "bytes": 42174,
+          "sha256": "3f3d687bd2c70b10add33bdbd4616deda28f0138f757d358f9f0b78fb38bde6e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_06.png",
+          "bytes": 36247,
+          "sha256": "22c61c0e280db28b6cb6033c015dde4360a124b3488302ea708566b7f36fd900"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/trace_07.png",
+          "bytes": 33145,
+          "sha256": "4e5f177b7717d291464f01538756eb2f471961b09b39ea82ea72447210af7110"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/twirl_01.png",
+          "bytes": 51060,
+          "sha256": "ba3f4996a5a91ea3cba6817a9b4770a385a82ef0b9350cbda5c0f140d182af7e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/twirl_02.png",
+          "bytes": 76886,
+          "sha256": "3963633f6b2395a3fa95b9f4f65f22a4d38a2c561d9312dfff4646b71c7aa6e2"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/twirl_03.png",
+          "bytes": 81463,
+          "sha256": "69baaab4bc68473e9f926dc249a1d1b58f759c88906e10ac859bf43ac3cfbc8b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/window_01.png",
+          "bytes": 33759,
+          "sha256": "373747a996fcfc320c76d093bde08252db2adde8d29672aca98430e521e702fa"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/window_02.png",
+          "bytes": 39286,
+          "sha256": "2b430446f1527409d00b418370975f7b08572282aea732503f9a22837055d54d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/window_03.png",
+          "bytes": 16860,
+          "sha256": "452680cff9e62da90a4b3bff96dd7634d05624ee2d58fd5db7d89f48a60cdf8c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/particle-pack/png/window_04.png",
+          "bytes": 52143,
+          "sha256": "096be5e6f21547f16f302747a607020b2f1214842618de7a078587f6b8f1956e"
+        }
+      ]
+    },
+    {
+      "name": "smoke-particles",
+      "official": "https://kenney.nl/assets/smoke-particles",
+      "source_repo": "shorepine/kenney",
+      "source_commit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+      "source_path": "2d/Smoke Particles",
+      "png_count": 77,
+      "files": [
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke00.png",
+          "bytes": 56081,
+          "sha256": "67b632cfc78d778d567ca18ee9ac35c880663d443d2b73b0096ab7bbc533c545"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke01.png",
+          "bytes": 59756,
+          "sha256": "b5450964cdadbbb6125e4a6c5b2b0a5634cb242936d0188354f447ac781d017e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke02.png",
+          "bytes": 54922,
+          "sha256": "257ec046b2bf0e99fac43e8603d446b7698207eb49daa70506b9e4d9196c0889"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke03.png",
+          "bytes": 57333,
+          "sha256": "c20464d02511e36bd84d06f3a4febc7cb050330fc4949a7ecd5e61429acb543c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke04.png",
+          "bytes": 59291,
+          "sha256": "3ce6f3c181d77698fb02dfb0c589f0163e90d71b3f920ec26238ad090c34d63e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke05.png",
+          "bytes": 59225,
+          "sha256": "e379a9ada464bc06d7d98fa4c98203a6bee5adc34b77c0fb11c1de37af2184b4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke06.png",
+          "bytes": 59642,
+          "sha256": "8539d2d7fdb83a0710cc4519f4fae247f0ba0634be5d528bf33978aeefed370e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke07.png",
+          "bytes": 61728,
+          "sha256": "5fb4e4a16a3b93d1e7143540ad501d95d324cc4b2f4a584b7b0b29d8f1ac749f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke08.png",
+          "bytes": 60263,
+          "sha256": "1ed936faff42d2801240b83bc500f11bdf2a1b49a5f3915796ef2e7cc86af2d7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke09.png",
+          "bytes": 54693,
+          "sha256": "b570a45d07d4d8709ecd8eadc46f84da8442cba810d260e618d624d2c03d096d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke10.png",
+          "bytes": 57511,
+          "sha256": "169109f75c9a7563b501b80628b1472001149e1d4c224eaa9bc1b0a29c10a73f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke11.png",
+          "bytes": 54495,
+          "sha256": "4f93e2760ee57cae56a5e77295a63ca96062b73d8a5391f992405c258e030372"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke12.png",
+          "bytes": 62234,
+          "sha256": "94d8ef9326a278be8013e588b5a10736abc73ff1e4efe26b4a612f28cedc71bb"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke13.png",
+          "bytes": 57528,
+          "sha256": "0e6c83b029c2e3800c58b48e25ceb64dbdf9208b88b2ceb68eb0720d750ad517"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke14.png",
+          "bytes": 62405,
+          "sha256": "2a33cf46e8e53f562321faf15b10e03c2fd0b1706d81960b439e9cdbdb1193d6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke15.png",
+          "bytes": 62139,
+          "sha256": "46c2cdd02bd385141534a31e05d4348b87d364ccd5826a87dfbfb86875ea4393"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke16.png",
+          "bytes": 61123,
+          "sha256": "52c12880719018e571ea80abe6d338c8ba3ffaae1189032851d081a6cb48c723"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke17.png",
+          "bytes": 55005,
+          "sha256": "d7306000c83e9a0821c9be4d42b7337fb6b7b72abe5ed5c14d6c2196f9c47766"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke18.png",
+          "bytes": 57166,
+          "sha256": "c3ea24626f147cc4c1037d93072af15162866d70220936241445f9514750721d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke19.png",
+          "bytes": 59875,
+          "sha256": "e5807f974fd01b177f25db3a174ba1dbbbc4fdde884f7608c0d2c746db7ffd36"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke20.png",
+          "bytes": 58886,
+          "sha256": "460f996532a695e391261ba2ec53f76359d4805784f8af85ff94610c2b5f1c12"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke21.png",
+          "bytes": 61959,
+          "sha256": "7a253fe355a96aff5d66e78806ead6d0d5e90a959902a1cb7ea75b7d3f4ccb46"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke22.png",
+          "bytes": 62367,
+          "sha256": "13dace14a35ecc9b15a5b93afeabd59ef57a4f5eb5b03be34823666ff1de2a15"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke23.png",
+          "bytes": 60118,
+          "sha256": "045d43c95ea61056170d11534f6026dc6a9fc318426277a3e35d8ceebc04a0ff"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Black smoke/blackSmoke24.png",
+          "bytes": 56774,
+          "sha256": "9151568cb6fe11cb3303edde3a2f47e8eca93e8bb1572ae67ffcf605eedf3642"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion00.png",
+          "bytes": 111957,
+          "sha256": "bfd931b030a6ac464fbdd439a5230933571f52da9b0b94d197fce18c1e081260"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion01.png",
+          "bytes": 118819,
+          "sha256": "32376fedef44f911debe65479965df02ce160cc821bb97e8e31d34b278d910cf"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion02.png",
+          "bytes": 107235,
+          "sha256": "c18d72369ce9d14d5b5eab9a017e3a098896a7a4afa43af97dd539f7a73e3e39"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion03.png",
+          "bytes": 114316,
+          "sha256": "045de608eb2e02ffeea6ea5c30d6fdaa726ce2883dc48e12d6c786b3dad0cfec"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion04.png",
+          "bytes": 120219,
+          "sha256": "7f9e5505cb4630b841dfcb00172889fe38f75c3ecaaf07d8261e2aebe2b12f06"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion05.png",
+          "bytes": 116874,
+          "sha256": "5e069890df5c2ffa7955ba4cb371dec444c7c35cd6bde816275cab481ae70335"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion06.png",
+          "bytes": 112512,
+          "sha256": "b3894f7a37f4aa456e8314461e6843f1e08348c05d992a0a6a1b3a2bbf4ddac4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion07.png",
+          "bytes": 107109,
+          "sha256": "1ba1a7125f922309eec06853d664c664cce6c068b2510919ef2de36eec40caae"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Explosion/explosion08.png",
+          "bytes": 122656,
+          "sha256": "c38492bdfa79e13252a1e98187053651bc2ef3f80f661428475dde892bcddd7c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash00.png",
+          "bytes": 92375,
+          "sha256": "e0597d637642f4ebeb17fbfe2a6a7dc7baf115efe00feccab78f054c36834ba6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash01.png",
+          "bytes": 87469,
+          "sha256": "a9349332b87564f7f7b7e9344d1a847e91b46b2462861d97944e340343f964e7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash02.png",
+          "bytes": 100473,
+          "sha256": "8b739296535cd1607e2363cb9320b649d48659c0b4b701e00372a1626ad51edf"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash03.png",
+          "bytes": 91652,
+          "sha256": "3e5f48007d26bccc58daebd29b4a6b7787310255343b46d7c1edfd9332c20b9c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash04.png",
+          "bytes": 87508,
+          "sha256": "a085badfe56e49f1cfa36d71975813a7ee84ee1c1e0eb12a7db0fa53765e3402"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash05.png",
+          "bytes": 102851,
+          "sha256": "7433a66e12dac09fa94c5e62cfcc61dbd7de8581cc5831ade819695675abba91"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash06.png",
+          "bytes": 93875,
+          "sha256": "8a6dfec323fbd16586bba1c933c140aaed989ba09824315ab5db59a2f397969b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash07.png",
+          "bytes": 101648,
+          "sha256": "909bba2bf0b8d366317434009292cb86954473e09b5d5e85095d6a91b715e0e8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Flash/flash08.png",
+          "bytes": 99044,
+          "sha256": "a2e167100b732c4f97bd3bf61375180ec7048dc5940a7a1bb412cfc70841f3b9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas00.png",
+          "bytes": 109041,
+          "sha256": "46a16a153344a2709d5fda308ab9629e237fb8eda3fdd2bfae0b8cd7c7297b8f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas01.png",
+          "bytes": 109934,
+          "sha256": "7528a85cc0a10022d25950da3db6b1b4116b8f25a4544022148520779bf1c166"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas02.png",
+          "bytes": 112219,
+          "sha256": "59fc2c7f8f79907193f7cb14cc3770122cfb203967a789e52a37a9f328dd4199"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas03.png",
+          "bytes": 114021,
+          "sha256": "81deee4c75555045064a5a7ac8529565e2cd585b4d48087e3f64f80ff9c9e68f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas04.png",
+          "bytes": 119105,
+          "sha256": "fbb4366be98bc2e39f91889593d98d1aa10b94cc5cb1ddc1ec10be32c53d6938"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas05.png",
+          "bytes": 106036,
+          "sha256": "9e54a790fa99ba1f9f65b55fd6709a8ab77ad7dbea9ba9a0c64f1b12c1040c62"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas06.png",
+          "bytes": 118056,
+          "sha256": "38820cb2593dc77912ae274bbb6821fa4eb8eeddde4f939b2cd6cb21bc82140e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas07.png",
+          "bytes": 128287,
+          "sha256": "8270d65d78bfd62e7f051c2ecd242c9c509c47eb48efea754fb513ee026e1616"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/Gas/gas08.png",
+          "bytes": 112825,
+          "sha256": "1d350479d59471a38f6edc97daa59ac16335d605f6686c6284ac5cf9e1189e35"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff00.png",
+          "bytes": 57599,
+          "sha256": "33f894c2279bee9f77874dbfa3c0e9f071a0ee5e1a7065dcc40196029d699f58"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff01.png",
+          "bytes": 55357,
+          "sha256": "5b15a3986ce9be1212dda30c60f97f6a5e9e01d740950385868a6d03713c6923"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff02.png",
+          "bytes": 58602,
+          "sha256": "b0ed662d8989da0710c2363df9e7d1ffe5e99ee9efd080917b59330b0645b4e9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff03.png",
+          "bytes": 58213,
+          "sha256": "f027268d30b6dfbdea22833bc992fb45c456371919add2635e76c17bec35f7e0"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff04.png",
+          "bytes": 60272,
+          "sha256": "8233a8b20beabd2e3dfb5224d3faf816fe229faeeaadad6d04350c1c818b60ee"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff05.png",
+          "bytes": 55591,
+          "sha256": "a2953f2f27bc5a52ee835fc9614ed68bbe3204cc2894d3ce505747db42c22121"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff06.png",
+          "bytes": 57119,
+          "sha256": "055e78cfd8b476eedf0764b614efa1267abf266c187f62338fe47f30c898e6a0"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff07.png",
+          "bytes": 58796,
+          "sha256": "810f3959b1beea2fe2ad077c8dd01caf48e04bf4422743fe680676948ed253ee"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff08.png",
+          "bytes": 61704,
+          "sha256": "5e476e2c9eb48ab7e36eefb6e4576e8e8339f1249cbb768ba5405d640b933be4"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff09.png",
+          "bytes": 56272,
+          "sha256": "41b7d6cb239d7983a54b1fa45f4818a557d2dd60259b77ef2ff865c78e548901"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff10.png",
+          "bytes": 59523,
+          "sha256": "615585e00afc6b0f3126d9755397ad343756811d599f1d0a758afa63a420dd4d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff11.png",
+          "bytes": 62053,
+          "sha256": "ce5266c104eea27e189b2d38dfd9885c033856f335198bafb4ddfd7689323eb1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff12.png",
+          "bytes": 56305,
+          "sha256": "1a62910a4c91177de2720432c5f86ec19211db6db6cece6ce29ad91fb78d5869"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff13.png",
+          "bytes": 61682,
+          "sha256": "a328e7790aff1ac302bab531104f66d63065b0235130c5969e6879eac6ad2578"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff14.png",
+          "bytes": 60125,
+          "sha256": "b0820c128660890a53b3f3890f5966760532090fc2a7d1b78267753c43a19c4d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff15.png",
+          "bytes": 59474,
+          "sha256": "ff8c0eb7215766312d76b974e8dd7c5121957d7d02e417320ae356d5556e3062"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff16.png",
+          "bytes": 62341,
+          "sha256": "603f5f2faa71e1c18e5a2eb45ed16e01aa7642ca8222d4e80fa32a038979d764"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff17.png",
+          "bytes": 57952,
+          "sha256": "5929e838a4d793eb90a3c4796358c8675fe6d23bbb2a3d56224f7f481d173d33"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff18.png",
+          "bytes": 57505,
+          "sha256": "a68d6a05e6fe7d6b1d5ac7c2efc7223903f1ec743c57bf1e5be705532fd71f6d"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff19.png",
+          "bytes": 61655,
+          "sha256": "df36434f0aa11c9fa77bf704017d40d45b2428b3802485394d986dc8bc8d8a38"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff20.png",
+          "bytes": 59174,
+          "sha256": "e4ec6baabfb10ed0bfc37b96247aa70830c862edcdbe33ef374c8bd9ff295cc5"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff21.png",
+          "bytes": 55513,
+          "sha256": "198d0c2b43316d0570dcbbfbde1ef0aa72ed493feb3c212d8f73f5c5b823d3aa"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff22.png",
+          "bytes": 62775,
+          "sha256": "e64dbe5dc2b5d484c29b450b2856fbfe6299aa4cea1ec506bd25ff262c5db8c7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff23.png",
+          "bytes": 60142,
+          "sha256": "21d58a7a4b72a8e44d41a626fb6f82534314d64c7f12aadacbc88a292b723edc"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/smoke-particles/png/White puff/whitePuff24.png",
+          "bytes": 54102,
+          "sha256": "910af24555c21b7c548b3616848308b2048596173b60a21465f2f0c5cd6f800d"
+        }
+      ]
+    },
+    {
+      "name": "pixel-ui-pack",
+      "official": "https://kenney.nl/assets/pixel-ui-pack",
+      "source_url": "https://opengameart.org/sites/default/files/PixelUIpack.zip",
+      "png_count": 36,
+      "files": [
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/brown.png",
+          "bytes": 274,
+          "sha256": "5223c9086c245cbee564debb9c0bd95cb03d5df1e44859ed5a2fc4ccaf7790ed"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/brown_inlay.png",
+          "bytes": 222,
+          "sha256": "f2cf40b1c99e0b63416b5ffb5adf8e37d2be0d1ddb698fe122ba0bb4f459f6c8"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/brown_pressed.png",
+          "bytes": 255,
+          "sha256": "84d338ce6e30b072ca35dc86740eea1d747f7878a70ca8bc311f5b1016e5e1e2"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/grey.png",
+          "bytes": 272,
+          "sha256": "4b6eadb1565f2b7890001b19e978eaf64830efa618dae554b43d0af4122fccde"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/grey_inlay.png",
+          "bytes": 221,
+          "sha256": "770265d3a33978bd887fe12159fe940cc9c83a7ed6fa71d4f718b70b22ecc2ed"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/grey_pressed.png",
+          "bytes": 254,
+          "sha256": "38068e8040ed94573d85e0c8a11eda017d83562e7d73c81cd5e21803b660c648"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/tan.png",
+          "bytes": 274,
+          "sha256": "f1b2c44c8e25ec31ee2417dbf8491d1a8a01321387e33e6b45f78354a79bfe89"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/tan_inlay.png",
+          "bytes": 223,
+          "sha256": "2fcdf3aaf283f60ec6935a6a28eabf5514c0fd9f8820744fec7bca5319cac314"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/tan_pressed.png",
+          "bytes": 256,
+          "sha256": "8c7b35f266e43aad98a70a72bc4aa701a73438ef5ed794d4659ff65c28204a65"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/white.png",
+          "bytes": 265,
+          "sha256": "2808f3d552cdfeb47b272589b1ffef3f98d1f54d6e63abf5941abdad5d22fb53"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/white_inlay.png",
+          "bytes": 223,
+          "sha256": "4e5aad8050304b39d6581b464e8c937bcd105b759f33b8558c7ddc7f6b55277b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Ancient/white_pressed.png",
+          "bytes": 249,
+          "sha256": "17c6cdc8272fc43cb2227feadb1ccf4e9abb75de465ad98fcaa6c7bd9da402e9"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/blue.png",
+          "bytes": 230,
+          "sha256": "fff9516aadf0ad3f9a7981a30fcf4fb739155fb82d04968ea7332b51f8ea51e3"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/blue_pressed.png",
+          "bytes": 214,
+          "sha256": "ed353d19c6842c5e230cb0d3b40b7dd615c4a5eb7bff9993420797a7334c39db"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/green.png",
+          "bytes": 230,
+          "sha256": "3dddc0527f257d782c8f4aafab2e5f6d219861f52734fa8d87f289204a928c83"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/green_pressed.png",
+          "bytes": 214,
+          "sha256": "6b858d99b059629e6288e8e68b4cb8bf2d05bcced8e2c0d53f7b9951a8563ee1"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/grey.png",
+          "bytes": 216,
+          "sha256": "af913e560e8cf0159d46e6f42981ab0adb813ecdc3b23cb181e4afa52699068c"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/grey_pressed.png",
+          "bytes": 201,
+          "sha256": "318a0aede7a6a14d89337b11b9a5ea0aaefa3c7d5c53f2383ad86b27baea1bf7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/red.png",
+          "bytes": 230,
+          "sha256": "08f69b6ef9307ae3c39eb4e2c0c97ca72019c0afd4f28c5ba35140edd2d54600"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/red_pressed.png",
+          "bytes": 214,
+          "sha256": "0e0a2bb45f23cbfd92eae510e8410d4e96434c9a329d9ede23e1a764ec100edc"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/yellow.png",
+          "bytes": 221,
+          "sha256": "43850f322d944faafcd0873c4434b3406dc85e19834a621695088c51a6f829c7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Colored/yellow_pressed.png",
+          "bytes": 206,
+          "sha256": "b9958567f3324cea4cd61337922ff3e14c44e086fc3e69eddf7ccea429af8779"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/blue.png",
+          "bytes": 221,
+          "sha256": "1512120bfe7b0845f8c3120a8b1f6760997119852927d096352ef03fe3a7f10e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/blue_pressed.png",
+          "bytes": 207,
+          "sha256": "0a30f3e64652f638132b377a7d7759ef805f3d01a291a87e2179819f5e8fe8d7"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/green.png",
+          "bytes": 221,
+          "sha256": "f318e5be6ffe2e4ab73b20e6149fa9aa773c7804f0ba063acbcc17c3fa08cf17"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/green_pressed.png",
+          "bytes": 207,
+          "sha256": "45c49e395aa2eb1ada26403815e08fc8a9554491bdfdf9cbdd8e0acf468eb88b"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/red.png",
+          "bytes": 221,
+          "sha256": "76caa1847dc34d5e42dd8e334775cbc1df471de0c7be5ace7b263f5a6fc77b03"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/red_pressed.png",
+          "bytes": 207,
+          "sha256": "ee96b22876dd4a29054548077e76ce9b539cf43bc79ccb25deeef5c5f71de92a"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/yellow.png",
+          "bytes": 219,
+          "sha256": "e0208395ce86f1bbb99a9a3cc4ff8d7113db1a6ed1e9601162b4d5abbfbf1d67"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/Outline/yellow_pressed.png",
+          "bytes": 203,
+          "sha256": "3e6443c61404cbb79f6b8bc4609341a8303652fe3b5b02b665a2f9ae4d220733"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/list.png",
+          "bytes": 213,
+          "sha256": "9d2f511da3a08c287cb2c944891dcac4cedb55f242a75a676fd032f770b0b99e"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/space.png",
+          "bytes": 1048,
+          "sha256": "4eb96da68441bb9892bee9bb2a31510ccec02a19d6a85209ca16e35f64ec0d1f"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/9-Slice/space_inlay.png",
+          "bytes": 1019,
+          "sha256": "cc48668d130953d55c53fcb8e0613a81c06bf8119f23b568989c2881b7840ed6"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/Preview.png",
+          "bytes": 104645,
+          "sha256": "e2dda1fb46d863d99352b59dc7169fc1624e778e6d57d6925314225f4f68a825"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/Spritesheet/UIpackSheet_magenta.png",
+          "bytes": 29163,
+          "sha256": "112f73928cdb0cbd73131e34e0a12f18daf76606c4f69dfd329b1fb2be129285"
+        },
+        {
+          "path": "apps/client/public/assets/vendor/kenney/pixel-ui-pack/png/Spritesheet/UIpackSheet_transparent.png",
+          "bytes": 40423,
+          "sha256": "38cd7cabd9667ace6bdd9f561a50f697359eb9460e80adbcdde7f2a3e71efb1a"
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
