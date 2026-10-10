@@ -5,6 +5,7 @@ import {
   SPIN_BLADE_WEAPON_ID
 } from "@rift/shared";
 import { DamageSystem } from "./damage.js";
+import { chooseFixedRangeBladeDirection } from "./boomerang.js";
 import {
   distanceSquared,
   emitCombatEvent,
@@ -78,25 +79,29 @@ export class WeaponSystem {
       projectile.weaponId === SPIN_BLADE_WEAPON_ID &&
       projectile.sourcePlayerId === player.sessionId)) return;
 
-    // Auto-aim a nearby living enemy. Unlike the old melee fan this is a
-    // projectile: launching does not apply any immediate damage.
+    // Always fly the same fixed range even if the target is close, dies,
+    // or no enemies are nearby. The target only informs the initial direction.
     const target = this.nearestEnemy(world, player.x, player.y,
       COMBAT_SPIN_BLADE_THROW_DISTANCE + 35);
-    if (!target) return;
-    const dx = target.x - player.x;
-    const dy = target.y - player.y;
-    const length = Math.hypot(dx, dy);
-    if (length < 0.001) return;
-    const facingX = dx / length;
-    const facingY = dy / length;
     const level = getWeaponLevel(player, SPIN_BLADE_WEAPON_ID);
+    const arcHalfAngle = COMBAT_SPIN_BLADE_ARC_HALF_ANGLE *
+      (level >= 3 ? COMBAT_SPIN_BLADE_III_FAN_MULTIPLIER : 1);
+    const arcSign = (world.nextProjectileSequence + 1) % 2 === 0 ? -1 : 1;
+    const direction = chooseFixedRangeBladeDirection(
+      player.x, player.y,
+      target ? target.x - player.x : player.facingX,
+      target ? target.y - player.y : player.facingY,
+      COMBAT_SPIN_BLADE_THROW_DISTANCE, arcHalfAngle, arcSign,
+      COMBAT_SPIN_BLADE_PROJECTILE_RADIUS
+    );
+    const facingX = direction.x, facingY = direction.y;
     const damage = getWeaponDamage(player, SPIN_BLADE_WEAPON_ID);
     const projectileId = "projectile:spin-blade:" + world.nextProjectileSequence++;
     world.projectiles.set(projectileId, {
       id: projectileId,
       weaponId: SPIN_BLADE_WEAPON_ID,
       sourcePlayerId: player.sessionId,
-      targetEnemyId: target.id,
+      targetEnemyId: target?.id ?? "",
       damage,
       speed: COMBAT_SPIN_BLADE_SPEED,
       radius: COMBAT_SPIN_BLADE_PROJECTILE_RADIUS,
@@ -108,9 +113,8 @@ export class WeaponSystem {
         startY: player.y,
         directionX: facingX,
         directionY: facingY,
-        arcSign: world.nextProjectileSequence % 2 === 0 ? -1 : 1,
-        arcHalfAngle: COMBAT_SPIN_BLADE_ARC_HALF_ANGLE *
-          (level >= 3 ? COMBAT_SPIN_BLADE_III_FAN_MULTIPLIER : 1),
+        arcSign,
+        arcHalfAngle,
         maxDistance: COMBAT_SPIN_BLADE_THROW_DISTANCE,
         outwardDistance: 0,
         ageTicks: 0,
@@ -122,7 +126,7 @@ export class WeaponSystem {
     emitCombatEvent(world, {
       type: "weapon.fired",
       sourceId: player.sessionId,
-      targetId: target.id,
+      targetId: target?.id ?? "",
       assetId: SPIN_BLADE_ASSET_ID,
       x: player.x, y: player.y,
       amount: damage,
