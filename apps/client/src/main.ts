@@ -51,7 +51,6 @@ new Phaser.Game({
   type: Phaser.AUTO,
   parent: "app",
   scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT },
-  resolution: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
   pixelArt: true,
   scene: [scene]
 });
