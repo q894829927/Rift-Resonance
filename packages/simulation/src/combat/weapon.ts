@@ -95,7 +95,10 @@ export class WeaponSystem {
       assetId: SPIN_BLADE_ASSET_ID,
       x: player.x,
       y: player.y,
-      amount: damage
+      amount: damage,
+      facingX,
+      facingY,
+      weaponLevel: getWeaponLevel(player, SPIN_BLADE_WEAPON_ID)
     });
     for (const target of targets) {
       const applied = this.damage.applyEnemyDamage(world, {
