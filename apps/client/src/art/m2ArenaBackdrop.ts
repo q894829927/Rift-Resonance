@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH } from "@rift/shared";
+import { PIXEL_ATLAS_ISLET_SCALE, PIXEL_ENVIRONMENT_SCALE } from "./m2PixelPresentation.js";
 
 /**
  * M2-UI-A arena composition. The 80x48 Dark World tileset is a 5x3
@@ -23,14 +24,14 @@ function addAtlasIslet(scene: Phaser.Scene, px: number, py: number): void {
   if (!scene.textures.exists(key)) return;
   // Reassemble a 3-column by 3-row chunk at original atlas grid coordinates.
   // Each atlas frame is used once per island, preserving the author's pixels.
-  const scale = 1.6;
+  const scale = PIXEL_ATLAS_ISLET_SCALE;
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
       const index = row * 5 + col;
       const frame = scene.textures.get(key).get(index);
       if (!frame || frame.name === "__BASE") continue;
       scene.add.image(px + col * TW * scale, py + row * TH * scale, key, index)
-        .setOrigin(0, 0).setScale(scale).setDepth(-890);
+        .setOrigin(0, 0).setScale(scale).setTint(0x82798b).setAlpha(0.68).setDepth(-890);
     }
   }
 }
@@ -56,12 +57,12 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
       const h = hash(col, row);
       const x = col * 32;
       const y = row * 32;
-      floor.fillStyle(h % 5 === 0 ? 0x24252f : h % 3 === 0 ? 0x1a202a : 0x171d26, 0.42);
+      floor.fillStyle(h % 5 === 0 ? 0x343340 : h % 3 === 0 ? 0x252a36 : 0x222834, 0.64);
       floor.fillRoundedRect(x + 2, y + 2, 29, 29, 3);
-      floor.lineStyle(1, 0x4b4453, 0.11);
+      floor.lineStyle(1, 0x726778, 0.15);
       floor.strokeRoundedRect(x + 2, y + 2, 29, 29, 3);
       if (h % 6 === 0) {
-        floor.lineStyle(1, 0x796982, 0.22);
+        floor.lineStyle(1, 0x9b849e, 0.31);
         floor.lineBetween(x + 7, y + 11, x + 14, y + 14);
         floor.lineBetween(x + 14, y + 14, x + 19, y + 10);
       }
@@ -73,7 +74,7 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
     }
   }
 
-  // Frame/map border sits BELOW all gameplay units. No fake blocking geometry.
+  // Stronger ground texture contrast is independent of pixel-sprite filtering.\n  // Frame/map border sits BELOW all gameplay units. No fake blocking geometry.
   const rim = scene.add.graphics().setDepth(-945);
   rim.fillStyle(0x050a11, 0.68);
   rim.fillRect(0, 0, W, 29);
@@ -91,17 +92,17 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
   }
 
   // Clear central fighting area, scene dressing toward the perimeter only.
-  for (const [x, y, scale] of [
-    [97, 94, 0.92], [865, 86, 0.96], [112, 456, 0.82], [852, 460, 0.9]
-  ] as const) addDecoration(scene, "env.dark.tree", x, y, scale, 0.94);
+  for (const [x, y] of [
+    [97, 94], [865, 86], [112, 456], [852, 460]
+  ] as const) addDecoration(scene, "env.dark.tree", x, y, PIXEL_ENVIRONMENT_SCALE, 0.94);
 
-  for (const [x, y, scale] of [
-    [203, 96, 1.08], [755, 110, 0.98], [191, 454, 1.1], [772, 458, 1.1]
-  ] as const) addDecoration(scene, "env.dark.rock", x, y, scale, 0.86);
+  for (const [x, y] of [
+    [203, 96], [755, 110], [191, 454], [772, 458]
+  ] as const) addDecoration(scene, "env.dark.rock", x, y, PIXEL_ENVIRONMENT_SCALE, 0.94);
 
-  for (const [x, y, scale] of [
-    [299, 62, 0.8], [660, 68, 0.88], [302, 485, 0.77], [670, 486, 0.9]
-  ] as const) addDecoration(scene, "env.dark.mushrooms", x, y, scale, 0.78);
+  for (const [x, y] of [
+    [299, 62], [660, 68], [302, 485], [670, 486]
+  ] as const) addDecoration(scene, "env.dark.mushrooms", x, y, PIXEL_ENVIRONMENT_SCALE, 0.85);
 
   // Rift motif: quiet edge-lit altar instead of high-contrast HUD obstruction.
   const altar = scene.add.graphics().setDepth(-810);
