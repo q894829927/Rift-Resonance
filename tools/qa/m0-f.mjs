@@ -44,6 +44,7 @@ async function waitUntil(check, label, limitMs = 8000) {
 function startProxy() {
   const sockets = new Set();
   const stats = {upstreamBytes:0, downstreamBytes:0, tcpConnections:0};
+  let impaired = false;
   const server = net.createServer((downstream) => {
     const upstream = net.connect({host:"127.0.0.1",port:targetPort});
     sockets.add(downstream); sockets.add(upstream);
@@ -74,9 +75,9 @@ function startProxy() {
         if(direction==="up")stats.upstreamBytes+=chunk.byteLength;
         else stats.downstreamBytes+=chunk.byteLength;
 
-        const jitter=jitterMs*(Math.random()*2-1);
+        const jitter=impaired ? jitterMs*(Math.random()*2-1) : 0;
         const previous=direction==="up"?clientDue:serverDue;
-        const due=Math.max(Date.now()+Math.max(0,rttMs/2+jitter),previous+0.01);
+        const due=Math.max(Date.now()+Math.max(0,(impaired?rttMs/2:0)+jitter),previous+0.01);
         if(direction==="up")clientDue=due;
         else serverDue=due;
 
@@ -107,6 +108,7 @@ function startProxy() {
 
   return {
     stats,
+    setImpairment(value){ impaired=Boolean(value); },
     async listen() {
       await new Promise((resolve,reject)=>{
         server.once("error",reject);
@@ -136,7 +138,7 @@ const report = {
   type:"m0-f-benchmark",
   generatedAt:new Date().toISOString(),
   configuration:{durationSec,playerCount,rttMs,jitterMs,disconnect,requireMetrics,maxOutKBps},
-  methodology:"Real Colyseus SDK clients over per-client FIFO TCP-delay proxies. Traffic includes game websocket frames after matchmaking baseline. Jitter is delay variation, not packet loss.",
+  methodology:"Real SDK clients; matchmaking uses clean transport. After room join, per-client TCP proxy adds RTT/jitter to live game traffic and measured HTTP probes. Traffic baseline excludes setup. No IP packet loss emulation.",
   result:"running"
 };
 const proxies=[], rooms=[], senders=[], observations=[], endpoints=[], setupFailures=[];
@@ -183,6 +185,9 @@ try {
     });
   }
   await waitUntil(()=>rooms.every(room=>room.state?.players?.size===playerCount),"room membership");
+  // Load tests stress the LIVE game transport, not the HTTP matchmaking handshake.
+  // Enable impairment only after all players have joined successfully.
+  for(const proxy of proxies)proxy.setImpairment(true);
   const tBefore=rooms[0].state.serverTick;
   await waitUntil(()=>rooms[0].state.serverTick>=tBefore+3,"tick updates");
   for(let i=0;i<rooms.length;i++) {
@@ -253,6 +258,7 @@ try {
       throw new Error("Replacement unexpectedly reused disconnected session ID");
     }
     rejoined=true;
+    replacement.setImpairment(true);
     baseline.push({...replacement.stats});
     const newInput=newRoom.input();
     senders.push(setInterval(()=>{
