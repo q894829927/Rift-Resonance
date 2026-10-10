@@ -384,7 +384,15 @@ export class LobbyConnection {
     for (const [id, event] of state.events ?? []) {
       if (this.seenEventIds.has(id)) continue;
       this.seenEventIds.add(id);
-      events.push({ id, ...event });
+      events.push({
+        id,
+        tick: event.tick, type: event.type, sourceId: event.sourceId,
+        targetId: event.targetId, assetId: event.assetId,
+        x: event.x, y: event.y, amount: event.amount, rawAmount: event.rawAmount,
+        facingX: Number(event.facingX ?? 0),
+        facingY: Number(event.facingY ?? 0),
+        weaponLevel: Number(event.weaponLevel ?? 0)
+      });
     }
     while (this.seenEventIds.size > 4096) {
       const oldest = this.seenEventIds.values().next().value as string | undefined;
