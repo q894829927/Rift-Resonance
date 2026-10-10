@@ -88,6 +88,12 @@ export const COMBAT_MAX_EVENTS = 64;
 export const COMBAT_MATCH_DURATION_TICKS = 20 * 240;
 export const COMBAT_RESULT_HOLD_TICKS = 20 * 5;
 export const COMBAT_PLAYER_WEAPON_SLOTS = 2;
+export const COMBAT_FIREBALL_EXPLOSION_RADIUS = 56;
+export const COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO = 0.5; // M2-B prototype balance
+export const COMBAT_SPIN_BLADE_III_FAN_MULTIPLIER = 1.25;
+export const PASSIVE_RAGE_ID = "passive.rage" as const;
+export const PASSIVE_SWIFT_CAST_ID = "passive.swift_cast" as const;
+export const PASSIVE_FORTITUDE_ID = "passive.fortitude" as const;
 export const COMBAT_MAX_WEAPON_LEVEL = 3;
 export const COMBAT_MAX_PASSIVE_LEVEL = 2;
 export const COMBAT_UPGRADE_TIMEOUT_TICKS = 20 * 10;
@@ -137,6 +143,7 @@ export interface CombatPlayer {
   readonly nextWeaponTicks: Map<CombatWeaponId, number>;
   readonly weaponLevels: Map<CombatWeaponId, number>;
   readonly passiveLevels: Map<string, number>;
+  upgradeRerollUsed: boolean;
   facingX: number;
   facingY: number;
   dashDirectionX: number;
@@ -202,6 +209,9 @@ export interface CombatWorld {
   upgradeReady: boolean;
   pendingUpgrade: CombatUpgradeState | null;
   nextUpgradeSequence: number;
+  /** Independent deterministic upgrade RNG, never shared with spawn or combat. */
+  upgradeSeed: number;
+  upgradeRandomState: number;
   readonly config: CombatConfig;
   readonly players: Map<string, CombatPlayer>;
   readonly stats: Map<string, CombatStats>;
@@ -223,6 +233,8 @@ export interface CombatUpgradeChoice {
   readonly id: string;
   readonly kind: CombatUpgradeKind;
   readonly label: string;
+  readonly description: string;
+  readonly nextLevel: number;
   readonly weaponId?: CombatWeaponId;
   readonly passiveId?: string;
 }
@@ -339,6 +351,7 @@ export function createCombatPlayer(
     ]),
     weaponLevels: new Map([[FIREBALL_WEAPON_ID, 1]]),
     passiveLevels: new Map(),
+    upgradeRerollUsed: false,
     facingX: 1,
     facingY: 0,
     dashDirectionX: 1,
@@ -355,11 +368,16 @@ export function getWeaponLevel(player: CombatPlayer, weaponId: CombatWeaponId): 
 }
 
 export function getWeaponDamage(player: CombatPlayer, weaponId: CombatWeaponId): number {
-  return WEAPON_DEFINITIONS[weaponId].damage + (getWeaponLevel(player, weaponId) - 1) * 5;
+  const weaponMultiplier = getWeaponLevel(player, weaponId) >= 2 ? 1.2 : 1;
+  const rageLevel = player.passiveLevels.get(PASSIVE_RAGE_ID) ?? 0;
+  const rageMultiplier = rageLevel >= 2 ? 1.22 : rageLevel === 1 ? 1.12 : 1;
+  return Math.round(WEAPON_DEFINITIONS[weaponId].damage * weaponMultiplier * rageMultiplier);
 }
 
 export function getWeaponCooldownTicks(player: CombatPlayer, weaponId: CombatWeaponId): number {
-  return Math.max(1, WEAPON_DEFINITIONS[weaponId].cooldownTicks - (getWeaponLevel(player, weaponId) - 1));
+  const castLevel = player.passiveLevels.get(PASSIVE_SWIFT_CAST_ID) ?? 0;
+  const reduction = castLevel >= 2 ? 0.15 : castLevel === 1 ? 0.08 : 0;
+  return Math.max(1, Math.ceil(WEAPON_DEFINITIONS[weaponId].cooldownTicks * (1 - reduction)));
 }
 
 export function isEnemyAssetId(value: string): value is EnemyAssetId {
