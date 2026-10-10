@@ -1,28 +1,27 @@
-	
+Kenney CC0 asset provenance notice (Rift Resonance M1)
+=======================================================
 
-	Castle Kit (2.0)
+This repository contains selected PNG artwork created by Kenney.
+Each pack's official page identifies its artwork as Creative Commons CC0.
 
-	Created/distributed by Kenney (www.kenney.nl)
-	Creation date: 27-03-2024 13:37
-	
-			------------------------------
+License reference: https://creativecommons.org/publicdomain/zero/1.0/
+Publisher: https://kenney.nl/
 
-	License: (Creative Commons Zero, CC0)
-	http://creativecommons.org/publicdomain/zero/1.0/
+Pack-specific sources:
+- Tiny Dungeon: https://kenney.nl/assets/tiny-dungeon
+- Pixel UI Pack: https://kenney.nl/assets/pixel-ui-pack
+- UI Pack - Adventure: https://kenney.nl/assets/ui-pack-adventure
+- Particle Pack: https://kenney.nl/assets/particle-pack
+- Smoke Particles: https://kenney.nl/assets/smoke-particles
 
-	You can use this content for personal, educational, and commercial purposes.
+The pinned Kenney mirror used for the imported PNGs is:
+https://github.com/shorepine/kenney/tree/3694c6879e487c108f55677be7dd2ca75b07cc3b
 
-	Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)
+Important correction:
+The previous copied LICENSE.txt was headed "Castle Kit (2.0)", which did
+not match the Tiny Dungeon pack. It was a generic file from the mirror,
+not reliable per-pack provenance and has been replaced with this notice.
 
-			------------------------------
-
-	• Website : www.kenney.nl
-	• Donate  : www.kenney.nl/donate
-
-	• Patreon : patreon.com/kenney
-	
-	Follow on social media for updates:
-
-	• Twitter:   twitter.com/KenneyNL
-	• Instagram: instagram.com/kenney_nl
-	• Mastodon:  mastodon.gamedev.place/@kenney
+The CC0 license applies to the imported Kenney art, not automatically
+to the project's source code, AI-generated materials or other assets.
+See docs/art/ASSET-SOURCES.md and docs/art/CC0-IMPORT-REPORT.json.
