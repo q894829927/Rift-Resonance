@@ -278,6 +278,7 @@ const matchBannerStats = element<HTMLElement>("match-banner-stats");
 const upgradePanel = element<HTMLElement>("upgrade-panel");
 const upgradeStatus = element<HTMLElement>("upgrade-status");
 const upgradeChoices = element<HTMLElement>("upgrade-choices");
+let renderedUpgradeKey = "";
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
 const list = element<HTMLUListElement>("players");
@@ -387,6 +388,7 @@ function updateUpgradePanel(view: LobbyView | null): void {
   if (!view || view.phase !== "UPGRADING") {
     upgradePanel.hidden = true;
     upgradeChoices.replaceChildren();
+    renderedUpgradeKey = "";
     return;
   }
   const local = view.players.get(view.sessionId);
@@ -399,6 +401,10 @@ function updateUpgradePanel(view: LobbyView | null): void {
   upgradeStatus.textContent = local.upgradeSelected
     ? "已提交选择，等待其他在线玩家（服务器将按时结算）"
     : "请选择一项；未选择时服务器会自动采用第一项";
+  const renderKey = [view.upgradeId, local.upgradeSelected ? "selected" : "pending",
+    ...local.upgradeChoices.map(choice => choice.id + ":" + choice.label)].join("|");
+  if (renderedUpgradeKey === renderKey) return;
+  renderedUpgradeKey = renderKey;
   upgradeChoices.replaceChildren();
   for (const choice of local.upgradeChoices) {
     const button = document.createElement("button");
