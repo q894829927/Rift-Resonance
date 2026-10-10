@@ -8,6 +8,7 @@ on:
       - apps/client/index.html
       - tests/ui-layout.test.mjs
       - tests/ui-pixel.test.mjs
+      - tests/ui-readability.test.mjs
       - .github/workflows/m2-ui-a-verify.yml
   workflow_dispatch:
 permissions:
@@ -27,5 +28,5 @@ jobs:
       - run: npm ci
       - name: Build, type check and unit tests
         run: npm run verify
-      - name: Verify UI layout, pixel sharpness and atlas framing
-        run: node --test tests/ui-layout.test.mjs tests/ui-pixel.test.mjs
+      - name: Verify UI layout, pixel art and combat readability
+        run: node --test tests/ui-layout.test.mjs tests/ui-pixel.test.mjs tests/ui-readability.test.mjs
