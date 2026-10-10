@@ -1,0 +1,30 @@
+name: M2-UI-A Build Check
+on:
+  push:
+    branches:
+      - codex/m1-art-cc0-bootstrap
+    paths:
+      - apps/client/src/**
+      - apps/client/index.html
+      - tests/ui-layout.test.mjs
+      - .github/workflows/m2-ui-a-verify.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  client-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Build, type check and unit tests
+        run: npm run verify
+      - name: Verify UI surface and asset slicing
+        run: node --test tests/ui-layout.test.mjs
