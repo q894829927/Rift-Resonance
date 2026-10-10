@@ -5,6 +5,10 @@ import {
   PIXEL_LARGE_ENEMY_SCALE, getDarkWorldWalkFrame
 } from "./m2PixelPresentation.js";
 import { assetUrl, M1_ASSETS, type M1AssetId } from "./m1AssetCatalog.js";
+import {
+  CHARGE_PREVIEW_LENGTH, CHARGE_PREVIEW_HALF_WIDTH, facingAngle,
+  COMMON_ENEMY_BAR_Y, LARGE_ENEMY_BAR_Y
+} from "./m2CombatReadability.js";
 
 /** Presentational assets only: the server never sees texture keys or effects. */
 export const M1_ART = {
@@ -89,26 +93,49 @@ export function updateM1PlayerAvatar(
 }
 
 /** Reusable visual fallback for future server-synchronized enemy renderers. */
+/**
+ * Temporary but recognizable creatures. Both texture IDs map to Kenney's
+ * actual creature sprites (instead of M2-UI-B's item and chest icons).
+ * The graphics-only charge lane never feeds simulation hit detection.
+ */
 export function createM1EnemyPlaceholder(
   scene: Phaser.Scene,
   id: "enemy.slime" | "enemy.rift_swarm" | "enemy.berserker_beast" | "enemy.skeleton" | "enemy.bat" | "enemy.elite",
   x: number, y: number
 ): Phaser.GameObjects.Container {
   const large = id === "enemy.elite" || id === "enemy.berserker_beast";
-  const visualWidth = large ? 96 : 48;
-  const shadow = scene.add.ellipse(0, large ? 27 : 20, visualWidth * 0.68, 13, 0x050b13, 0.68);
+  const visualWidth = large ? 80 : 48;
+  const shadow = scene.add.ellipse(0, 17, large ? 58 : 37, 12, 0x050b13, 0.72);
+  // A faint species ring helps recognize enemy teams against the dark floor.
+  const speciesTint = id === "enemy.rift_swarm" || id === "enemy.slime" ? 0x54d7c5 : 0xca685e;
+  const speciesRing = scene.add.ellipse(0, 13, large ? 59 : 39, large ? 25 : 19,
+    speciesTint, 0.065).setStrokeStyle(1, speciesTint, 0.3);
   const spec = M1_ASSETS[id];
   const body = scene.textures.exists(spec.id)
-    ? scene.add.image(0, large ? -12 : -6, spec.id)
+    ? scene.add.image(0, large ? -10 : -6, spec.id)
         .setScale(large ? PIXEL_LARGE_ENEMY_SCALE : PIXEL_COMMON_ENEMY_SCALE)
-    : scene.add.rectangle(0, -6, visualWidth, visualWidth, 0x6c5772, 0.85)
-        .setStrokeStyle(2, 0xff596d, 0.9);
-  const guide = scene.add.triangle(0, -visualWidth / 2 - 23, 0, -18, 10, 0, -10, 0, 0xff596d, 0.85)
-    .setVisible(false).setDepth(1);
-  const entity = scene.add.container(x, y, [shadow, guide, body]).setDepth(1000 + y);
+    : scene.add.rectangle(0, -7, visualWidth, visualWidth, speciesTint, 0.86)
+        .setStrokeStyle(2, 0xffb7a0, 0.88);
+
+  // Server locks a charge direction during windup. Show the corridor in that
+  // direction, not a small upward triangle unrelated to the actual threat.
+  const lane = scene.add.graphics().setVisible(false);
+  if (large) {
+    const half = CHARGE_PREVIEW_HALF_WIDTH;
+    lane.fillStyle(0xde5366, 0.13);
+    lane.fillRoundedRect(10, -half, CHARGE_PREVIEW_LENGTH - 10, half * 2, 9);
+    lane.lineStyle(2, 0xffab80, 0.73);
+    lane.strokeRoundedRect(10, -half, CHARGE_PREVIEW_LENGTH - 10, half * 2, 9);
+    lane.fillStyle(0xffb87f, 0.82);
+    lane.fillTriangle(CHARGE_PREVIEW_LENGTH - 23, -12,
+      CHARGE_PREVIEW_LENGTH - 4, 0, CHARGE_PREVIEW_LENGTH - 23, 12);
+  }
+  const entity = scene.add.container(x, y, [shadow, speciesRing, lane, body])
+    .setDepth(1000 + y);
   entity.setData("m1EnemyBody", body);
-  entity.setData("m1ChargeGuide", guide);
-  addM1HealthBar(entity, large ? 72 : 44, -visualWidth / 2 - 18, 0xff596d);
+  entity.setData("m1ChargeGuide", lane);
+  addM1HealthBar(entity, large ? 68 : 42,
+    large ? LARGE_ENEMY_BAR_Y : COMMON_ENEMY_BAR_Y, 0xe35b69);
   return entity;
 }
 
@@ -124,15 +151,14 @@ export function updateM1EnemyVisual(
   state: M1EnemyVisualState
 ): void {
   const body = entity.getData("m1EnemyBody") as {setTint?: (color: number) => unknown} | undefined;
-  const guide = entity.getData("m1ChargeGuide") as Phaser.GameObjects.Triangle | undefined;
-  const charging = state.behavior === "charge_windup" || state.behavior === "charging";
-  body?.setTint?.(state.behavior === "charge_windup" ? 0xffc857 : state.behavior === "charging" ? 0xff596d : 0xffffff);
-  if (guide) {
-    guide.setVisible(state.alive && charging);
-    guide.setAlpha(state.behavior === "charging" ? 1 : 0.55);
-    if (state.chargeDirectionX !== 0 || state.chargeDirectionY !== 0) {
-      guide.setRotation(Math.atan2(state.chargeDirectionY, state.chargeDirectionX) + Math.PI / 2);
-    }
+  const lane = entity.getData("m1ChargeGuide") as Phaser.GameObjects.Graphics | undefined;
+  const windup = state.behavior === "charge_windup";
+  const charging = state.behavior === "charging";
+  body?.setTint?.(windup ? 0xffc98e : charging ? 0xff9f87 : 0xffffff);
+  if (lane) {
+    lane.setVisible(state.alive && (windup || charging));
+    lane.setAlpha(windup ? 0.68 + 0.17 * Math.sin(entity.scene.time.now / 75) : 0.44);
+    lane.setRotation(facingAngle(state.chargeDirectionX, state.chargeDirectionY));
   }
 }
 
