@@ -31,7 +31,13 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     dashRemainingTicks: player.dashRemainingTicks,
     dashInvulnerableRemainingTicks: player.dashInvulnerableRemainingTicks,
     dashCooldownRemainingTicks: player.dashCooldownRemainingTicks,
-    hitProtectionRemainingTicks: player.hitProtectionRemainingTicks
+    hitProtectionRemainingTicks: player.hitProtectionRemainingTicks,
+    weaponIds: JSON.stringify(player.weaponIds),
+    weaponLevels: JSON.stringify(Object.fromEntries(player.weaponLevels)),
+    passiveLevels: JSON.stringify(Object.fromEntries(player.passiveLevels)),
+    upgradeChoices: "[]",
+    upgradeSelectionId: "",
+    upgradeSelected: false
   }));
 }
 export function projectMemberLeft(
@@ -47,6 +53,9 @@ export function projectMemberLeft(
   }
   target.connected = false;
   target.alive = false;
+  target.upgradeChoices = "[]";
+  target.upgradeSelectionId = "";
+  target.upgradeSelected = false;
   if (stats) {
     target.kills = stats.kills;
     target.totalDamage = stats.totalDamage;
@@ -115,6 +124,11 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
   state.matchElapsedTicks = world.matchElapsedTicks;
   state.matchDurationTicks = world.config.matchDurationTicks;
   state.winner = world.winner;
+  state.teamLevel = world.teamLevel;
+  state.teamExperience = world.teamExperience;
+  state.teamNextLevelExperience = world.teamNextLevelExperience;
+  state.upgradeId = world.pendingUpgrade?.id ?? "";
+  state.upgradeDeadlineTick = world.pendingUpgrade?.deadlineTick ?? 0;
   for (const member of world.players.values()) {
     const target = state.players.get(member.sessionId);
     if (!target) continue;
@@ -140,6 +154,13 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.dashInvulnerableRemainingTicks = member.dashInvulnerableRemainingTicks;
     target.dashCooldownRemainingTicks = member.dashCooldownRemainingTicks;
     target.hitProtectionRemainingTicks = member.hitProtectionRemainingTicks;
+    target.weaponIds = JSON.stringify(member.weaponIds);
+    target.weaponLevels = JSON.stringify(Object.fromEntries(member.weaponLevels));
+    target.passiveLevels = JSON.stringify(Object.fromEntries(member.passiveLevels));
+    const choices = world.pendingUpgrade?.choicesByPlayer.get(member.sessionId) ?? [];
+    target.upgradeChoices = JSON.stringify(choices);
+    target.upgradeSelectionId = world.pendingUpgrade?.selections.get(member.sessionId) ?? "";
+    target.upgradeSelected = target.upgradeSelectionId !== "";
   }
 
   const enemyIds = new Set<string>();

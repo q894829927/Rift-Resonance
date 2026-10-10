@@ -26,6 +26,20 @@ export {
   SpawnSystem,
   WeaponSystem
 } from "./combat/world.js";
+export {
+  advanceCombatUpgrade,
+  applyCombatUpgrade,
+  awardEnemyExperience,
+  experienceRewardForEnemy,
+  experienceThresholdForLevel,
+  getCombatUpgradeChoices,
+  handleCombatPlayerLeft,
+  maybeStartCombatUpgrade,
+  selectCombatUpgrade,
+  TEAM_VITALITY_PASSIVE_ID,
+  TEAM_XP_THRESHOLDS,
+  teamSizeMultiplier
+} from "./combat/world.js";
 export type {
   CombatEnemy,
   CombatPhase,
@@ -33,5 +47,8 @@ export type {
   CombatProjectile,
   CombatStats,
   CombatWinner,
-  CombatWorld
+  CombatWorld,
+  CombatUpgradeChoice,
+  CombatUpgradeKind,
+  CombatUpgradeState
 } from "./combat/world.js";

@@ -23,7 +23,13 @@ export const PlayerNetworkState = schema({
   dashRemainingTicks: t.number().default(0),
   dashInvulnerableRemainingTicks: t.number().default(0),
   dashCooldownRemainingTicks: t.number().default(0),
-  hitProtectionRemainingTicks: t.number().default(0)
+  hitProtectionRemainingTicks: t.number().default(0),
+  weaponIds: t.string().default("[\"weapon.fireball\"]"),
+  weaponLevels: t.string().default("{\"weapon.fireball\":1}"),
+  passiveLevels: t.string().default("{}"),
+  upgradeChoices: t.string().default("[]"),
+  upgradeSelectionId: t.string().default(""),
+  upgradeSelected: t.boolean().default(false)
 }, "RiftPlayerNetworkState");
 export type PlayerNetworkState = SchemaType<typeof PlayerNetworkState>;
 
@@ -67,6 +73,11 @@ export const CombatNetworkState = schema({
   matchDurationTicks: t.number().default(4800),
   hostSessionId: t.string().default(""),
   winner: t.string().default("NONE"),
+  teamLevel: t.number().default(1),
+  teamExperience: t.number().default(0),
+  teamNextLevelExperience: t.number().default(50),
+  upgradeId: t.string().default(""),
+  upgradeDeadlineTick: t.number().default(0),
   players: t.map(PlayerNetworkState),
   enemies: t.map(EnemyNetworkState),
   projectiles: t.map(ProjectileNetworkState),

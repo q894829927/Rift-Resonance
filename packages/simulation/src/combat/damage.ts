@@ -7,6 +7,7 @@ import {
   type CombatPlayer,
   type CombatWorld
 } from "./types.js";
+import { awardEnemyExperience } from "./progression.js";
 
 export interface DamageRequest {
   readonly actionId: string;
@@ -134,6 +135,7 @@ export class DamageSystem {
       target.removeAfterTick = world.tick + world.config.deadEntityRetentionTicks;
       target.targetSessionId = null;
       if (sourceStats) sourceStats.kills++;
+      awardEnemyExperience(world, target);
       emitCombatEvent(world, {
         type: "enemy.died",
         sourceId: request.sourceId,

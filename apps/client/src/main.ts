@@ -257,6 +257,8 @@ const status = element<HTMLElement>("status");
 const tickMonitor = element<HTMLElement>("tick-monitor");
 const matchPhase = element<HTMLElement>("match-phase");
 const matchTimer = element<HTMLElement>("match-timer");
+const teamLevel = element<HTMLElement>("team-level");
+const teamXpFill = element<HTMLElement>("team-xp-fill");
 const aliveCount = element<HTMLElement>("alive-count");
 const hudHealth = element<HTMLElement>("hud-health");
 const hudDash = element<HTMLElement>("hud-dash");
@@ -267,6 +269,9 @@ const matchBannerKicker = element<HTMLElement>("match-banner-kicker");
 const matchBannerTitle = element<HTMLElement>("match-banner-title");
 const matchBannerSummary = element<HTMLElement>("match-banner-summary");
 const matchBannerStats = element<HTMLElement>("match-banner-stats");
+const upgradePanel = element<HTMLElement>("upgrade-panel");
+const upgradeStatus = element<HTMLElement>("upgrade-status");
+const upgradeChoices = element<HTMLElement>("upgrade-choices");
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
 const list = element<HTMLUListElement>("players");
@@ -320,6 +325,7 @@ function render(view: LobbyView | null): void {
     }
   }
   updateHud(view);
+  updateUpgradePanel(view);
   updateMatchBanner(view);
   refreshControls();
 }
@@ -328,6 +334,8 @@ function updateHud(view: LobbyView | null): void {
   if (!view) {
     matchPhase.textContent = "大厅";
     matchTimer.textContent = "--:--";
+    teamLevel.textContent = "Lv 1";
+    teamXpFill.style.width = "0%";
     aliveCount.textContent = "0/0";
     hudHealth.textContent = "--";
     hudDash.textContent = "就绪";
@@ -336,9 +344,12 @@ function updateHud(view: LobbyView | null): void {
     return;
   }
   const phaseText: Record<string, string> = {
-    LOBBY: "等待准备", RUNNING: "战斗中", WON: "胜利", LOST: "失败", RESULT: "结算"
+    LOBBY: "等待准备", RUNNING: "战斗中", UPGRADING: "升级选择", WON: "胜利", LOST: "失败", RESULT: "结算"
   };
   matchPhase.textContent = phaseText[view.phase] ?? view.phase;
+  teamLevel.textContent = "Lv " + view.teamLevel;
+  teamXpFill.style.width = Math.min(100, Math.max(0,
+    view.teamExperience / Math.max(1, view.teamNextLevelExperience) * 100)) + "%";
   const remaining = Math.max(0, view.matchDurationTicks - view.matchElapsedTicks);
   const seconds = Math.ceil(remaining / 20);
   matchTimer.textContent = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" +
@@ -355,8 +366,38 @@ function updateHud(view: LobbyView | null): void {
   hudDamage.textContent = String(Math.round(local.totalDamage));
 }
 
+function updateUpgradePanel(view: LobbyView | null): void {
+  if (!view || view.phase !== "UPGRADING") {
+    upgradePanel.hidden = true;
+    upgradeChoices.replaceChildren();
+    return;
+  }
+  const local = view.players.get(view.sessionId);
+  upgradePanel.hidden = false;
+  if (!local) {
+    upgradeStatus.textContent = "等待服务器同步升级选项";
+    upgradeChoices.replaceChildren();
+    return;
+  }
+  upgradeStatus.textContent = local.upgradeSelected
+    ? "已提交选择，等待其他在线玩家（服务器将按时结算）"
+    : "请选择一项；未选择时服务器会自动采用第一项";
+  upgradeChoices.replaceChildren();
+  for (const choice of local.upgradeChoices) {
+    const button = document.createElement("button");
+    button.className = "upgrade-choice";
+    button.disabled = local.upgradeSelected;
+    button.innerHTML = "<strong>" + choice.label + "</strong><small>" + choice.kind + "</small>";
+    button.addEventListener("click", () => connection.selectUpgrade(choice.id));
+    upgradeChoices.append(button);
+  }
+  if (local.upgradeChoices.length === 0) {
+    upgradeStatus.textContent = "当前没有可用升级，等待服务器恢复战斗";
+  }
+}
+
 function updateMatchBanner(view: LobbyView | null): void {
-  if (!view || view.phase === "RUNNING") {
+  if (!view || view.phase === "RUNNING" || view.phase === "UPGRADING") {
     matchBanner.hidden = true;
     return;
   }

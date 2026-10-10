@@ -26,14 +26,16 @@ export const ENEMY_DEFINITIONS = {
     maxHealth: 35,
     moveSpeed: 85,
     collisionRadius: 18,
-    contactDamage: 8
+    contactDamage: 8,
+    experience: 5
   },
   berserker_beast: {
     assetId: ENEMY_BERSERKER_BEAST_ASSET_ID,
     maxHealth: 95,
     moveSpeed: 100,
     collisionRadius: 24,
-    contactDamage: 18
+    contactDamage: 18,
+    experience: 12
   }
 } as const;
 
@@ -85,8 +87,12 @@ export const COMBAT_ACTION_RETENTION_TICKS = 120;
 export const COMBAT_MAX_EVENTS = 64;
 export const COMBAT_MATCH_DURATION_TICKS = 20 * 240;
 export const COMBAT_RESULT_HOLD_TICKS = 20 * 5;
+export const COMBAT_PLAYER_WEAPON_SLOTS = 2;
+export const COMBAT_MAX_WEAPON_LEVEL = 3;
+export const COMBAT_MAX_PASSIVE_LEVEL = 2;
+export const COMBAT_UPGRADE_TIMEOUT_TICKS = 20 * 10;
 
-export type CombatPhase = "LOBBY" | "RUNNING" | "WON" | "LOST" | "RESULT";
+export type CombatPhase = "LOBBY" | "RUNNING" | "UPGRADING" | "WON" | "LOST" | "RESULT";
 export type CombatWinner = "NONE" | "TEAM";
 
 export interface SpawnDifficultyStage {
@@ -104,6 +110,8 @@ export interface CombatConfig {
   actionRetentionTicks: number;
   matchDurationTicks: number;
   resultHoldTicks: number;
+  upgradeTimeoutTicks: number;
+  experiencePlayerScale: number;
   difficultyStages: readonly SpawnDifficultyStage[];
 }
 
@@ -120,13 +128,15 @@ export interface CombatPlayer {
   readonly spawnSlot: number;
   x: number;
   y: number;
-  readonly maxHealth: number;
+  maxHealth: number;
   health: number;
   alive: boolean;
   ready: boolean;
   deathTick: number | null;
-  readonly weaponIds: readonly CombatWeaponId[];
+  readonly weaponIds: CombatWeaponId[];
   readonly nextWeaponTicks: Map<CombatWeaponId, number>;
+  readonly weaponLevels: Map<CombatWeaponId, number>;
+  readonly passiveLevels: Map<string, number>;
   facingX: number;
   facingY: number;
   dashDirectionX: number;
@@ -163,6 +173,7 @@ export interface CombatEnemy {
   nextChargeTick: number;
   chargeSequence: number;
   chargeHitTargetId: string | null;
+  experienceAwarded: boolean;
 }
 
 export interface CombatProjectile {
@@ -185,6 +196,12 @@ export interface CombatWorld {
   matchElapsedTicks: number;
   matchStartTick: number | null;
   resultTick: number | null;
+  teamLevel: number;
+  teamExperience: number;
+  teamNextLevelExperience: number;
+  upgradeReady: boolean;
+  pendingUpgrade: CombatUpgradeState | null;
+  nextUpgradeSequence: number;
   readonly config: CombatConfig;
   readonly players: Map<string, CombatPlayer>;
   readonly stats: Map<string, CombatStats>;
@@ -198,6 +215,25 @@ export interface CombatWorld {
   nextEnemySpawnTick: number;
   nextProjectileSequence: number;
   nextEventSequence: number;
+}
+
+export type CombatUpgradeKind = "weapon_unlock" | "weapon_power" | "passive";
+
+export interface CombatUpgradeChoice {
+  readonly id: string;
+  readonly kind: CombatUpgradeKind;
+  readonly label: string;
+  readonly weaponId?: CombatWeaponId;
+  readonly passiveId?: string;
+}
+
+export interface CombatUpgradeState {
+  readonly id: string;
+  readonly level: number;
+  readonly startedTick: number;
+  readonly deadlineTick: number;
+  readonly choicesByPlayer: Map<string, readonly CombatUpgradeChoice[]>;
+  readonly selections: Map<string, string>;
 }
 
 export const COMBAT_PLAYER_SPAWNS = [
@@ -268,7 +304,8 @@ export function createEnemy(
     chargeUntilTick: 0,
     nextChargeTick: COMBAT_BERSERKER_CHARGE_FIRST_TICK,
     chargeSequence: 0,
-    chargeHitTargetId: null
+    chargeHitTargetId: null,
+    experienceAwarded: false
   };
 }
 
@@ -294,11 +331,14 @@ export function createCombatPlayer(
     alive: true,
     ready: false,
     deathTick: null,
-    weaponIds: [FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID],
+    // M2-A starts with one weapon and leaves one slot open for a server-owned
+    // upgrade. The renderer never decides this loadout.
+    weaponIds: [FIREBALL_WEAPON_ID],
     nextWeaponTicks: new Map([
-      [FIREBALL_WEAPON_ID, 0],
-      [SPIN_BLADE_WEAPON_ID, 0]
+      [FIREBALL_WEAPON_ID, 0]
     ]),
+    weaponLevels: new Map([[FIREBALL_WEAPON_ID, 1]]),
+    passiveLevels: new Map(),
     facingX: 1,
     facingY: 0,
     dashDirectionX: 1,
@@ -308,6 +348,18 @@ export function createCombatPlayer(
     dashCooldownRemainingTicks: 0,
     hitProtectionRemainingTicks: 0
   };
+}
+
+export function getWeaponLevel(player: CombatPlayer, weaponId: CombatWeaponId): number {
+  return player.weaponLevels.get(weaponId) ?? 1;
+}
+
+export function getWeaponDamage(player: CombatPlayer, weaponId: CombatWeaponId): number {
+  return WEAPON_DEFINITIONS[weaponId].damage + (getWeaponLevel(player, weaponId) - 1) * 5;
+}
+
+export function getWeaponCooldownTicks(player: CombatPlayer, weaponId: CombatWeaponId): number {
+  return Math.max(1, WEAPON_DEFINITIONS[weaponId].cooldownTicks - (getWeaponLevel(player, weaponId) - 1));
 }
 
 export function isEnemyAssetId(value: string): value is EnemyAssetId {

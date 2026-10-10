@@ -62,3 +62,55 @@ test("combat input projects authoritative dash and hit protection", { timeout: 1
     await room.leave();
   }
 });
+
+test("two players receive the same server-owned XP upgrade phase and can resume together", { timeout: 50000 }, async () => {
+  const rooms = [];
+  const timers = [];
+  try {
+    const alice = await client.create(ROOM_TYPE, { nickname: "Alice" });
+    rooms.push(alice);
+    const bob = await client.joinById(alice.roomId, { nickname: "Bob" });
+    rooms.push(bob);
+    await waitUntil(() => alice.state?.players?.size === 2 && bob.state?.players?.size === 2, "two upgrade players");
+    alice.send("match.ready", { ready: true });
+    bob.send("match.ready", { ready: true });
+    await waitUntil(() => alice.state?.phase === "RUNNING", "running upgrade match");
+
+    // Keep both players moving around the arena while the authoritative weapons
+    // accumulate enough deterministic kills to cross the first XP threshold.
+    for (const [index, room] of [alice, bob].entries()) {
+      const input = room.input();
+      let direction = index === 0 ? 1 : -1;
+      let elapsed = 0;
+      timers.push(setInterval(() => {
+        elapsed += 50;
+        if (elapsed >= 800) {
+          elapsed = 0;
+          direction *= -1;
+        }
+        input.data.moveX = direction;
+        input.data.moveY = index === 0 ? 0 : direction;
+        input.data.dash = false;
+        input.send();
+      }, 50));
+    }
+
+    await waitUntil(() => alice.state?.phase === "UPGRADING", "shared upgrade phase", 40000);
+    assert.equal(bob.state.phase, "UPGRADING");
+    assert.equal(alice.state.teamLevel, bob.state.teamLevel);
+    assert.equal(alice.state.teamExperience, bob.state.teamExperience);
+    const alicePlayer = alice.state.players.get(alice.sessionId);
+    const bobPlayer = bob.state.players.get(bob.sessionId);
+    const aliceChoices = JSON.parse(alicePlayer.upgradeChoices);
+    const bobChoices = JSON.parse(bobPlayer.upgradeChoices);
+    assert.ok(aliceChoices.length > 0 && aliceChoices.length <= 3);
+    assert.ok(bobChoices.length > 0 && bobChoices.length <= 3);
+    alice.send("upgrade.select", { choiceId: aliceChoices[0].id });
+    bob.send("upgrade.select", { choiceId: bobChoices[0].id });
+    await waitUntil(() => alice.state?.phase === "RUNNING" && bob.state?.phase === "RUNNING", "resume after synchronized choices");
+    assert.equal(alice.state.players.get(alice.sessionId).upgradeSelected, false);
+  } finally {
+    for (const timer of timers) clearInterval(timer);
+    await Promise.allSettled(rooms.map(room => room.leave()));
+  }
+});

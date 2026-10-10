@@ -26,6 +26,19 @@ export interface LobbyPlayerView {
   dashInvulnerableRemainingTicks: number;
   dashCooldownRemainingTicks: number;
   hitProtectionRemainingTicks: number;
+  weaponIds: readonly string[];
+  weaponLevels: Readonly<Record<string, number>>;
+  passiveLevels: Readonly<Record<string, number>>;
+  upgradeChoices: readonly UpgradeChoiceView[];
+  upgradeSelectionId: string;
+  upgradeSelected: boolean;
+}
+export interface UpgradeChoiceView {
+  id: string;
+  kind: string;
+  label: string;
+  weaponId?: string;
+  passiveId?: string;
 }
 export interface EnemyView {
   assetId: string;
@@ -69,6 +82,11 @@ export interface LobbyView {
   matchDurationTicks: number;
   hostSessionId: string;
   winner: string;
+  teamLevel: number;
+  teamExperience: number;
+  teamNextLevelExperience: number;
+  upgradeId: string;
+  upgradeDeadlineTick: number;
   players: Map<string, LobbyPlayerView>;
 }
 export interface MatchSnapshot {
@@ -77,6 +95,11 @@ export interface MatchSnapshot {
   matchDurationTicks: number;
   hostSessionId: string;
   winner: string;
+  teamLevel: number;
+  teamExperience: number;
+  teamNextLevelExperience: number;
+  upgradeId: string;
+  upgradeDeadlineTick: number;
 }
 export interface RenderPosition { x: number; y: number }
 export type LobbyListener = (view: LobbyView) => void;
@@ -125,64 +148,15 @@ export class LobbyConnection {
     const callbacks = Callbacks.get(room);
     callbacks.onAdd("players", (value: unknown, key: unknown) => {
       if (this.room !== room || typeof key !== "string" || !isLobbyPlayerView(value)) return;
-      this.players.set(key, {
-        nickname: value.nickname,
-        x: value.x,
-        y: value.y,
-        health: value.health,
-        maxHealth: value.maxHealth,
-        alive: value.alive,
-        connected: value.connected,
-        dashActive: value.dashActive,
-        hitProtected: value.hitProtected,
-        ready: value.ready,
-        kills: value.kills,
-        totalDamage: value.totalDamage,
-        damageTaken: value.damageTaken,
-        survivalTicks: value.survivalTicks,
-        facingX: value.facingX,
-        facingY: value.facingY,
-        dashDirectionX: value.dashDirectionX,
-        dashDirectionY: value.dashDirectionY,
-        dashRemainingTicks: value.dashRemainingTicks,
-        dashInvulnerableRemainingTicks: value.dashInvulnerableRemainingTicks,
-        dashCooldownRemainingTicks: value.dashCooldownRemainingTicks,
-        hitProtectionRemainingTicks: value.hitProtectionRemainingTicks
-      });
+      this.players.set(key, toLobbyPlayerView(value));
       // Ordinary patches update the decoded schema instance itself. Rendering is
       // driven by Predict.value() once per frame, not by patch-driven DOM rebuilds.
       callbacks.onChange(value as never, () => {
         if (this.room !== room || !isLobbyPlayerView(value)) return;
+        const next = toLobbyPlayerView(value);
         const old = this.players.get(key);
-        if (old && (old.nickname !== value.nickname || old.health !== value.health ||
-          old.maxHealth !== value.maxHealth || old.alive !== value.alive || old.connected !== value.connected ||
-          old.dashActive !== value.dashActive || old.hitProtected !== value.hitProtected ||
-          old.ready !== value.ready || old.kills !== value.kills || old.totalDamage !== value.totalDamage ||
-          old.damageTaken !== value.damageTaken || old.survivalTicks !== value.survivalTicks)) {
-          this.players.set(key, {
-            nickname: value.nickname,
-            x: value.x,
-            y: value.y,
-            health: value.health,
-            maxHealth: value.maxHealth,
-            alive: value.alive,
-            connected: value.connected,
-            dashActive: value.dashActive,
-            hitProtected: value.hitProtected,
-            ready: value.ready,
-            kills: value.kills,
-            totalDamage: value.totalDamage,
-            damageTaken: value.damageTaken,
-            survivalTicks: value.survivalTicks,
-            facingX: value.facingX,
-            facingY: value.facingY,
-            dashDirectionX: value.dashDirectionX,
-            dashDirectionY: value.dashDirectionY,
-            dashRemainingTicks: value.dashRemainingTicks,
-            dashInvulnerableRemainingTicks: value.dashInvulnerableRemainingTicks,
-            dashCooldownRemainingTicks: value.dashCooldownRemainingTicks,
-            hitProtectionRemainingTicks: value.hitProtectionRemainingTicks
-          });
+        if (old && JSON.stringify(old) !== JSON.stringify(next)) {
+          this.players.set(key, next);
           this.emit();
         }
       });
@@ -245,6 +219,10 @@ export class LobbyConnection {
 
   restartMatch(): void {
     this.room?.send("match.restart");
+  }
+
+  selectUpgrade(choiceId: string): void {
+    if (choiceId.trim()) this.room?.send("upgrade.select", { choiceId });
   }
 
   private startPrediction(room: Room): void {
@@ -353,6 +331,11 @@ export class LobbyConnection {
       matchDurationTicks: match.matchDurationTicks,
       hostSessionId: match.hostSessionId,
       winner: match.winner,
+      teamLevel: match.teamLevel,
+      teamExperience: match.teamExperience,
+      teamNextLevelExperience: match.teamNextLevelExperience,
+      upgradeId: match.upgradeId,
+      upgradeDeadlineTick: match.upgradeDeadlineTick,
       players: new Map(this.players)
     });
   }
@@ -407,6 +390,11 @@ interface MatchStateShape {
   matchDurationTicks?: number;
   hostSessionId?: string;
   winner?: string;
+  teamLevel?: number;
+  teamExperience?: number;
+  teamNextLevelExperience?: number;
+  upgradeId?: string;
+  upgradeDeadlineTick?: number;
 }
 
 function readMatchSnapshot(state: MatchStateShape): MatchSnapshot {
@@ -415,7 +403,12 @@ function readMatchSnapshot(state: MatchStateShape): MatchSnapshot {
     matchElapsedTicks: Number(state.matchElapsedTicks ?? 0),
     matchDurationTicks: Number(state.matchDurationTicks ?? 4800),
     hostSessionId: String(state.hostSessionId ?? ""),
-    winner: String(state.winner ?? "NONE")
+    winner: String(state.winner ?? "NONE"),
+    teamLevel: Number(state.teamLevel ?? 1),
+    teamExperience: Number(state.teamExperience ?? 0),
+    teamNextLevelExperience: Number(state.teamNextLevelExperience ?? 50),
+    upgradeId: String(state.upgradeId ?? ""),
+    upgradeDeadlineTick: Number(state.upgradeDeadlineTick ?? 0)
   };
 }
 
@@ -439,5 +432,31 @@ function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
     typeof item.dashDirectionY === "number" && typeof item.dashRemainingTicks === "number" &&
     typeof item.dashInvulnerableRemainingTicks === "number" &&
     typeof item.dashCooldownRemainingTicks === "number" &&
-    typeof item.hitProtectionRemainingTicks === "number";
+    typeof item.hitProtectionRemainingTicks === "number" &&
+    typeof item.weaponIds === "string" && typeof item.weaponLevels === "string" &&
+    typeof item.passiveLevels === "string" && typeof item.upgradeChoices === "string" &&
+    typeof item.upgradeSelectionId === "string" && typeof item.upgradeSelected === "boolean";
+}
+
+function parseJson<T>(value: string, fallback: T): T {
+  try { return JSON.parse(value) as T; } catch { return fallback; }
+}
+
+function toLobbyPlayerView(value: LobbyPlayerView): LobbyPlayerView {
+  const raw = value as unknown as Record<string, unknown>;
+  return {
+    nickname: value.nickname, x: value.x, y: value.y, health: value.health, maxHealth: value.maxHealth,
+    alive: value.alive, connected: value.connected, dashActive: value.dashActive, hitProtected: value.hitProtected,
+    ready: value.ready, kills: value.kills, totalDamage: value.totalDamage, damageTaken: value.damageTaken,
+    survivalTicks: value.survivalTicks, facingX: value.facingX, facingY: value.facingY,
+    dashDirectionX: value.dashDirectionX, dashDirectionY: value.dashDirectionY,
+    dashRemainingTicks: value.dashRemainingTicks, dashInvulnerableRemainingTicks: value.dashInvulnerableRemainingTicks,
+    dashCooldownRemainingTicks: value.dashCooldownRemainingTicks, hitProtectionRemainingTicks: value.hitProtectionRemainingTicks,
+    weaponIds: parseJson<readonly string[]>(String(raw.weaponIds ?? "[]"), []),
+    weaponLevels: parseJson<Readonly<Record<string, number>>>(String(raw.weaponLevels ?? "{}"), {}),
+    passiveLevels: parseJson<Readonly<Record<string, number>>>(String(raw.passiveLevels ?? "{}"), {}),
+    upgradeChoices: parseJson<readonly UpgradeChoiceView[]>(String(raw.upgradeChoices ?? "[]"), []),
+    upgradeSelectionId: String(raw.upgradeSelectionId ?? ""),
+    upgradeSelected: Boolean(raw.upgradeSelected)
+  };
 }

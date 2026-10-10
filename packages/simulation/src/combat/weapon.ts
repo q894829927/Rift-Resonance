@@ -9,6 +9,8 @@ import {
   clampCombatPosition,
   distanceSquared,
   emitCombatEvent,
+  getWeaponCooldownTicks,
+  getWeaponDamage,
   WEAPON_DEFINITIONS,
   type CombatEnemy,
   type CombatPlayer,
@@ -39,18 +41,19 @@ export class WeaponSystem {
     const target = this.nearestEnemy(world, player.x, player.y, definition.range);
     if (!target) return;
     const projectileId = "projectile:fireball:" + world.nextProjectileSequence++;
+    const damage = getWeaponDamage(player, FIREBALL_WEAPON_ID);
     world.projectiles.set(projectileId, {
       id: projectileId,
       weaponId: FIREBALL_WEAPON_ID,
       sourcePlayerId: player.sessionId,
       targetEnemyId: target.id,
-      damage: definition.damage,
+      damage,
       speed: definition.projectileSpeed,
       radius: definition.projectileRadius,
       x: player.x,
       y: player.y
     });
-    player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, world.tick + definition.cooldownTicks);
+    player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, FIREBALL_WEAPON_ID));
     emitCombatEvent(world, {
       type: "weapon.fired",
       sourceId: player.sessionId,
@@ -58,12 +61,13 @@ export class WeaponSystem {
       assetId: FIREBALL_PROJECTILE_ASSET_ID,
       x: player.x,
       y: player.y,
-      amount: definition.damage
+      amount: damage
     });
   }
 
   private spinBlade(world: CombatWorld, player: CombatPlayer): void {
     const definition = WEAPON_DEFINITIONS[SPIN_BLADE_WEAPON_ID];
+    const damage = getWeaponDamage(player, SPIN_BLADE_WEAPON_ID);
     const facingLength = Math.hypot(player.facingX, player.facingY);
     const facingX = facingLength > 0 ? player.facingX / facingLength : 1;
     const facingY = facingLength > 0 ? player.facingY / facingLength : 0;
@@ -78,7 +82,7 @@ export class WeaponSystem {
       .sort((a, b) => a.id.localeCompare(b.id));
     if (targets.length === 0) return;
 
-    player.nextWeaponTicks.set(SPIN_BLADE_WEAPON_ID, world.tick + definition.cooldownTicks);
+    player.nextWeaponTicks.set(SPIN_BLADE_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, SPIN_BLADE_WEAPON_ID));
     emitCombatEvent(world, {
       type: "weapon.fired",
       sourceId: player.sessionId,
@@ -86,14 +90,14 @@ export class WeaponSystem {
       assetId: SPIN_BLADE_ASSET_ID,
       x: player.x,
       y: player.y,
-      amount: definition.damage
+      amount: damage
     });
     for (const target of targets) {
       const applied = this.damage.applyEnemyDamage(world, {
         actionId: "spin-blade-hit:" + player.sessionId + ":" + world.tick + ":" + target.id,
         sourceId: player.sessionId,
         targetId: target.id,
-        amount: definition.damage,
+        amount: damage,
         assetId: SPIN_BLADE_WEAPON_ID,
         x: target.x,
         y: target.y

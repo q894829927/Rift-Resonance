@@ -8,6 +8,8 @@ import {
   resetCombatMatch,
   setCombatPlayerReady,
   startCombatMatch,
+  handleCombatPlayerLeft,
+  selectCombatUpgrade,
   stepCombatWorld,
   type CombatWorld
 } from "@rift/simulation";
@@ -49,6 +51,12 @@ export class ScaffoldRoom extends Room {
       resetCombatMatch(this.world);
       this.projectState();
     });
+    this.onMessage("upgrade.select", (client, payload: unknown) => {
+      const choiceId = typeof payload === "object" && payload !== null && "choiceId" in payload
+        ? (payload as {choiceId?: unknown}).choiceId : undefined;
+      if (typeof choiceId === "string") selectCombatUpgrade(this.world, client.sessionId, choiceId);
+      this.projectState();
+    });
     this.setFixedTimestep((context) => {
       const startedAt = performance.now();
       const commands = new Map<string, CombatInput>();
@@ -86,6 +94,7 @@ export class ScaffoldRoom extends Room {
     const preserveResult = this.world.phase !== "LOBBY";
     const departingStats = this.world.stats.get(client.sessionId);
     if (removeCombatPlayer(this.world, client.sessionId, { preserveStats: preserveResult })) {
+      handleCombatPlayerLeft(this.world, client.sessionId);
       projectMemberLeft(this.state, client.sessionId, preserveResult, departingStats);
     }
     if (client.sessionId === this.hostSessionId) {

@@ -4,6 +4,9 @@ import {
   addCombatPlayer,
   createCombatWorld,
   DamageSystem,
+  getCombatUpgradeChoices,
+  selectCombatUpgrade,
+  handleCombatPlayerLeft,
   resetCombatMatch,
   startCombatMatch,
   stepCombatWorld
@@ -186,6 +189,9 @@ test("berserker emits a charge warning and enters the charge state", () => {
 test("spin blade uses its fan and configurable damage, while dash is authoritative and protected", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
+  player.weaponIds.push("weapon.spin_blade");
+  player.weaponLevels.set("weapon.spin_blade", 1);
+  player.nextWeaponTicks.set("weapon.spin_blade", 0);
   world.config.spawnIntervalTicks = 1000;
   begin(world, player);
   stepCombatWorld(world, 50);
@@ -235,6 +241,81 @@ test("spin blade uses its fan and configurable damage, while dash is authoritati
     y: player.y
   }), false);
   assert.equal(player.health, healthBeforeProtectedHit - 10);
+});
+
+test("M2-A starts with one weapon and produces only valid server-owned choices", () => {
+  const world = createCombatWorld();
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  assert.deepEqual(player.weaponIds, ["weapon.fireball"]);
+  const choices = getCombatUpgradeChoices(player);
+  assert.equal(choices.length, 3);
+  assert.deepEqual(choices.map(choice => choice.id), [
+    "upgrade.weapon.spin_blade",
+    "upgrade.weapon.fireball.power",
+    "passive.vitality"
+  ]);
+  assert.equal(new Set(choices.map(choice => choice.id)).size, choices.length);
+});
+
+test("shared XP enters upgrading only after the combat tick and pauses match time", () => {
+  const world = createCombatWorld();
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  player.weaponIds.length = 0;
+  begin(world, player);
+  stepCombatWorld(world, 50);
+  const enemy = world.enemies.get("enemy:rift_swarm:1");
+  assert.ok(enemy);
+  world.teamExperience = world.teamNextLevelExperience - 5;
+  const damage = new DamageSystem();
+  assert.equal(damage.applyEnemyDamage(world, {
+    actionId: "xp-kill",
+    sourceId: player.sessionId,
+    targetId: enemy.id,
+    amount: enemy.health,
+    assetId: "weapon.fireball",
+    x: enemy.x,
+    y: enemy.y
+  }), true);
+  assert.equal(world.teamExperience, world.teamNextLevelExperience);
+  assert.equal(world.phase, "RUNNING");
+  const elapsedBeforeUpgrade = world.matchElapsedTicks;
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "UPGRADING");
+  assert.equal(world.teamLevel, 2);
+  assert.equal(world.matchElapsedTicks, elapsedBeforeUpgrade + 1);
+  const position = {x: player.x, y: player.y};
+  for (let i = 0; i < 4; i++) stepCombatWorld(world, 50, new Map([[player.sessionId, {moveX: 1, moveY: 0, dash: true}]]));
+  assert.equal(world.phase, "UPGRADING");
+  assert.equal(world.matchElapsedTicks, elapsedBeforeUpgrade + 1);
+  assert.deepEqual({x: player.x, y: player.y}, position);
+
+  const choices = world.pendingUpgrade.choicesByPlayer.get(player.sessionId);
+  assert.ok(choices?.length);
+  assert.equal(selectCombatUpgrade(world, player.sessionId, choices[0].id), true);
+  assert.equal(selectCombatUpgrade(world, player.sessionId, choices[0].id), false);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RUNNING");
+  assert.equal(world.pendingUpgrade, null);
+});
+
+test("upgrade timeout auto-selects deterministically and departure cannot block the team", () => {
+  const world = createCombatWorld();
+  world.config.upgradeTimeoutTicks = 2;
+  const alice = addCombatPlayer(world, "player-a", "Alice");
+  const bob = addCombatPlayer(world, "player-b", "Bob");
+  alice.weaponIds.length = 0;
+  bob.weaponIds.length = 0;
+  begin(world, alice, bob);
+  world.upgradeReady = true;
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "UPGRADING");
+  const firstChoice = world.pendingUpgrade.choicesByPlayer.get(alice.sessionId)[0];
+  handleCombatPlayerLeft(world, bob.sessionId);
+  world.players.delete(bob.sessionId);
+  stepCombatWorld(world, 50);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RUNNING");
+  assert.equal(alice.weaponIds[0], firstChoice.weaponId ?? alice.weaponIds[0]);
 });
 
 test("processed actions and transient events remain bounded over time", () => {
