@@ -14,6 +14,7 @@ import {
   type CombatWorld
 } from "./types.js";
 import { awardEnemyExperience } from "./progression.js";
+import { returningBladeOutboundPoint } from "./boomerang.js";
 
 export interface DamageRequest {
   readonly actionId: string;
@@ -127,18 +128,16 @@ export class DamageSystem {
     let recovered = false;
     if (flight.phase === "outbound") {
       flight.outwardDistance = Math.min(flight.maxDistance, flight.outwardDistance + travel);
-      const progress = flight.outwardDistance / flight.maxDistance;
-      // Lateral bow expands by 25% at III, while keeping the outbound tip
-      // directly ahead. Both outgoing and returning motion are visible.
-      const arc = Math.sin(progress * Math.PI) * flight.maxDistance * 0.12 *
-        (flight.arcHalfAngle / (Math.PI / 4)) * flight.arcSign;
-      const projected = clampCombatPosition(
-        flight.startX + flight.directionX * flight.outwardDistance - flight.directionY * arc,
-        flight.startY + flight.directionY * flight.outwardDistance + flight.directionX * arc,
-        projectile.radius
+      // Fixed reach along the launch direction, regardless of target
+      // distance/hit/death. A boundary-safe direction was chosen at launch,
+      // so no wall clamp silently shortens the actual outward travel.
+      const point = returningBladeOutboundPoint(
+        flight.startX, flight.startY, flight.directionX, flight.directionY,
+        flight.outwardDistance, flight.maxDistance,
+        flight.arcHalfAngle, flight.arcSign
       );
-      projectile.x = projected.x;
-      projectile.y = projected.y;
+      projectile.x = point.x;
+      projectile.y = point.y;
     } else {
       // Follow the owner's CURRENT position: turning or moving during flight
       // cannot strand the weapon at the old launch point.
