@@ -57,6 +57,8 @@ export interface EnemyView {
 export interface ProjectileView {
   weaponId: string;
   phase: string;
+  outwardDistance: number;
+  maxDistance: number;
   x: number;
   y: number;
 }
@@ -377,6 +379,8 @@ export class LobbyConnection {
       projectiles.set(id, {
         weaponId: projectile.weaponId,
         phase: projectile.phase ?? "",
+        outwardDistance: Number(projectile.outwardDistance ?? 0),
+        maxDistance: Number(projectile.maxDistance ?? 0),
         x: projectile.x,
         y: projectile.y
       });
