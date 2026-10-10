@@ -1,6 +1,14 @@
-import { emitCombatEvent, distanceSquared, type CombatEnemy, type CombatPlayer, type CombatWorld } from "./types.js";
+import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH } from "@rift/shared";
+import {
+  COMBAT_HIT_PROTECTION_TICKS,
+  emitCombatEvent,
+  distanceSquared,
+  type CombatEnemy,
+  type CombatPlayer,
+  type CombatWorld
+} from "./types.js";
 
-interface DamageRequest {
+export interface DamageRequest {
   readonly actionId: string;
   readonly sourceId: string;
   readonly targetId: string;
@@ -14,13 +22,14 @@ interface DamageRequest {
 export class DamageSystem {
   applyPlayerDamage(world: CombatWorld, request: DamageRequest): boolean {
     const target = world.players.get(request.targetId);
-    if (!target || !target.alive) return false;
+    if (!target || !target.alive || request.amount <= 0 || !this.acceptAction(world, request.actionId)) return false;
+    if (world.tick <= target.dashInvulnerableUntilTick || world.tick <= target.hitProtectedUntilTick) return false;
     return this.applyToPlayer(world, target, request);
   }
 
   applyEnemyDamage(world: CombatWorld, request: DamageRequest): boolean {
     const target = world.enemies.get(request.targetId);
-    if (!target || !target.alive) return false;
+    if (!target || !target.alive || request.amount <= 0 || !this.acceptAction(world, request.actionId)) return false;
     return this.applyToEnemy(world, target, request);
   }
 
@@ -56,16 +65,22 @@ export class DamageSystem {
         projectile.x += (dx / distance) * travel;
         projectile.y += (dy / distance) * travel;
       }
-      if (projectile.x < -32 || projectile.x > 992 || projectile.y < -32 || projectile.y > 572) {
+      if (projectile.x < -32 || projectile.x > WORLD_VIEW_WIDTH + 32 ||
+          projectile.y < -32 || projectile.y > WORLD_VIEW_HEIGHT + 32) {
         world.projectiles.delete(projectileId);
       }
     }
   }
 
+  private acceptAction(world: CombatWorld, actionId: string): boolean {
+    if (world.processedActionIds.has(actionId)) return false;
+    world.processedActionIds.set(actionId, world.tick);
+    return true;
+  }
+
   private applyToPlayer(world: CombatWorld, target: CombatPlayer, request: DamageRequest): boolean {
-    if (request.amount <= 0 || world.processedActionIds.has(request.actionId)) return false;
-    world.processedActionIds.add(request.actionId);
     target.health = Math.max(0, target.health - request.amount);
+    target.hitProtectedUntilTick = world.tick + COMBAT_HIT_PROTECTION_TICKS;
     emitCombatEvent(world, {
       type: "damage.applied",
       sourceId: request.sourceId,
@@ -92,8 +107,6 @@ export class DamageSystem {
   }
 
   private applyToEnemy(world: CombatWorld, target: CombatEnemy, request: DamageRequest): boolean {
-    if (request.amount <= 0 || world.processedActionIds.has(request.actionId)) return false;
-    world.processedActionIds.add(request.actionId);
     target.health = Math.max(0, target.health - request.amount);
     emitCombatEvent(world, {
       type: "damage.applied",
@@ -107,6 +120,7 @@ export class DamageSystem {
     if (target.health === 0) {
       target.alive = false;
       target.deathTick = world.tick;
+      target.removeAfterTick = world.tick + world.config.deadEntityRetentionTicks;
       target.targetSessionId = null;
       emitCombatEvent(world, {
         type: "enemy.died",

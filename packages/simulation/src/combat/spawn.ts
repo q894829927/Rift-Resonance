@@ -1,19 +1,49 @@
 import { MAX_ROOM_PLAYERS } from "@rift/shared";
 import {
+  COMBAT_BERSERKER_EVERY,
   COMBAT_PLAYER_SPAWNS,
-  createInitialEnemy,
+  createEnemy,
   createCombatPlayer,
   type CombatPlayer,
-  type CombatWorld
+  type CombatWorld,
+  type EnemyKind
 } from "./types.js";
 
 /** Deterministic combat entity creation; it owns no rendering or network state. */
 export class SpawnSystem {
   step(world: CombatWorld): void {
-    if (world.initialEnemySpawned || ![...world.players.values()].some(player => player.alive)) return;
-    world.enemies.set("enemy:slime:1", createInitialEnemy());
+    if (![...world.players.values()].some(player => player.alive)) return;
+    if (world.tick < world.nextEnemySpawnTick) return;
+
+    // One spawn decision per fixed tick interval keeps replays and load behavior
+    // deterministic. Dead entities remain briefly for death projection but do not
+    // count against the active gameplay cap.
+    world.nextEnemySpawnTick = world.tick + world.config.spawnIntervalTicks;
+    const activeCount = [...world.enemies.values()].filter(enemy => enemy.alive).length;
+    if (activeCount >= world.config.maxEnemies) return;
+
+    const sequence = world.nextEnemySequence++;
+    const kind: EnemyKind = sequence % world.config.berserkerEvery === 0
+      ? "berserker_beast"
+      : "rift_swarm";
+    const position = spawnPosition(sequence);
+    const id = "enemy:" + kind + ":" + sequence;
+    world.enemies.set(id, createEnemy(id, kind, position.x, position.y));
     world.initialEnemySpawned = true;
   }
+}
+
+function spawnPosition(sequence: number): { x: number; y: number } {
+  if (sequence === 1) return { x: 80, y: 80 };
+  const ring = Math.floor((sequence - 1) / 4);
+  const lane = (sequence - 1) % 4;
+  const inset = Math.min(110, ring * 28);
+  return [
+    { x: 80 + inset, y: 80 + inset },
+    { x: 880 - inset, y: 80 + inset },
+    { x: 80 + inset, y: 520 - inset },
+    { x: 880 - inset, y: 520 - inset }
+  ][lane]!;
 }
 
 export function addCombatPlayer(world: CombatWorld, sessionId: string, nickname: string): CombatPlayer {

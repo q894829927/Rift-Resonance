@@ -5,6 +5,7 @@ import {
   createM1EnemyPlaceholder,
   createM1PlayerAvatar,
   createM1Projectile,
+  createM1WeaponEffect,
   updateM1HealthBar
 } from "./art/m1Visuals.js";
 import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
@@ -85,6 +86,7 @@ class LobbyScene extends Phaser.Scene {
       for (const entity of this.projectiles.values()) entity.destroy();
       this.enemies.clear();
       this.projectiles.clear();
+      this.handledCombatEventIds.clear();
       return;
     }
 
@@ -136,7 +138,8 @@ class LobbyScene extends Phaser.Scene {
     for (const [id, enemy] of combat.enemies) {
       let entity = this.enemies.get(id);
       if (!entity) {
-        const assetId = enemy.assetId === "enemy.slime" || enemy.assetId === "enemy.skeleton" ||
+        const assetId = enemy.assetId === "enemy.slime" || enemy.assetId === "enemy.rift_swarm" ||
+          enemy.assetId === "enemy.berserker_beast" || enemy.assetId === "enemy.skeleton" ||
           enemy.assetId === "enemy.bat" || enemy.assetId === "enemy.elite"
           ? enemy.assetId : "enemy.slime";
         entity = createM1EnemyPlaceholder(this, assetId, enemy.x, enemy.y);
@@ -154,7 +157,7 @@ class LobbyScene extends Phaser.Scene {
     }
     for (const [id, projectile] of combat.projectiles) {
       let entity = this.projectiles.get(id);
-      if (!entity && projectile.weaponId === "weapon.arcane_bolt") {
+      if (!entity && (projectile.weaponId === "weapon.arcane_bolt" || projectile.weaponId === "weapon.fireball")) {
         entity = createM1Projectile(this, projectile.weaponId, projectile.x, projectile.y);
         this.projectiles.set(id, entity);
       }
@@ -164,7 +167,20 @@ class LobbyScene extends Phaser.Scene {
     for (const event of combat.events) {
       if (this.handledCombatEventIds.has(event.id)) continue;
       this.handledCombatEventIds.add(event.id);
-      if (event.type === "damage.applied") {
+      if (event.type === "weapon.fired" && event.assetId === "weapon.spin_blade") {
+        const slash = createM1WeaponEffect(this, "weapon.spin_blade", event.x, event.y);
+        this.tweens.add({targets: slash, angle: 120, alpha: 0, scale: 1.35, duration: 180,
+          onComplete: () => slash.destroy()});
+      } else if (event.type === "dash.started") {
+        const dash = createM1WeaponEffect(this, "player.dash", event.x, event.y);
+        this.tweens.add({targets: dash, alpha: 0, scale: 1.7, duration: 220,
+          onComplete: () => dash.destroy()});
+      } else if (event.type === "enemy.charge.started") {
+        const warning = this.add.circle(event.x, event.y, 34, 0xff596d, 0.1)
+          .setStrokeStyle(3, 0xffb45e, 0.95).setDepth(1290);
+        this.tweens.add({targets: warning, alpha: 0, scale: 1.8, duration: 300,
+          onComplete: () => warning.destroy()});
+      } else if (event.type === "damage.applied") {
         const impact = this.add.circle(event.x, event.y, 10, 0xffd36a, 0.8)
           .setStrokeStyle(2, 0xffffff, 0.8).setDepth(1300);
         this.tweens.add({targets: impact, alpha: 0, scale: 1.8, duration: 180, onComplete: () => impact.destroy()});
@@ -264,12 +280,21 @@ function releaseKeys(): void {
 window.addEventListener("keydown", event => {
   if (!connection.connected || event.repeat && heldKeys.has(event.code)) return;
   if (document.activeElement instanceof HTMLInputElement) return;
+  if (event.code === "ShiftLeft" || event.code === "ShiftRight") {
+    event.preventDefault();
+    connection.queueDash();
+    return;
+  }
   if (!/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(event.code)) return;
   event.preventDefault();
   heldKeys.add(event.code);
   updateMovement();
 });
 window.addEventListener("keyup", event => {
+  if (event.code === "ShiftLeft" || event.code === "ShiftRight") {
+    event.preventDefault();
+    return;
+  }
   if (!/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(event.code)) return;
   heldKeys.delete(event.code);
   updateMovement();

@@ -72,14 +72,15 @@ export function createM1PlayerAvatar(
 
 /** Reusable visual fallback for future server-synchronized enemy renderers. */
 export function createM1EnemyPlaceholder(
-  scene: Phaser.Scene, id: "enemy.slime" | "enemy.skeleton" | "enemy.bat" | "enemy.elite",
+  scene: Phaser.Scene,
+  id: "enemy.slime" | "enemy.rift_swarm" | "enemy.berserker_beast" | "enemy.skeleton" | "enemy.bat" | "enemy.elite",
   x: number, y: number
 ): Phaser.GameObjects.Container {
-  const size = id === "enemy.elite" ? 64 : 38;
+  const size = id === "enemy.elite" || id === "enemy.berserker_beast" ? 64 : 38;
   const shadow = scene.add.ellipse(0, 18, size, 11, 0x050b13, 0.65);
   const spec = M1_ASSETS[id];
   const body = scene.textures.exists(spec.id)
-    ? scene.add.image(0, 0, spec.id).setScale(id === "enemy.elite" ? 4 : 2.5)
+    ? scene.add.image(0, 0, spec.id).setScale(size === 64 ? 4 : 2.5)
     : scene.add.rectangle(0, 0, size, size, 0x6c5772, 0.85)
       .setStrokeStyle(2, 0xff596d, 0.9);
   const entity = scene.add.container(x, y, [shadow, body]).setDepth(1000 + y);
@@ -88,7 +89,7 @@ export function createM1EnemyPlaceholder(
 }
 
 export function createM1Projectile(
-  scene: Phaser.Scene, assetId: "weapon.arcane_bolt", x: number, y: number
+  scene: Phaser.Scene, assetId: "weapon.arcane_bolt" | "weapon.fireball", x: number, y: number
 ): Phaser.GameObjects.Container {
   const key = assetId as M1AssetId;
   let body: Phaser.GameObjects.GameObject;
@@ -98,6 +99,16 @@ export function createM1Projectile(
     body = scene.add.circle(0, 0, 7, 0xffc857, 1);
   }
   return scene.add.container(x, y, [body]).setDepth(1200);
+}
+
+export function createM1WeaponEffect(
+  scene: Phaser.Scene, assetId: "weapon.spin_blade" | "player.dash", x: number, y: number
+): Phaser.GameObjects.Container {
+  const key = assetId as M1AssetId;
+  const body = scene.textures.exists(key)
+    ? scene.add.image(0, 0, key).setScale(assetId === "player.dash" ? 2.2 : 2.8)
+    : scene.add.circle(0, 0, assetId === "player.dash" ? 14 : 24, 0xffc857, 0.7);
+  return scene.add.container(x, y, [body]).setDepth(1300);
 }
 
 export function updateM1HealthBar(

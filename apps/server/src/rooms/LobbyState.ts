@@ -7,22 +7,24 @@ export const PlayerNetworkState = schema({
   y: t.number().default(0),
   health: t.number().default(100),
   maxHealth: t.number().default(100),
-  alive: t.boolean().default(true)
+  alive: t.boolean().default(true),
+  dashActive: t.boolean().default(false),
+  hitProtected: t.boolean().default(false)
 }, "RiftPlayerNetworkState");
 export type PlayerNetworkState = SchemaType<typeof PlayerNetworkState>;
 
 export const EnemyNetworkState = schema({
-  assetId: t.string().default("enemy.slime"),
+  assetId: t.string().default("enemy.rift_swarm"),
   x: t.number().default(0),
   y: t.number().default(0),
   health: t.number().default(40),
-  maxHealth: t.number().default(40),
+  maxHealth: t.number().default(35),
   alive: t.boolean().default(true)
 }, "RiftEnemyNetworkState");
 export type EnemyNetworkState = SchemaType<typeof EnemyNetworkState>;
 
 export const ProjectileNetworkState = schema({
-  weaponId: t.string().default("weapon.arcane_bolt"),
+  weaponId: t.string().default("weapon.fireball"),
   x: t.number().default(0),
   y: t.number().default(0)
 }, "RiftProjectileNetworkState");

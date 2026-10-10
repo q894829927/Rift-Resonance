@@ -1,25 +1,92 @@
 import {
-  ARCANE_BOLT_WEAPON_ID,
-  ENEMY_SLIME_ASSET_ID,
+  ENEMY_BERSERKER_BEAST_ASSET_ID,
+  ENEMY_RIFT_SWARM_ASSET_ID,
+  FIREBALL_PROJECTILE_ASSET_ID,
+  FIREBALL_WEAPON_ID,
+  SPIN_BLADE_ASSET_ID,
+  SPIN_BLADE_WEAPON_ID,
   type CombatEvent,
   type EnemyAssetId,
-  type WeaponId,
   WORLD_VIEW_HEIGHT,
   WORLD_VIEW_WIDTH
 } from "@rift/shared";
 
 export const COMBAT_PLAYER_MAX_HEALTH = 100;
-export const COMBAT_ENEMY_MAX_HEALTH = 40;
-export const COMBAT_ENEMY_SPEED = 55;
-export const COMBAT_ENEMY_COLLISION_RADIUS = 18;
-export const COMBAT_ENEMY_CONTACT_DAMAGE = 4;
+
+// GDD values are kept in the simulation package. Renderer asset paths never enter
+// these definitions, so a visual replacement cannot change authoritative rules.
+export const ENEMY_DEFINITIONS = {
+  rift_swarm: {
+    assetId: ENEMY_RIFT_SWARM_ASSET_ID,
+    maxHealth: 35,
+    moveSpeed: 85,
+    collisionRadius: 18,
+    contactDamage: 8
+  },
+  berserker_beast: {
+    assetId: ENEMY_BERSERKER_BEAST_ASSET_ID,
+    maxHealth: 95,
+    moveSpeed: 100,
+    collisionRadius: 24,
+    contactDamage: 18
+  }
+} as const;
+
+export type EnemyKind = keyof typeof ENEMY_DEFINITIONS;
+export type CombatEnemyAssetId = typeof ENEMY_RIFT_SWARM_ASSET_ID | typeof ENEMY_BERSERKER_BEAST_ASSET_ID;
+export type CombatWeaponId = typeof FIREBALL_WEAPON_ID | typeof SPIN_BLADE_WEAPON_ID;
+
+export const WEAPON_DEFINITIONS = {
+  [FIREBALL_WEAPON_ID]: {
+    id: FIREBALL_WEAPON_ID,
+    cooldownTicks: 17, // 0.85 seconds at 20 Hz
+    damage: 20,
+    range: 520,
+    projectileSpeed: 360,
+    projectileRadius: 7,
+    projectileAssetId: FIREBALL_PROJECTILE_ASSET_ID
+  },
+  [SPIN_BLADE_WEAPON_ID]: {
+    id: SPIN_BLADE_WEAPON_ID,
+    cooldownTicks: 18, // 0.90 seconds at 20 Hz
+    damage: 22,
+    range: 108,
+    fanHalfAngleCos: Math.cos(Math.PI / 4),
+    knockback: 26,
+    projectileAssetId: SPIN_BLADE_ASSET_ID
+  }
+} as const;
+
 export const COMBAT_ENEMY_CONTACT_COOLDOWN_TICKS = 10;
-export const COMBAT_WEAPON_RANGE = 520;
-export const COMBAT_WEAPON_COOLDOWN_TICKS = 10;
-export const COMBAT_PROJECTILE_SPEED = 400;
-export const COMBAT_PROJECTILE_RADIUS = 7;
-export const COMBAT_PROJECTILE_DAMAGE = 10;
+export const COMBAT_ENEMY_SPAWN_INTERVAL_TICKS = 20;
+export const COMBAT_MAX_ACTIVE_ENEMIES = 60;
+export const COMBAT_BERSERKER_EVERY = 5;
+export const COMBAT_BERSERKER_CHARGE_FIRST_TICK = 50;
+export const COMBAT_BERSERKER_CHARGE_COOLDOWN_TICKS = 80;
+export const COMBAT_BERSERKER_CHARGE_WINDUP_TICKS = 6;
+export const COMBAT_BERSERKER_CHARGE_DURATION_TICKS = 8;
+export const COMBAT_BERSERKER_CHARGE_SPEED = 260;
+export const COMBAT_BERSERKER_CHARGE_RANGE = 420;
+
+export const COMBAT_DASH_SPEED = 500;
+export const COMBAT_DASH_DURATION_TICKS = 4; // 0.20 seconds, fixed-tick quantization of the 0.18s GDD target
+export const COMBAT_DASH_INVULNERABLE_TICKS = 3; // 0.15 seconds
+export const COMBAT_DASH_COOLDOWN_TICKS = 100; // 5 seconds
+export const COMBAT_HIT_PROTECTION_TICKS = 9; // 0.45 seconds after accepted damage
+
+export const COMBAT_DEAD_ENTITY_RETENTION_TICKS = 12;
+export const COMBAT_EVENT_RETENTION_TICKS = 20;
+export const COMBAT_ACTION_RETENTION_TICKS = 120;
 export const COMBAT_MAX_EVENTS = 64;
+
+export interface CombatConfig {
+  maxEnemies: number;
+  spawnIntervalTicks: number;
+  berserkerEvery: number;
+  deadEntityRetentionTicks: number;
+  eventRetentionTicks: number;
+  actionRetentionTicks: number;
+}
 
 export interface CombatPlayer {
   readonly sessionId: string;
@@ -30,28 +97,49 @@ export interface CombatPlayer {
   health: number;
   alive: boolean;
   deathTick: number | null;
-  nextWeaponTick: number;
+  readonly weaponIds: readonly CombatWeaponId[];
+  readonly nextWeaponTicks: Map<CombatWeaponId, number>;
+  facingX: number;
+  facingY: number;
+  dashDirectionX: number;
+  dashDirectionY: number;
+  dashActiveUntilTick: number;
+  dashInvulnerableUntilTick: number;
+  hitProtectedUntilTick: number;
+  nextDashTick: number;
 }
+
+export type EnemyBehavior = "chase" | "charge_windup" | "charging";
 
 export interface CombatEnemy {
   readonly id: string;
-  readonly assetId: EnemyAssetId;
+  readonly kind: EnemyKind;
+  readonly assetId: CombatEnemyAssetId;
   x: number;
   y: number;
   readonly maxHealth: number;
   health: number;
   alive: boolean;
   deathTick: number | null;
+  removeAfterTick: number | null;
   targetSessionId: string | null;
   readonly moveSpeed: number;
   readonly collisionRadius: number;
   readonly contactDamage: number;
   nextContactAttackTick: number;
+  behavior: EnemyBehavior;
+  chargeDirectionX: number;
+  chargeDirectionY: number;
+  chargeWindupUntilTick: number;
+  chargeUntilTick: number;
+  nextChargeTick: number;
+  chargeSequence: number;
+  chargeHitTargetId: string | null;
 }
 
 export interface CombatProjectile {
   readonly id: string;
-  readonly weaponId: WeaponId;
+  readonly weaponId: CombatWeaponId;
   readonly sourcePlayerId: string;
   readonly targetEnemyId: string;
   readonly damage: number;
@@ -64,12 +152,16 @@ export interface CombatProjectile {
 export interface CombatWorld {
   tick: number;
   elapsedMs: number;
+  readonly config: CombatConfig;
   readonly players: Map<string, CombatPlayer>;
   readonly enemies: Map<string, CombatEnemy>;
   readonly projectiles: Map<string, CombatProjectile>;
   readonly events: CombatEvent[];
-  readonly processedActionIds: Set<string>;
+  /** Recently accepted action IDs with their tick; pruned to a finite window. */
+  readonly processedActionIds: Map<string, number>;
   initialEnemySpawned: boolean;
+  nextEnemySequence: number;
+  nextEnemySpawnTick: number;
   nextProjectileSequence: number;
   nextEventSequence: number;
 }
@@ -111,22 +203,42 @@ export function emitCombatEvent(
   return created;
 }
 
-export function createInitialEnemy(id = "enemy:slime:1"): CombatEnemy {
+export function createEnemy(
+  id: string,
+  kind: EnemyKind,
+  x: number,
+  y: number
+): CombatEnemy {
+  const definition = ENEMY_DEFINITIONS[kind];
   return {
     id,
-    assetId: ENEMY_SLIME_ASSET_ID,
-    x: INITIAL_ENEMY_POSITION.x,
-    y: INITIAL_ENEMY_POSITION.y,
-    maxHealth: COMBAT_ENEMY_MAX_HEALTH,
-    health: COMBAT_ENEMY_MAX_HEALTH,
+    kind,
+    assetId: definition.assetId,
+    x,
+    y,
+    maxHealth: definition.maxHealth,
+    health: definition.maxHealth,
     alive: true,
     deathTick: null,
+    removeAfterTick: null,
     targetSessionId: null,
-    moveSpeed: COMBAT_ENEMY_SPEED,
-    collisionRadius: COMBAT_ENEMY_COLLISION_RADIUS,
-    contactDamage: COMBAT_ENEMY_CONTACT_DAMAGE,
-    nextContactAttackTick: 0
+    moveSpeed: definition.moveSpeed,
+    collisionRadius: definition.collisionRadius,
+    contactDamage: definition.contactDamage,
+    nextContactAttackTick: 0,
+    behavior: "chase",
+    chargeDirectionX: 0,
+    chargeDirectionY: 0,
+    chargeWindupUntilTick: 0,
+    chargeUntilTick: 0,
+    nextChargeTick: COMBAT_BERSERKER_CHARGE_FIRST_TICK,
+    chargeSequence: 0,
+    chargeHitTargetId: null
   };
+}
+
+export function createInitialEnemy(id = "enemy:rift_swarm:1"): CombatEnemy {
+  return createEnemy(id, "rift_swarm", INITIAL_ENEMY_POSITION.x, INITIAL_ENEMY_POSITION.y);
 }
 
 export function createCombatPlayer(
@@ -144,6 +256,22 @@ export function createCombatPlayer(
     health: COMBAT_PLAYER_MAX_HEALTH,
     alive: true,
     deathTick: null,
-    nextWeaponTick: 0
+    weaponIds: [FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID],
+    nextWeaponTicks: new Map([
+      [FIREBALL_WEAPON_ID, 0],
+      [SPIN_BLADE_WEAPON_ID, 0]
+    ]),
+    facingX: 1,
+    facingY: 0,
+    dashDirectionX: 1,
+    dashDirectionY: 0,
+    dashActiveUntilTick: 0,
+    dashInvulnerableUntilTick: 0,
+    hitProtectedUntilTick: 0,
+    nextDashTick: 0
   };
+}
+
+export function isEnemyAssetId(value: string): value is EnemyAssetId {
+  return value === ENEMY_RIFT_SWARM_ASSET_ID || value === ENEMY_BERSERKER_BEAST_ASSET_ID;
 }

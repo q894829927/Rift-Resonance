@@ -44,14 +44,17 @@ git push origin codex/m1-art-cc0-bootstrap
 - **纹理丢失**：允许退回几何占位，不能影响服务端移动、碰撞和伤害。
 - **严格不变**：服务器 20Hz Tick、10Hz 网络补丁、960×540 逻辑视口、服务端权威判定和玩家预测／插值。
 
-## M1-A 当前启用的稳定 ID
+## M1-B 当前启用的稳定 ID
 
 | 稳定 ID | 当前来源 | 当前用途 | 状态 |
 | --- | --- | --- | --- |
-| `enemy.slime` | Kenney Tiny Dungeon 临时图 | 一个服务器权威追击怪物 | 已接入，仍为显式占位 |
-| `weapon.arcane_bolt` | Kenney Particle Pack `fire_01.png` | 自动攻击弹体与命中事件 | 已接入，等待正式武器图 |
+| `enemy.rift_swarm` | Kenney Tiny Dungeon 临时图 | 裂隙虫群服务器权威追击 | 已接入，仍为显式占位 |
+| `enemy.berserker_beast` | Kenney Tiny Dungeon 临时图 | 狂暴兽蓄力与直线冲锋 | 已接入，仍为显式占位 |
+| `weapon.fireball` | Kenney Particle Pack `fire_01.png` | 服务器追踪火焰弹 | 已接入，等待正式武器图 |
+| `weapon.spin_blade` | Kenney Particle Pack `slash_02.png` | 服务器扇形回旋刃 | 已接入，等待正式武器图 |
+| `player.dash` | Kenney Particle Pack `slash_01.png` | 冲刺轨迹和无敌反馈 | 已接入，效果占位 |
 
-这些 ID 不绑定文件名以外的玩法含义，服务端事件与客户端渲染均通过 ID 传递。第二种怪物、第二种武器和正式动画素材等基础闭环稳定后再加入。
+这些 ID 不绑定文件名以外的玩法含义，服务端事件与客户端渲染均通过 ID 传递。正式动画素材仍在后续统一替换，不改变服务器玩法参数。
 
 ## 后期集中 AI 生成清单（当前均未生成）
 

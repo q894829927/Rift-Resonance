@@ -5,18 +5,19 @@
 ## M1 美术开发策略（开发优先）
 
 当前分支 `codex/m1-art-cc0-bootstrap`：已入库共 473 张 Kenney / Kaishido CC0 PNG 免费素材；
-M1-A 已打通一个追击怪物与一把自动攻击武器的基础战斗闭环。角色、怪物和技能缺口继续由现有精灵、通用粒子或几何占位，不提前生成 AI 图片。
+M1-B 已打通持续刷怪、两种敌人、两种自动攻击武器与服务端权威冲刺的基础生存战斗。角色、怪物和技能缺口继续由现有精灵、通用粒子或几何占位，不提前生成 AI 图片。
 当前仍是基础战斗原型，掉落、共振和复杂内容尚未实现；不应将美术占位误认为正式素材完成。
 
 - 开发/占位登记：[`docs/art/M1-ASSET-PLACEHOLDER-PLAN.md`](docs/art/M1-ASSET-PLACEHOLDER-PLAN.md)
 - M1-A 基础战斗实现：[`docs/technical/M1-A-IMPLEMENTATION.md`](docs/technical/M1-A-IMPLEMENTATION.md)
+- M1-B 持续刷怪实现：[`docs/technical/M1-B-IMPLEMENTATION.md`](docs/technical/M1-B-IMPLEMENTATION.md)
 - 资源映射：[`apps/client/src/art/m1AssetCatalog.ts`](apps/client/src/art/m1AssetCatalog.ts)
 - 作者提供的 Kaishido Dark World v1.0 资源已按 [导入脚本](tools/art/import_dark_world.py) 导入公共资源目录（20 张 PNG，Git LFS）；后续拉取需执行 `git lfs pull`。
 - 原始 M0-F 的真实浏览器弱网/ECS 综合验收后置；保留构建安全检查，优先使 M1 基础战斗可玩。
 
 ## 项目状态
 
-- 当前阶段：**M1-A 单怪物/单武器基础战斗已实现；第二种怪物、第二种武器及长期验收后置**
+- 当前阶段：**M1-B 持续刷怪基础生存战斗已实现；正式动画、F-09/F-10 与长期验收后置**
 - GDD 版本：**V1.0（待原型验证）**
 - 战斗定位：**70% 割草 + 30% 弹幕躲避**
 - 平台：**桌面浏览器优先**
@@ -53,7 +54,7 @@ M1-A 已打通一个追击怪物与一把自动攻击武器的基础战斗闭环
 | 阶段 | 目标 |
 | --- | --- |
 | M0 | 技术验证：双人连接、输入和位置同步 |
-| M1 | 基础战斗：移动、伤害、怪物、自动攻击 |
+| M1 | 基础战斗：持续刷怪、伤害、怪物、自动攻击与冲刺 |
 | M2 | 联机垂直切片：房间、经验、升级、首个共振 |
 | M3 | 构筑：职业、武器、被动、进化与共振 |
 | M4 | 内容闭环：地图、精英、Boss、12 分钟一局 |
@@ -82,7 +83,7 @@ M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机
 
 访问地址仍为 `http://127.0.0.1:5173`，服务端健康接口为 `http://127.0.0.1:2567/health`。
 
-> GDD 数值待游戏原型测试。M1-A 仍是基础战斗原型；公网开放前还需进行依赖安全审查、网络与合规配置。
+> GDD 数值待游戏原型测试。M1-B 仍是基础生存战斗原型；公网开放前还需进行依赖安全审查、网络与合规配置。
 
 ## M0-C 本地验收
 

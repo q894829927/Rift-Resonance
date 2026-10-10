@@ -4,10 +4,15 @@ export interface MovementInput {
   moveX: MoveAxis;
   moveY: MoveAxis;
 }
+export interface CombatInput extends MovementInput {
+  /** Edge-triggered request. The server owns cooldown, direction and duration. */
+  dash: boolean;
+}
 export const PLAYER_MOVE_SPEED = 160;
 export const PLAYER_COLLISION_RADIUS = 22;
 export const MOVE_SEND_HZ = 20;
 export const NEUTRAL_MOVEMENT: Readonly<MovementInput> = Object.freeze({ moveX: 0, moveY: 0 });
+export const NEUTRAL_COMBAT_INPUT: Readonly<CombatInput> = Object.freeze({ moveX: 0, moveY: 0, dash: false });
 
 /** Opposing keys cancel; always emits discrete -1 / 0 / 1 values. */
 export function movementAxis(negative: boolean, positive: boolean): MoveAxis {

@@ -14,23 +14,44 @@ async function waitUntil(check, label, ms = 8000) {
   throw new Error("Timeout: " + label);
 }
 
-test("combat state synchronizes enemy chase, weapon events, health and death", { timeout: 15000 }, async () => {
+test("combat state synchronizes sustained spawning, weapons, health and death", { timeout: 20000 }, async () => {
   const room = await client.create(ROOM_TYPE, { nickname: "Combatant" });
   try {
-    await waitUntil(() => room.state?.enemies?.size === 1, "initial enemy spawn");
-    const enemy = room.state.enemies.get("enemy:slime:1");
-    assert.equal(enemy.assetId, "enemy.slime");
-    assert.equal(enemy.maxHealth, 40);
-    await waitUntil(() => [...room.state.events.values()].some(event => event.type === "weapon.fired"), "weapon event");
+    await waitUntil(() => room.state?.enemies?.size >= 1, "initial enemy spawn");
+    const [enemyId, enemy] = [...room.state.enemies.entries()][0];
+    assert.equal(enemy.assetId, "enemy.rift_swarm");
+    assert.equal(enemy.maxHealth, 35);
+    await waitUntil(() => [...room.state.events.values()].some(event =>
+      event.type === "weapon.fired" && event.assetId === "weapon.fireball"), "fireball event");
+    await waitUntil(() => room.state?.enemies?.size >= 2, "fixed cadence spawn", 3000);
     await waitUntil(() => {
       const player = room.state.players.get(room.sessionId);
       return player?.health === 100 && player.maxHealth === 100 && player.alive === true;
     }, "health projection");
-    await waitUntil(() => room.state.enemies.get("enemy:slime:1")?.alive === false, "enemy death");
+    await waitUntil(() => [...room.state.events.values()].some(event =>
+      event.type === "enemy.died" && event.targetId === enemyId), "enemy death");
     const death = [...room.state.events.values()].find(event =>
-      event.type === "enemy.died" && event.targetId === "enemy:slime:1");
+      event.type === "enemy.died" && event.targetId === enemyId);
     assert.ok(death);
-    assert.equal(room.state.enemies.get("enemy:slime:1").health, 0);
+    assert.equal(death.assetId, "enemy.rift_swarm");
+  } finally {
+    await room.leave();
+  }
+});
+
+test("combat input projects authoritative dash and hit protection", { timeout: 12000 }, async () => {
+  const room = await client.create(ROOM_TYPE, { nickname: "Dasher" });
+  try {
+    await waitUntil(() => room.state?.players?.size === 1, "player projection");
+    const input = room.input();
+    input.data.moveX = 1;
+    input.data.moveY = 0;
+    input.data.dash = true;
+    input.send();
+    input.data.dash = false;
+    await waitUntil(() => [...room.state.events.values()].some(event => event.type === "dash.started"), "dash event");
+    await waitUntil(() => room.state.players.get(room.sessionId)?.dashActive === true, "dash projection");
+    assert.equal(room.state.players.get(room.sessionId).hitProtected, true);
   } finally {
     await room.leave();
   }

@@ -1,5 +1,5 @@
 import { Room, type Client } from "colyseus";
-import { MAX_ROOM_PLAYERS, NETWORK_PATCH_HZ, SIMULATION_TICK_HZ, validateNickname, type MovementInput } from "@rift/shared";
+import { MAX_ROOM_PLAYERS, NETWORK_PATCH_HZ, SIMULATION_TICK_HZ, validateNickname, type CombatInput } from "@rift/shared";
 import {
   addCombatPlayer,
   createCombatWorld,
@@ -33,12 +33,13 @@ export class ScaffoldRoom extends Room {
     this.patchRate = 1000 / NETWORK_PATCH_HZ;
     this.setFixedTimestep((context) => {
       const startedAt = performance.now();
-      const commands = new Map<string, MovementInput>();
+      const commands = new Map<string, CombatInput>();
       for (const sessionId of this.world.players.keys()) {
         const input = this.inputs.get(sessionId).next();
         commands.set(sessionId, {
           moveX: input?.moveX ?? 0,
-          moveY: input?.moveY ?? 0
+          moveY: input?.moveY ?? 0,
+          dash: input?.dash ?? false
         });
       }
       stepCombatWorld(this.world, context.dtMs, commands);

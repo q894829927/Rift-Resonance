@@ -1,46 +1,122 @@
 import {
-  ARCANE_BOLT_PROJECTILE_ASSET_ID,
-  ARCANE_BOLT_WEAPON_ID
+  FIREBALL_PROJECTILE_ASSET_ID,
+  FIREBALL_WEAPON_ID,
+  SPIN_BLADE_ASSET_ID,
+  SPIN_BLADE_WEAPON_ID
 } from "@rift/shared";
-import { emitCombatEvent, distanceSquared, COMBAT_PROJECTILE_DAMAGE, COMBAT_PROJECTILE_RADIUS, COMBAT_PROJECTILE_SPEED, COMBAT_WEAPON_COOLDOWN_TICKS, COMBAT_WEAPON_RANGE, type CombatEnemy, type CombatWorld } from "./types.js";
+import { DamageSystem } from "./damage.js";
+import {
+  clampCombatPosition,
+  distanceSquared,
+  emitCombatEvent,
+  WEAPON_DEFINITIONS,
+  type CombatEnemy,
+  type CombatPlayer,
+  type CombatWorld
+} from "./types.js";
 
-/** A single server-owned automatic weapon for the first M1-A combat loop. */
+/** Server-owned configurable weapons. Definitions contain gameplay only. */
 export class WeaponSystem {
+  constructor(private readonly damage: DamageSystem) {}
+
   step(world: CombatWorld): void {
     for (const player of world.players.values()) {
-      if (!player.alive || world.tick < player.nextWeaponTick) continue;
-      const target = this.nearestEnemy(world, player.x, player.y);
-      if (!target) continue;
-
-      const projectileId = "projectile:arcane-bolt:" + world.nextProjectileSequence;
-      world.nextProjectileSequence++;
-      world.projectiles.set(projectileId, {
-        id: projectileId,
-        weaponId: ARCANE_BOLT_WEAPON_ID,
-        sourcePlayerId: player.sessionId,
-        targetEnemyId: target.id,
-        damage: COMBAT_PROJECTILE_DAMAGE,
-        speed: COMBAT_PROJECTILE_SPEED,
-        radius: COMBAT_PROJECTILE_RADIUS,
-        x: player.x,
-        y: player.y
-      });
-      player.nextWeaponTick = world.tick + COMBAT_WEAPON_COOLDOWN_TICKS;
-      emitCombatEvent(world, {
-        type: "weapon.fired",
-        sourceId: player.sessionId,
-        targetId: target.id,
-        assetId: ARCANE_BOLT_PROJECTILE_ASSET_ID,
-        x: player.x,
-        y: player.y,
-        amount: COMBAT_PROJECTILE_DAMAGE
-      });
+      if (!player.alive) continue;
+      for (const weaponId of player.weaponIds) {
+        const nextTick = player.nextWeaponTicks.get(weaponId) ?? 0;
+        if (world.tick < nextTick) continue;
+        if (weaponId === FIREBALL_WEAPON_ID) {
+          this.fireball(world, player);
+        } else if (weaponId === SPIN_BLADE_WEAPON_ID) {
+          this.spinBlade(world, player);
+        }
+      }
     }
   }
 
-  private nearestEnemy(world: CombatWorld, x: number, y: number): CombatEnemy | null {
+  private fireball(world: CombatWorld, player: CombatPlayer): void {
+    const definition = WEAPON_DEFINITIONS[FIREBALL_WEAPON_ID];
+    const target = this.nearestEnemy(world, player.x, player.y, definition.range);
+    if (!target) return;
+    const projectileId = "projectile:fireball:" + world.nextProjectileSequence++;
+    world.projectiles.set(projectileId, {
+      id: projectileId,
+      weaponId: FIREBALL_WEAPON_ID,
+      sourcePlayerId: player.sessionId,
+      targetEnemyId: target.id,
+      damage: definition.damage,
+      speed: definition.projectileSpeed,
+      radius: definition.projectileRadius,
+      x: player.x,
+      y: player.y
+    });
+    player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, world.tick + definition.cooldownTicks);
+    emitCombatEvent(world, {
+      type: "weapon.fired",
+      sourceId: player.sessionId,
+      targetId: target.id,
+      assetId: FIREBALL_PROJECTILE_ASSET_ID,
+      x: player.x,
+      y: player.y,
+      amount: definition.damage
+    });
+  }
+
+  private spinBlade(world: CombatWorld, player: CombatPlayer): void {
+    const definition = WEAPON_DEFINITIONS[SPIN_BLADE_WEAPON_ID];
+    const facingLength = Math.hypot(player.facingX, player.facingY);
+    const facingX = facingLength > 0 ? player.facingX / facingLength : 1;
+    const facingY = facingLength > 0 ? player.facingY / facingLength : 0;
+    const targets = [...world.enemies.values()]
+      .filter(enemy => enemy.alive && distanceSquared(player, enemy) <= definition.range ** 2)
+      .filter(enemy => {
+        const dx = enemy.x - player.x;
+        const dy = enemy.y - player.y;
+        const length = Math.hypot(dx, dy);
+        return length > 0 && (dx / length) * facingX + (dy / length) * facingY >= definition.fanHalfAngleCos;
+      })
+      .sort((a, b) => a.id.localeCompare(b.id));
+    if (targets.length === 0) return;
+
+    player.nextWeaponTicks.set(SPIN_BLADE_WEAPON_ID, world.tick + definition.cooldownTicks);
+    emitCombatEvent(world, {
+      type: "weapon.fired",
+      sourceId: player.sessionId,
+      targetId: targets[0]!.id,
+      assetId: SPIN_BLADE_ASSET_ID,
+      x: player.x,
+      y: player.y,
+      amount: definition.damage
+    });
+    for (const target of targets) {
+      const applied = this.damage.applyEnemyDamage(world, {
+        actionId: "spin-blade-hit:" + player.sessionId + ":" + world.tick + ":" + target.id,
+        sourceId: player.sessionId,
+        targetId: target.id,
+        amount: definition.damage,
+        assetId: SPIN_BLADE_WEAPON_ID,
+        x: target.x,
+        y: target.y
+      });
+      if (!applied || !target.alive) continue;
+      const dx = target.x - player.x;
+      const dy = target.y - player.y;
+      const length = Math.hypot(dx, dy);
+      if (length > 0) {
+        const next = clampCombatPosition(
+          target.x + (dx / length) * definition.knockback,
+          target.y + (dy / length) * definition.knockback,
+          target.collisionRadius
+        );
+        target.x = next.x;
+        target.y = next.y;
+      }
+    }
+  }
+
+  private nearestEnemy(world: CombatWorld, x: number, y: number, range: number): CombatEnemy | null {
     let nearest: CombatEnemy | null = null;
-    let nearestDistance = COMBAT_WEAPON_RANGE * COMBAT_WEAPON_RANGE;
+    let nearestDistance = range * range;
     for (const enemy of world.enemies.values()) {
       if (!enemy.alive) continue;
       const distance = distanceSquared({x, y}, enemy);

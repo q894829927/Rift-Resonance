@@ -15,7 +15,9 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     y: player.y,
     health: player.health,
     maxHealth: player.maxHealth,
-    alive: player.alive
+    alive: player.alive,
+    dashActive: false,
+    hitProtected: false
   }));
 }
 export function projectMemberLeft(state: LobbyNetworkState, sessionId: string): void {
@@ -62,7 +64,17 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
 
 /** Projects combat snapshots and stable event IDs at the existing 10 Hz patch rate. */
 export function projectCombatState(state: LobbyNetworkState, world: CombatWorld): void {
-  projectMemberPositions(state, world.players.values());
+  for (const member of world.players.values()) {
+    const target = state.players.get(member.sessionId);
+    if (!target) continue;
+    target.x = member.x;
+    target.y = member.y;
+    target.health = member.health;
+    target.maxHealth = member.maxHealth;
+    target.alive = member.alive;
+    target.dashActive = member.alive && world.tick <= member.dashActiveUntilTick;
+    target.hitProtected = member.alive && world.tick <= Math.max(member.dashInvulnerableUntilTick, member.hitProtectedUntilTick);
+  }
 
   const enemyIds = new Set<string>();
   for (const enemy of world.enemies.values()) {

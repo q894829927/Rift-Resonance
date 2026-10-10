@@ -11,6 +11,8 @@ export interface LobbyPlayerView {
   health: number;
   maxHealth: number;
   alive: boolean;
+  dashActive: boolean;
+  hitProtected: boolean;
 }
 export interface EnemyView {
   assetId: string;
@@ -62,6 +64,7 @@ export class LobbyConnection {
   private readonly players = new Map<string, LobbyPlayerView>();
   private readonly seenEventIds = new Set<string>();
   private axes = { moveX: 0, moveY: 0 } as const as {moveX: -1 | 0 | 1; moveY: -1 | 0 | 1};
+  private dashQueued = false;
   private animationFrame: number | undefined;
 
   constructor(
@@ -99,7 +102,9 @@ export class LobbyConnection {
         y: value.y,
         health: value.health,
         maxHealth: value.maxHealth,
-        alive: value.alive
+        alive: value.alive,
+        dashActive: value.dashActive,
+        hitProtected: value.hitProtected
       });
       // Ordinary patches update the decoded schema instance itself. Rendering is
       // driven by Predict.value() once per frame, not by patch-driven DOM rebuilds.
@@ -114,7 +119,9 @@ export class LobbyConnection {
             y: value.y,
             health: value.health,
             maxHealth: value.maxHealth,
-            alive: value.alive
+            alive: value.alive,
+            dashActive: value.dashActive,
+            hitProtected: value.hitProtected
           });
           this.emit();
         }
@@ -160,6 +167,11 @@ export class LobbyConnection {
     this.axes = axes;
   }
 
+  /** The input is edge-triggered; server cooldown and timing remain authoritative. */
+  queueDash(): void {
+    if (this.room) this.dashQueued = true;
+  }
+
   private startPrediction(room: Room): void {
     this.stopInputs();
     const input = room.input();
@@ -202,9 +214,11 @@ export class LobbyConnection {
       // SDK performs acknowledgment-driven rollback/replay; send before reading.
       const steps = predictor.tick(now);
       for (let i = 0; i < steps; i++) {
-        const wire = input.data as { moveX: number; moveY: number };
+        const wire = input.data as { moveX: number; moveY: number; dash: boolean };
         wire.moveX = this.axes.moveX;
         wire.moveY = this.axes.moveY;
+        wire.dash = this.dashQueued;
+        this.dashQueued = false;
         input.send();
       }
 
@@ -227,6 +241,7 @@ export class LobbyConnection {
     if (this.animationFrame !== undefined) window.cancelAnimationFrame(this.animationFrame);
     this.animationFrame = undefined;
     this.axes = { moveX: 0, moveY: 0 };
+    this.dashQueued = false;
   }
 
   get connected(): boolean { return this.room !== null; }
@@ -304,5 +319,6 @@ function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
   if (typeof value !== "object" || value === null) return false;
   const item = value as Record<string, unknown>;
   return typeof item.nickname === "string" && typeof item.x === "number" && typeof item.y === "number" &&
-    typeof item.health === "number" && typeof item.maxHealth === "number" && typeof item.alive === "boolean";
+    typeof item.health === "number" && typeof item.maxHealth === "number" && typeof item.alive === "boolean" &&
+    typeof item.dashActive === "boolean" && typeof item.hitProtected === "boolean";
 }
