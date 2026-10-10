@@ -105,7 +105,15 @@ test("two players receive the same server-owned XP upgrade phase and can resume 
     const bobChoices = JSON.parse(bobPlayer.upgradeChoices);
     assert.ok(aliceChoices.length > 0 && aliceChoices.length <= 3);
     assert.ok(bobChoices.length > 0 && bobChoices.length <= 3);
-    alice.send("upgrade.select", { choiceId: aliceChoices[0].id });
+    assert.equal(aliceChoices[0].id, "upgrade.weapon.spin_blade");
+    alice.send("upgrade.reroll");
+    await waitUntil(() => alice.state.players.get(alice.sessionId)?.upgradeRerollUsed === true,
+      "server reroll projection", 3000);
+    const rerolledChoices = JSON.parse(alice.state.players.get(alice.sessionId).upgradeChoices);
+    assert.equal(rerolledChoices[0].id, "upgrade.weapon.spin_blade");
+    assert.equal(new Set(rerolledChoices.map(c => c.id)).size, rerolledChoices.length);
+    assert.equal(bob.state.players.get(bob.sessionId).upgradeRerollUsed, false);
+    alice.send("upgrade.select", { choiceId: rerolledChoices[0].id });
     bob.send("upgrade.select", { choiceId: bobChoices[0].id });
     await waitUntil(() => alice.state?.phase === "RUNNING" && bob.state?.phase === "RUNNING", "resume after synchronized choices");
     assert.equal(alice.state.players.get(alice.sessionId).upgradeSelected, false);
