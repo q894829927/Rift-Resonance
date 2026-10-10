@@ -3,9 +3,9 @@
  * World coordinates, collision radii, dash distances and network patches remain
  * unchanged. Each scale below is an integer relative to its native PNG frame.
  */
-export const PIXEL_CHARACTER_SCALE = 2;        // 32px source -> 64 world px
+export const PIXEL_CHARACTER_SCALE = 3;        // 32px source -> 96 world px; actual nontransparent figure is smaller
 export const PIXEL_COMMON_ENEMY_SCALE = 3;     // 16px source -> 48 world px
-export const PIXEL_LARGE_ENEMY_SCALE = 5;      // 16px source -> 80 world px
+export const PIXEL_LARGE_ENEMY_SCALE = 6;      // 16px source -> 96 world px
 export const PIXEL_ENVIRONMENT_SCALE = 1;      // source PNGs are already 48-96px
 export const PIXEL_ATLAS_ISLET_SCALE = 2;      // 16px atlas cells -> 32 world px
 
