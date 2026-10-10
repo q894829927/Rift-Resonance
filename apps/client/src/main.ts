@@ -38,7 +38,8 @@ class LobbyScene extends Phaser.Scene {
     for (const [id, player] of this.latestView.players) {
       const label = this.nameLabels.get(id);
       if (!label) continue;
-      const p = projectWorldToViewport(player.x, player.y + 56, this.scale.width, this.scale.height);
+      const pos = this.renderPositions.get(id) ?? player;
+      const p = projectWorldToViewport(pos.x, pos.y + 56, this.scale.width, this.scale.height);
       label.style.left = p.x + "px";
       label.style.top = p.y + "px";
       label.style.fontSize = Math.max(13, Math.min(24, Math.round(17 * p.zoom))) + "px";
@@ -82,6 +83,17 @@ class LobbyScene extends Phaser.Scene {
       // Position changes are applied once per render frame by showPositions().
       // On join, raw authoritative position provides a safe initial fallback.
       if (!this.renderPositions.has(id)) entity.setPosition(player.x, player.y);
+    }
+    this.positionNames();
+  }
+
+  /** Render-only interpolation/prediction, never write positions back to Schema. */
+  showPositions(positions: ReadonlyMap<string, RenderPosition>): void {
+    for (const [id, pos] of positions) {
+      const entity = this.avatars.get(id);
+      if (!entity) continue;
+      entity.setPosition(pos.x, pos.y);
+      this.renderPositions.set(id, pos);
     }
     this.positionNames();
   }
