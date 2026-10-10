@@ -2,6 +2,17 @@
 
 > 像素角色 × 华丽技能特效 × 2～4 人多人合作弹幕 Roguelike
 
+## M1 美术开发策略（开发优先）
+
+当前分支 `codex/m1-art-cc0-bootstrap`：已入库 Kenney CC0 453 张 PNG，先使用这些免费素材；
+角色、怪物和技能缺口全部由现有精灵、通用粒子或几何占位，不提前生成 AI 图片。
+当前仍是联机移动原型，尚未实现权威怪物/伤害/掉落，不应将美术占位误认为战斗功能完成。
+
+- 开发/占位登记：[`docs/art/M1-ASSET-PLACEHOLDER-PLAN.md`](docs/art/M1-ASSET-PLACEHOLDER-PLAN.md)
+- 资源映射：[`apps/client/src/art/m1AssetCatalog.ts`](apps/client/src/art/m1AssetCatalog.ts)
+- 作者提供的 Kaishido Dark World v1.0 资源可按 [导入脚本](tools/art/import_dark_world.py) 放入公共资源目录（20 张 PNG），但**未直接由仓库导入完成**。
+- 原始 M0-F 的真实浏览器弱网/ECS 综合验收后置；保留构建安全检查，优先使 M1 基础战斗可玩。
+
 ## 项目状态
 
 - 当前阶段：**M0-F 验收工具已实现；30 分钟与 ECS 实机验收待执行**
