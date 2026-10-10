@@ -123,7 +123,7 @@ const report = {
   methodology:"Real Colyseus SDK clients over per-client FIFO TCP-delay proxies. Traffic includes game websocket frames after matchmaking baseline. Jitter is delay variation, not packet loss.",
   result:"running"
 };
-const proxies=[], rooms=[], senders=[], observations=[];
+const proxies=[], rooms=[], senders=[], observations=[], endpoints=[];
 let firstMetrics=null, peakRss=0, maxTickP99=0, endedMetrics=null, monitor=null;
 let startedAt=0, endedAt=0;
 
@@ -138,6 +138,7 @@ try {
     const proxy=startProxy();
     const endpoint=await proxy.listen();
     proxies.push(proxy);
+    endpoints.push(endpoint);
     const client=new Client(endpoint);
     const room=i===0
       ?await client.create(ROOM_TYPE,{nickname:"Load"+i})
@@ -159,6 +160,20 @@ try {
   await waitUntil(()=>rooms[0].state.serverTick>=tBefore+3,"tick updates");
   for(let i=0;i<rooms.length;i++) {
     if(rooms[i].input().tickRate!==20) throw new Error("Input tick rate mismatch");
+  }
+  // Probe observed HTTP request/response round-trip through the same proxy.
+  // This is an HTTP probe including processing overhead, not WebSocket gameplay RTT.
+  const observedHttpRtts = [];
+  for(let i=0;i<5;i++){
+    const begin=performance.now();
+    const response=await fetch(endpoints[0]+"/health");
+    if(!response.ok)throw new Error("Health probe failed");
+    await response.arrayBuffer();
+    observedHttpRtts.push(performance.now()-begin);
+  }
+  const httpRttP50=quantile(observedHttpRtts,.5);
+  if(rttMs>=80 && httpRttP50<rttMs*.65){
+    throw new Error("Delay proxy not applying expected round trip delay: "+httpRttP50);
   }
   // Each proxy receives its own matchmaking and WS traffic; connection stats are
   // snapshotted after join so sustained rates exclude asset/room matchmaking.
@@ -252,7 +267,8 @@ try {
   report.measured={
     elapsedSeconds,roomOutBytes,roomInBytes,outKBps,
     inKBps:roomInBytes/1024/elapsedSeconds,
-    clients:traffic, observations,
+    clients:traffic, observations: observations.map(item=>({...item})),
+    observedHttpRttMs:{ samples:observedHttpRtts, p50:httpRttP50, p95:quantile(observedHttpRtts,.95) },
     disconnectedIndex, replacementJoined:rejoined,
     peakServerRssBytes:peakRss||null,
     serverSnapshots:windowStats,
@@ -278,6 +294,8 @@ try {
     impairment:{rttMs,jitterMs},
     downstreamKBps:Number(outKBps.toFixed(2)),
     peakRssMiB:Number((peakRss/1048576).toFixed(1)),
+    cpuSingleCorePercent:Number((report.measured.cpuSingleCorePercent??0).toFixed(2)),
+    observedHttpRttP50Ms:Number(httpRttP50.toFixed(1)),
     tickP95Ms:endedMetrics?.rooms?.[0]?.tickDurationMs?.p95,
     tickP99Ms:endedMetrics?.rooms?.[0]?.tickDurationMs?.p99,
     disconnectedAndRejoined:rejoined
