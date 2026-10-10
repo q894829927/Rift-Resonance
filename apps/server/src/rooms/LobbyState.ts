@@ -8,6 +8,7 @@ export const PlayerNetworkState = schema({
   health: t.number().default(100),
   maxHealth: t.number().default(100),
   alive: t.boolean().default(true),
+  connected: t.boolean().default(true),
   dashActive: t.boolean().default(false),
   hitProtected: t.boolean().default(false),
   ready: t.boolean().default(false),
@@ -32,7 +33,10 @@ export const EnemyNetworkState = schema({
   y: t.number().default(0),
   health: t.number().default(35),
   maxHealth: t.number().default(35),
-  alive: t.boolean().default(true)
+  alive: t.boolean().default(true),
+  behavior: t.string().default("chase"),
+  chargeDirectionX: t.number().default(0),
+  chargeDirectionY: t.number().default(0)
 }, "RiftEnemyNetworkState");
 export type EnemyNetworkState = SchemaType<typeof EnemyNetworkState>;
 
@@ -51,7 +55,8 @@ export const CombatEventNetworkState = schema({
   assetId: t.string().default(""),
   x: t.number().default(0),
   y: t.number().default(0),
-  amount: t.number().default(0)
+  amount: t.number().default(0),
+  rawAmount: t.number().default(0)
 }, "RiftCombatEventNetworkState");
 export type CombatEventNetworkState = SchemaType<typeof CombatEventNetworkState>;
 

@@ -56,6 +56,27 @@ git push origin codex/m1-art-cc0-bootstrap
 
 这些 ID 不绑定文件名以外的玩法含义，服务端事件与客户端渲染均通过 ID 传递。正式动画素材仍在后续统一替换，不改变服务器玩法参数。
 
+## M1-D 当前启用的稳定 ID
+
+| 稳定 ID | 当前来源 | 当前用途 | 状态 |
+|---|---|---|---|
+| `env.dark.tiles` | Kaishido Dark World `Environment/tileset.png` | 祭坛地形底图 | 已接入 CC0 |
+| `env.dark.tree` | Kaishido Dark World `Environment/tree.png` | 场景边缘枯树装饰 | 已接入 CC0；无碰撞 |
+| `env.dark.rock` | Kaishido Dark World `Environment/rock.png` | 场景边缘岩石装饰 | 已接入 CC0；无碰撞 |
+| `env.dark.mushrooms` | Kaishido Dark World `Environment/mushrooms.png` | 场景边缘蘑菇装饰 | 已接入 CC0；无碰撞 |
+| `player.darkworld` | Kaishido Dark World `Character/character_sheet.png` | 玩家原型待机/移动/冲刺/受击帧 | 已接入 CC0；帧语义仍为原型映射 |
+| `vfx.explosion` | Kenney Smoke Particles `Explosion/explosion00.png` | 火焰弹命中、敌人死亡 | 已接入 CC0 |
+| `vfx.smoke` | Kenney Smoke Particles `White puff/whitePuff00.png` | 死亡余烟 | 已接入 CC0 |
+| `vfx.flash` | Kenney Smoke Particles `Flash/flash00.png` | 受击与武器发射反馈 | 已接入 CC0 |
+| `ui.panel.dark` | Kenney UI Pack Adventure `panel_grey_dark.png` | HUD/结算面板 | 已接入 CC0 |
+| `ui.button.primary` / `ui.button.danger` | Kenney UI Pack Adventure 按钮贴图 | 准备、重开、退出按钮 | 已接入 CC0 |
+
+### M1-D 仍为明确占位的内容
+
+- `enemy.rift_swarm`、`enemy.berserker_beast`：继续使用 Kenney Tiny Dungeon 单帧贴图；移动、蓄力、冲锋和死亡表现由几何指示器与 CC0 粒子补足，不宣称为正式动画。
+- `weapon.fireball`、`weapon.spin_blade`、`player.dash`：继续复用 Kenney Particle Pack 单帧图；飞行、扇形方向和冲刺拖尾由客户端表现层补足。
+- 专属角色职业、怪物完整图集、攻击/受击/死亡逐帧动画、音效和共振特效：本阶段未实现，后续可以统一替换；没有新增 AI 素材。
+
 ## 后期集中 AI 生成清单（当前均未生成）
 
 | 稳定 Asset ID / 类型 | 临时来源 | 后期需替换内容 | 优先级 |

@@ -67,15 +67,19 @@ export function addCombatPlayer(world: CombatWorld, sessionId: string, nickname:
   const slot = COMBAT_PLAYER_SPAWNS.findIndex((_, index) => !occupied.has(index));
   if (slot < 0) throw new Error("No spawn slot");
   const spawn = COMBAT_PLAYER_SPAWNS[slot]!;
-  const player = createCombatPlayer(sessionId, nickname, spawn.x, spawn.y);
+  const player = createCombatPlayer(sessionId, nickname, spawn.x, spawn.y, slot);
   world.players.set(sessionId, player);
   const stats: CombatStats = { kills: 0, totalDamage: 0, damageTaken: 0, survivalTicks: 0 };
   world.stats.set(sessionId, stats);
   return player;
 }
 
-export function removeCombatPlayer(world: CombatWorld, sessionId: string): boolean {
+export function removeCombatPlayer(
+  world: CombatWorld,
+  sessionId: string,
+  options: { preserveStats?: boolean } = {}
+): boolean {
   const removed = world.players.delete(sessionId);
-  if (removed) world.stats.delete(sessionId);
+  if (removed && !options.preserveStats) world.stats.delete(sessionId);
   return removed;
 }

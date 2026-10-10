@@ -10,6 +10,7 @@ export interface LobbyPlayerView {
   health: number;
   maxHealth: number;
   alive: boolean;
+  connected: boolean;
   dashActive: boolean;
   hitProtected: boolean;
   ready: boolean;
@@ -33,6 +34,9 @@ export interface EnemyView {
   health: number;
   maxHealth: number;
   alive: boolean;
+  behavior: string;
+  chargeDirectionX: number;
+  chargeDirectionY: number;
 }
 export interface ProjectileView {
   weaponId: string;
@@ -49,6 +53,7 @@ export interface CombatEventView {
   x: number;
   y: number;
   amount: number;
+  rawAmount: number;
 }
 export interface CombatRenderState {
   enemies: ReadonlyMap<string, EnemyView>;
@@ -127,6 +132,7 @@ export class LobbyConnection {
         health: value.health,
         maxHealth: value.maxHealth,
         alive: value.alive,
+        connected: value.connected,
         dashActive: value.dashActive,
         hitProtected: value.hitProtected,
         ready: value.ready,
@@ -149,7 +155,7 @@ export class LobbyConnection {
         if (this.room !== room || !isLobbyPlayerView(value)) return;
         const old = this.players.get(key);
         if (old && (old.nickname !== value.nickname || old.health !== value.health ||
-          old.maxHealth !== value.maxHealth || old.alive !== value.alive ||
+          old.maxHealth !== value.maxHealth || old.alive !== value.alive || old.connected !== value.connected ||
           old.dashActive !== value.dashActive || old.hitProtected !== value.hitProtected ||
           old.ready !== value.ready || old.kills !== value.kills || old.totalDamage !== value.totalDamage ||
           old.damageTaken !== value.damageTaken || old.survivalTicks !== value.survivalTicks)) {
@@ -160,6 +166,7 @@ export class LobbyConnection {
             health: value.health,
             maxHealth: value.maxHealth,
             alive: value.alive,
+            connected: value.connected,
             dashActive: value.dashActive,
             hitProtected: value.hitProtected,
             ready: value.ready,
@@ -363,7 +370,10 @@ export class LobbyConnection {
         y: enemy.y,
         health: enemy.health,
         maxHealth: enemy.maxHealth,
-        alive: enemy.alive
+        alive: enemy.alive,
+        behavior: enemy.behavior,
+        chargeDirectionX: enemy.chargeDirectionX,
+        chargeDirectionY: enemy.chargeDirectionY
       });
     }
 
@@ -420,6 +430,7 @@ function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
   const item = value as Record<string, unknown>;
   return typeof item.nickname === "string" && typeof item.x === "number" && typeof item.y === "number" &&
     typeof item.health === "number" && typeof item.maxHealth === "number" && typeof item.alive === "boolean" &&
+    typeof item.connected === "boolean" &&
     typeof item.dashActive === "boolean" && typeof item.hitProtected === "boolean" &&
     typeof item.ready === "boolean" && typeof item.kills === "number" &&
     typeof item.totalDamage === "number" && typeof item.damageTaken === "number" &&

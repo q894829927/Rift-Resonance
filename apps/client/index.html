@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>异界共振 · M1-C 生存对局</title>
+  <title>异界共振 · M1-D 生存对局</title>
 </head>
 <body>
   <main class="shell">
@@ -11,7 +11,7 @@
       <div>
         <p class="eyebrow">RIFT RESONANCE / M1 VISUAL PROTOTYPE</p>
         <h1>异界共振</h1>
-        <p class="subhead">M1-C 基础生存对局 · CC0 像素角色与地图</p>
+        <p class="subhead">M1-D 基础生存对局 · Dark World 与 Kenney CC0 表现原型</p>
       </div>
       <span id="connection-badge" class="badge">未连接</span>
     </header>
@@ -32,6 +32,12 @@
             <span>击杀 <strong id="hud-kills">0</strong></span>
             <span>伤害 <strong id="hud-damage">0</strong></span>
           </div>
+          <section id="match-banner" class="match-banner" hidden aria-live="assertive">
+            <p id="match-banner-kicker" class="match-banner-kicker"></p>
+            <h2 id="match-banner-title"></h2>
+            <p id="match-banner-summary"></p>
+            <div id="match-banner-stats" class="match-banner-stats"></div>
+          </section>
           <div class="arena-footer">
             <span>WASD / 方向键移动 · 20 Hz 服务端判定</span>
             <span id="tick-monitor">20 Hz 逻辑 · Tick --</span>
@@ -59,7 +65,7 @@
           <button id="leave-room" class="danger">退出房间</button>
         </section>
         <p id="status" class="status" role="status" aria-live="polite">输入昵称后创建房间，或者按房间 ID 加入。</p>
-        <p class="note">M1-C 使用持续刷怪、火焰弹与回旋刃；阶段、计时、战斗判定和战绩均由服务端决定。怪物暂用显式占位素材，房间 ID 并非密码，请勿直接公开部署。</p>
+        <p class="note">M1-D 使用 Dark World、Kenney CC0 和显式占位素材；阶段、计时、战斗判定和战绩均由服务端决定。房间 ID 并非密码，请勿直接公开部署。</p>
       </aside>
     </div>
   </main>

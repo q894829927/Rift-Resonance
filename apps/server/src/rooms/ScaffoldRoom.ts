@@ -83,8 +83,10 @@ export class ScaffoldRoom extends Room {
   }
 
   onLeave(client: Client): void {
-    if (removeCombatPlayer(this.world, client.sessionId)) {
-      projectMemberLeft(this.state, client.sessionId);
+    const preserveResult = this.world.phase !== "LOBBY";
+    const departingStats = this.world.stats.get(client.sessionId);
+    if (removeCombatPlayer(this.world, client.sessionId, { preserveStats: preserveResult })) {
+      projectMemberLeft(this.state, client.sessionId, preserveResult, departingStats);
     }
     if (client.sessionId === this.hostSessionId) {
       this.hostSessionId = this.world.players.keys().next().value ?? "";

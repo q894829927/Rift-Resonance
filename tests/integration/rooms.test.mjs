@@ -49,6 +49,28 @@ test("two players see the same server state and departure", { timeout: 20000 }, 
     await Promise.allSettled(rooms.map(r => r.leave()));
   }
 });
+
+test("host transfer preserves a running player's disconnected result record", { timeout: 20000 }, async () => {
+  const rooms = [];
+  try {
+    const host = await client.create(ROOM_TYPE, { nickname: "Host" });
+    rooms.push(host);
+    const survivor = await client.joinById(host.roomId, { nickname: "Survivor" });
+    rooms.push(survivor);
+    await waitUntil(() => host.state?.players?.size === 2 && survivor.state?.players?.size === 2, "two players");
+    host.send("match.ready", { ready: true });
+    survivor.send("match.ready", { ready: true });
+    await waitUntil(() => survivor.state?.phase === "RUNNING", "combat start");
+    const departedId = host.sessionId;
+    await host.leave();
+    rooms.shift();
+    await waitUntil(() => survivor.state?.hostSessionId === survivor.sessionId, "host transfer");
+    await waitUntil(() => survivor.state?.players?.get(departedId)?.connected === false, "disconnected result record");
+    assert.equal(survivor.state.players.get(departedId)?.alive, false);
+  } finally {
+    await Promise.allSettled(rooms.map(r => r.leave()));
+  }
+});
 test("four players maximum and fifth rejected", { timeout: 20000 }, async () => {
   const rooms = [];
   try {

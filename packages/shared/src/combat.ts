@@ -41,4 +41,6 @@ export interface CombatEvent {
   readonly x: number;
   readonly y: number;
   readonly amount: number;
+  /** Requested damage for damage events; equals amount for other events. */
+  readonly rawAmount: number;
 }

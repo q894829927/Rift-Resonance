@@ -62,24 +62,37 @@ h3 { font-size: 16px; margin: 4px 0 14px; }
   border-radius: 10px; background: rgba(8, 12, 20, .78); color: #d8e8fa;
   font-size: clamp(10px, 1.05vw, 14px); font-variant-numeric: tabular-nums;
   box-shadow: 0 4px 18px rgba(3, 5, 12, .35);
+  background-image: url('/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_dark.png');
+  background-size: 100% 100%;
 }
 .match-hud strong { color: #8ee4f5; }
+.match-banner {
+  width: min(82%, 440px); padding: 22px 28px; border: 2px solid rgba(230, 198, 255, .72);
+  border-radius: 12px; background: rgba(11, 16, 25, .9) url('/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_dark.png') center / 100% 100%;
+  box-shadow: 0 10px 38px rgba(4, 4, 12, .7), 0 0 26px rgba(181,139,255,.2);
+  text-align: center; pointer-events: auto;
+}
+.match-banner[hidden] { display: none; }
+.match-banner-kicker { margin: 0 0 5px; color: #d1a6ff; letter-spacing: .16em; font-size: 11px; }
+.match-banner h2 { margin: 0; color: #f8f2ff; font-size: clamp(23px, 3vw, 35px); }
+.match-banner-summary { margin: 9px 0 0; color: #c5d6e9; font-size: 13px; line-height: 1.5; }
+.match-banner-stats { margin-top: 13px; color: #8ee4f5; font-size: 12px; font-variant-numeric: tabular-nums; }
 .arena-footer {
   display: flex; gap: 10px; flex-wrap: wrap;
   align-items: center; justify-content: center;
   color: #a1b4cc; font-size: clamp(10px, 1.0vw, 14px);
 }
 #tick-monitor { font-variant-numeric: tabular-nums; color: #7ce5c8; }
-.panel { background: #141e2d; border: 1px solid #303b4d; border-radius: 15px; padding: 25px; }
+.panel { background: #141e2d url('/assets/vendor/kenney/ui-pack-adventure/png/panel_grey_dark.png') center / 100% 100%; border: 1px solid #303b4d; border-radius: 15px; padding: 25px; }
 label { display: block; color: #a6b8cc; font-size: 13px; margin: 14px 0 7px; }
 input { width: 100%; border: 1px solid #4b5871; border-radius: 8px; padding: 11px 12px; font: inherit; font-size: 14px; color: #ebf2fb; background: #0b1019; }
 input:focus { outline: 2px solid #b58bff; outline-offset: 2px; }
 button { cursor: pointer; background: #29364a; color: #f0f7ff; border: 1px solid #586580; padding: 11px 14px; border-radius: 8px; font: inherit; font-size: 14px; white-space: nowrap; }
 button:disabled { cursor: not-allowed; opacity: .45; }
-button.primary { background: #5e4285; border-color: #b58bff; width: 100%; margin-top: 12px; }
+button.primary { background: #5e4285 url('/assets/vendor/kenney/ui-pack-adventure/png/button_brown.png') center / 100% 100%; border-color: #b58bff; width: 100%; margin-top: 12px; }
 .join-row { display: flex; gap: 8px; }
 .join-row input { min-width: 0; }
-.danger { color: #ffb7bb; border-color: #914b58; }
+.danger { color: #ffb7bb; border-color: #914b58; background: #592530 url('/assets/vendor/kenney/ui-pack-adventure/png/button_red.png') center / 100% 100%; }
 .details { margin-top: 21px; padding: 16px; border-radius: 10px; background: #0b1019; border: 1px solid #253c55; }
 .details[hidden] { display: none; }
 .details .label { font-size: 12px; overflow-wrap: anywhere; }

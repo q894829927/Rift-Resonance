@@ -117,6 +117,7 @@ export interface CombatStats {
 export interface CombatPlayer {
   readonly sessionId: string;
   readonly nickname: string;
+  readonly spawnSlot: number;
   x: number;
   y: number;
   readonly maxHealth: number;
@@ -223,12 +224,13 @@ export function distanceSquared(a: {x: number; y: number}, b: {x: number; y: num
 
 export function emitCombatEvent(
   world: CombatWorld,
-  event: Omit<CombatEvent, "id" | "tick">
+  event: Omit<CombatEvent, "id" | "tick" | "rawAmount"> & { rawAmount?: number }
 ): CombatEvent {
   const created: CombatEvent = {
     ...event,
     id: "combat-event:" + world.nextEventSequence,
-    tick: world.tick
+    tick: world.tick,
+    rawAmount: event.rawAmount ?? event.amount
   };
   world.nextEventSequence++;
   world.events.push(created);
@@ -278,11 +280,13 @@ export function createCombatPlayer(
   sessionId: string,
   nickname: string,
   x: number,
-  y: number
+  y: number,
+  spawnSlot = 0
 ): CombatPlayer {
   return {
     sessionId,
     nickname,
+    spawnSlot,
     x,
     y,
     maxHealth: COMBAT_PLAYER_MAX_HEALTH,

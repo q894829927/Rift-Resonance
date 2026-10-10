@@ -20,6 +20,10 @@ const particle = (name: string): string =>
   "/assets/vendor/kenney/particle-pack/png/" + name + ".png";
 const adventure = (name: string): string =>
   "/assets/vendor/kenney/ui-pack-adventure/png/" + name + ".png";
+const darkWorld = (folder: string, name: string): string =>
+  "/assets/vendor/kaishido/dark-world-v1/" + folder + "/" + name + ".png";
+const smoke = (folder: string, name: string): string =>
+  "/assets/vendor/kenney/smoke-particles/png/" + folder + "/" + name + ".png";
 
 export const M1_ASSETS = {
   "env.floor": { id: "env.floor", source: "cc0", category: "environment",
@@ -28,6 +32,16 @@ export const M1_ASSETS = {
     url: tiny(0), replacement: "祭坛碎石装饰" },
   "env.rune": { id: "env.rune", source: "cc0", category: "environment",
     url: tiny(19), replacement: "AI 原创共振符文与裂隙核心" },
+  "env.dark.tiles": { id: "env.dark.tiles", source: "cc0", category: "environment",
+    url: darkWorld("Environment", "tileset"), replacement: "Dark World 祭坛地形正式贴图" },
+  "env.dark.tree": { id: "env.dark.tree", source: "cc0", category: "environment",
+    url: darkWorld("Environment", "tree"), replacement: "Dark World 枯树装饰" },
+  "env.dark.rock": { id: "env.dark.rock", source: "cc0", category: "environment",
+    url: darkWorld("Environment", "rock"), replacement: "Dark World 岩石装饰" },
+  "env.dark.mushrooms": { id: "env.dark.mushrooms", source: "cc0", category: "environment",
+    url: darkWorld("Environment", "mushrooms"), replacement: "Dark World 蘑菇装饰" },
+  "player.darkworld": { id: "player.darkworld", source: "cc0", category: "character",
+    url: darkWorld("Character", "character_sheet"), replacement: "正式多方向角色图集，当前仅使用原型帧" },
   "player.guardian": { id: "player.guardian", source: "placeholder", category: "character",
     url: tiny(87), replacement: "守卫：四方向 idle/move/attack/hit/death" },
   "player.mage": { id: "player.mage", source: "placeholder", category: "character",
@@ -62,8 +76,20 @@ export const M1_ASSETS = {
     url: particle("magic_03"), replacement: "静电链折线与分叉闪电" },
   "vfx.resonance": { id: "vfx.resonance", source: "placeholder", category: "effect",
     url: particle("twirl_02"), replacement: "双环火雷超载共振特效" },
+  "vfx.explosion": { id: "vfx.explosion", source: "cc0", category: "effect",
+    url: smoke("Explosion", "explosion00"), replacement: "Kenney 爆炸粒子；当前作为命中/死亡反馈" },
+  "vfx.smoke": { id: "vfx.smoke", source: "cc0", category: "effect",
+    url: smoke("White puff", "whitePuff00"), replacement: "Kenney 烟雾粒子；当前作为死亡余烟" },
+  "vfx.flash": { id: "vfx.flash", source: "cc0", category: "effect",
+    url: smoke("Flash", "flash00"), replacement: "Kenney 闪光粒子；当前作为受击反馈" },
   "ui.frame": { id: "ui.frame", source: "cc0", category: "ui",
-    url: adventure("panel_grey"), replacement: "暗黑哥特 HUD 装饰帧" }
+    url: adventure("panel_grey"), replacement: "暗黑哥特 HUD 装饰帧" },
+  "ui.panel.dark": { id: "ui.panel.dark", source: "cc0", category: "ui",
+    url: adventure("panel_grey_dark"), replacement: "结算面板背景" },
+  "ui.button.primary": { id: "ui.button.primary", source: "cc0", category: "ui",
+    url: adventure("button_brown"), replacement: "准备/重新开始按钮皮肤" },
+  "ui.button.danger": { id: "ui.button.danger", source: "cc0", category: "ui",
+    url: adventure("button_red"), replacement: "退出/失败按钮皮肤" }
 } as const satisfies Record<string, M1AssetSpec>;
 
 export type M1AssetId = keyof typeof M1_ASSETS;

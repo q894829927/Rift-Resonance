@@ -16,6 +16,7 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     health: player.health,
     maxHealth: player.maxHealth,
     alive: player.alive,
+    connected: true,
     dashActive: false,
     hitProtected: false,
     ready: player.ready,
@@ -33,8 +34,25 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     hitProtectionRemainingTicks: player.hitProtectionRemainingTicks
   }));
 }
-export function projectMemberLeft(state: LobbyNetworkState, sessionId: string): void {
-  state.players.delete(sessionId);
+export function projectMemberLeft(
+  state: LobbyNetworkState,
+  sessionId: string,
+  preserveResult: boolean,
+  stats?: {kills: number; totalDamage: number; damageTaken: number; survivalTicks: number}
+): void {
+  const target = state.players.get(sessionId);
+  if (!target || !preserveResult) {
+    state.players.delete(sessionId);
+    return;
+  }
+  target.connected = false;
+  target.alive = false;
+  if (stats) {
+    target.kills = stats.kills;
+    target.totalDamage = stats.totalDamage;
+    target.damageTaken = stats.damageTaken;
+    target.survivalTicks = stats.survivalTicks;
+  }
 }
 
 /** Called by the authoritative fixed world tick, never by raw client messages. */
@@ -47,6 +65,7 @@ export function projectMemberPositions(state: LobbyNetworkState, members: Iterab
     if (target.health !== member.health) target.health = member.health;
     if (target.maxHealth !== member.maxHealth) target.maxHealth = member.maxHealth;
     if (target.alive !== member.alive) target.alive = member.alive;
+    target.connected = true;
     if (target.ready !== member.ready) target.ready = member.ready;
     target.dashActive = member.alive && member.dashRemainingTicks > 0;
     target.hitProtected = member.alive &&
@@ -74,6 +93,9 @@ function projectEnemy(state: LobbyNetworkState, enemy: CombatEnemy): void {
   target.health = enemy.health;
   target.maxHealth = enemy.maxHealth;
   target.alive = enemy.alive;
+  target.behavior = enemy.behavior;
+  target.chargeDirectionX = enemy.chargeDirectionX;
+  target.chargeDirectionY = enemy.chargeDirectionY;
 }
 
 function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectile): void {
@@ -101,6 +123,7 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.health = member.health;
     target.maxHealth = member.maxHealth;
     target.alive = member.alive;
+    target.connected = true;
     target.dashActive = member.alive && member.dashRemainingTicks > 0;
     target.hitProtected = member.alive && (member.dashInvulnerableRemainingTicks > 0 || member.hitProtectionRemainingTicks > 0);
     target.ready = member.ready;
@@ -153,8 +176,17 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.x = event.x;
     target.y = event.y;
     target.amount = event.amount;
+    target.rawAmount = event.rawAmount;
   }
   for (const id of [...state.events.keys()]) {
     if (!eventIds.has(id)) state.events.delete(id);
+  }
+
+  // Keep disconnected result records visible until a restart returns to LOBBY.
+  if (world.phase === "LOBBY") {
+    const activeIds = new Set(world.players.keys());
+    for (const id of [...state.players.keys()]) {
+      if (!activeIds.has(id)) state.players.delete(id);
+    }
   }
 }

@@ -80,6 +80,46 @@ test("damage action IDs make repeated delivery idempotent", () => {
   assert.equal(world.events.filter(event => event.type === "damage.applied" && event.targetId === enemy.id).length, 1);
 });
 
+test("damage statistics separate effective damage from an overkill request", () => {
+  const world = createCombatWorld();
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  player.weaponIds.length = 0;
+  begin(world, player);
+  stepCombatWorld(world, 50);
+  const enemy = world.enemies.get("enemy:rift_swarm:1");
+  assert.ok(enemy);
+  enemy.health = 5;
+  const damage = new DamageSystem();
+  assert.equal(damage.applyEnemyDamage(world, {
+    actionId: "overkill-enemy",
+    sourceId: player.sessionId,
+    targetId: enemy.id,
+    amount: 20,
+    assetId: "weapon.fireball",
+    x: enemy.x,
+    y: enemy.y
+  }), true);
+  const enemyHit = world.events.find(event => event.type === "damage.applied" && event.targetId === enemy.id);
+  assert.equal(enemyHit?.amount, 5);
+  assert.equal(enemyHit?.rawAmount, 20);
+  assert.equal(world.stats.get(player.sessionId)?.totalDamage, 5);
+
+  player.health = 7;
+  assert.equal(damage.applyPlayerDamage(world, {
+    actionId: "overkill-player",
+    sourceId: enemy.id,
+    targetId: player.sessionId,
+    amount: 20,
+    assetId: enemy.assetId,
+    x: player.x,
+    y: player.y
+  }), true);
+  const playerHit = world.events.find(event => event.type === "damage.applied" && event.targetId === player.sessionId);
+  assert.equal(playerHit?.amount, 7);
+  assert.equal(playerHit?.rawAmount, 20);
+  assert.equal(world.stats.get(player.sessionId)?.damageTaken, 7);
+});
+
 test("dead players stop moving and are no longer enemy targets", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
@@ -225,6 +265,18 @@ test("match stays in lobby until ready, then runs on fixed ticks", () => {
   assert.ok(world.enemies.size >= 1);
 });
 
+test("multiplayer match starts only after every active player is ready", () => {
+  const world = createCombatWorld();
+  const alice = addCombatPlayer(world, "player-a", "Alice");
+  const bob = addCombatPlayer(world, "player-b", "Bob");
+  alice.ready = true;
+  assert.equal(startCombatMatch(world), false);
+  assert.equal(world.phase, "LOBBY");
+  bob.ready = true;
+  assert.equal(startCombatMatch(world), true);
+  assert.equal(world.phase, "RUNNING");
+});
+
 test("match wins at the server duration, freezes combat, and enters result", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
@@ -259,6 +311,7 @@ test("all players dead produces a server-owned loss and restart resets the match
   }), true);
   stepCombatWorld(world, 50);
   assert.equal(world.phase, "LOST");
+  assert.equal(resetCombatMatch(world), false);
   for (let i = 0; i < world.config.resultHoldTicks; i++) stepCombatWorld(world, 50);
   assert.equal(world.phase, "RESULT");
   assert.equal(world.enemies.size, 0);
@@ -269,6 +322,53 @@ test("all players dead produces a server-owned loss and restart resets the match
   assert.equal(player.health, player.maxHealth);
   assert.equal(player.ready, false);
   assert.equal(world.events.length, 0);
+});
+
+test("a second match starts from clean spawn, facing, cooldown and statistics", () => {
+  const world = createCombatWorld();
+  world.config.matchDurationTicks = 1;
+  world.config.resultHoldTicks = 1;
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  player.weaponIds.length = 0;
+  begin(world, player);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "WON");
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RESULT");
+
+  player.x = 600;
+  player.y = 490;
+  player.facingX = -1;
+  player.facingY = 1;
+  player.dashDirectionX = -1;
+  player.dashDirectionY = 1;
+  player.dashRemainingTicks = 2;
+  player.dashInvulnerableRemainingTicks = 2;
+  player.dashCooldownRemainingTicks = 80;
+  player.hitProtectionRemainingTicks = 4;
+  player.nextWeaponTicks.set("weapon.fireball", 9999);
+  const stats = world.stats.get(player.sessionId);
+  stats.kills = 4;
+  stats.totalDamage = 77;
+  stats.damageTaken = 18;
+  stats.survivalTicks = 12;
+  assert.equal(resetCombatMatch(world), true);
+  assert.deepEqual({x: player.x, y: player.y}, {x: 265, y: 245});
+  assert.deepEqual({x: player.facingX, y: player.facingY}, {x: 1, y: 0});
+  assert.deepEqual({x: player.dashDirectionX, y: player.dashDirectionY}, {x: 1, y: 0});
+  assert.equal(player.dashRemainingTicks, 0);
+  assert.equal(player.dashInvulnerableRemainingTicks, 0);
+  assert.equal(player.dashCooldownRemainingTicks, 0);
+  assert.equal(player.hitProtectionRemainingTicks, 0);
+  assert.equal(player.nextWeaponTicks.get("weapon.fireball"), 0);
+  assert.deepEqual(world.stats.get(player.sessionId), {kills: 0, totalDamage: 0, damageTaken: 0, survivalTicks: 0});
+
+  player.ready = true;
+  assert.equal(startCombatMatch(world), true);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "WON");
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RESULT");
 });
 
 test("shared movement produces identical dash and correction state for server and client replay", () => {

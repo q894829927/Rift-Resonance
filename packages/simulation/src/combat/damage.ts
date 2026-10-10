@@ -36,6 +36,7 @@ export class DamageSystem {
   }
 
   step(world: CombatWorld, dtSeconds: number): void {
+    if (world.phase !== "RUNNING") return;
     for (const [projectileId, projectile] of world.projectiles) {
       const target = world.enemies.get(projectile.targetEnemyId);
       if (!target || !target.alive) {
@@ -81,10 +82,11 @@ export class DamageSystem {
   }
 
   private applyToPlayer(world: CombatWorld, target: CombatPlayer, request: DamageRequest): boolean {
-    target.health = Math.max(0, target.health - request.amount);
+    const effectiveAmount = Math.min(request.amount, target.health);
+    target.health -= effectiveAmount;
     target.hitProtectionRemainingTicks = COMBAT_HIT_PROTECTION_TICKS;
     const targetStats = world.stats.get(target.sessionId);
-    if (targetStats) targetStats.damageTaken += request.amount;
+    if (targetStats) targetStats.damageTaken += effectiveAmount;
     emitCombatEvent(world, {
       type: "damage.applied",
       sourceId: request.sourceId,
@@ -92,7 +94,8 @@ export class DamageSystem {
       assetId: request.assetId,
       x: request.x,
       y: request.y,
-      amount: request.amount
+      amount: effectiveAmount,
+      rawAmount: request.amount
     });
     if (target.health === 0) {
       target.alive = false;
@@ -111,9 +114,10 @@ export class DamageSystem {
   }
 
   private applyToEnemy(world: CombatWorld, target: CombatEnemy, request: DamageRequest): boolean {
-    target.health = Math.max(0, target.health - request.amount);
+    const effectiveAmount = Math.min(request.amount, target.health);
+    target.health -= effectiveAmount;
     const sourceStats = world.stats.get(request.sourceId);
-    if (sourceStats) sourceStats.totalDamage += request.amount;
+    if (sourceStats) sourceStats.totalDamage += effectiveAmount;
     emitCombatEvent(world, {
       type: "damage.applied",
       sourceId: request.sourceId,
@@ -121,7 +125,8 @@ export class DamageSystem {
       assetId: request.assetId,
       x: request.x,
       y: request.y,
-      amount: request.amount
+      amount: effectiveAmount,
+      rawAmount: request.amount
     });
     if (target.health === 0) {
       target.alive = false;

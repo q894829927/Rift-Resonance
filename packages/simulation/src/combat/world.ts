@@ -20,6 +20,7 @@ import {
   COMBAT_MAX_ACTIVE_ENEMIES,
   COMBAT_RESULT_HOLD_TICKS,
   emitCombatEvent,
+  COMBAT_PLAYER_SPAWNS,
   type CombatPhase,
   type CombatPlayer,
   type CombatStats,
@@ -100,7 +101,9 @@ export function startCombatMatch(world: CombatWorld): boolean {
 }
 
 export function resetCombatMatch(world: CombatWorld): boolean {
-  if (world.phase !== "RESULT" && world.phase !== "WON" && world.phase !== "LOST") return false;
+  // WON/LOST are the five-second result hold. The room can only be restarted
+  // after it reaches RESULT, so every client sees the same terminal phase.
+  if (world.phase !== "RESULT") return false;
   world.enemies.clear();
   world.projectiles.clear();
   world.events.length = 0;
@@ -114,22 +117,25 @@ export function resetCombatMatch(world: CombatWorld): boolean {
   world.matchElapsedTicks = 0;
   world.matchStartTick = null;
   world.resultTick = null;
+  world.stats.clear();
   for (const player of world.players.values()) {
+    const spawn = COMBAT_PLAYER_SPAWNS[player.spawnSlot] ?? COMBAT_PLAYER_SPAWNS[0]!;
+    player.x = spawn.x;
+    player.y = spawn.y;
     player.health = player.maxHealth;
     player.alive = true;
     player.ready = false;
     player.deathTick = null;
+    player.facingX = 1;
+    player.facingY = 0;
+    player.dashDirectionX = 1;
+    player.dashDirectionY = 0;
     player.dashRemainingTicks = 0;
     player.dashInvulnerableRemainingTicks = 0;
     player.dashCooldownRemainingTicks = 0;
     player.hitProtectionRemainingTicks = 0;
-    const stats = world.stats.get(player.sessionId);
-    if (stats) {
-      stats.kills = 0;
-      stats.totalDamage = 0;
-      stats.damageTaken = 0;
-      stats.survivalTicks = 0;
-    }
+    for (const weaponId of player.nextWeaponTicks.keys()) player.nextWeaponTicks.set(weaponId, 0);
+    ensureStats(world, player.sessionId);
   }
   return true;
 }

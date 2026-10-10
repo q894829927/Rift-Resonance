@@ -4,8 +4,12 @@ import {
   renderM1Backdrop,
   createM1EnemyPlaceholder,
   createM1PlayerAvatar,
+  updateM1PlayerAvatar,
   createM1Projectile,
   createM1WeaponEffect,
+  updateM1EnemyVisual,
+  createM1ImpactEffect,
+  createM1DamageNumber,
   updateM1HealthBar
 } from "./art/m1Visuals.js";
 import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
@@ -113,6 +117,7 @@ class LobbyScene extends Phaser.Scene {
       // On join, raw authoritative position provides a safe initial fallback.
       if (!this.renderPositions.has(id)) entity.setPosition(player.x, player.y);
       updateM1HealthBar(entity, player.health, player.maxHealth, player.alive);
+      updateM1PlayerAvatar(entity, player, false);
     }
     this.positionNames();
   }
@@ -122,9 +127,13 @@ class LobbyScene extends Phaser.Scene {
     for (const [id, pos] of positions) {
       const entity = this.avatars.get(id);
       if (!entity) continue;
+      const previous = this.renderPositions.get(id);
       entity.setPosition(pos.x, pos.y);
       entity.setDepth(1000 + pos.y);
       this.renderPositions.set(id, pos);
+      const player = this.latestView?.players.get(id);
+      if (player) updateM1PlayerAvatar(entity, player, previous !== undefined &&
+        Math.hypot(pos.x - previous.x, pos.y - previous.y) > 0.15);
     }
     this.showCombat(combat);
     this.positionNames();
@@ -149,6 +158,7 @@ class LobbyScene extends Phaser.Scene {
       entity.setPosition(enemy.x, enemy.y);
       entity.setDepth(1000 + enemy.y);
       updateM1HealthBar(entity, enemy.health, enemy.maxHealth, enemy.alive);
+      updateM1EnemyVisual(entity, enemy);
     }
 
     for (const [id, entity] of this.projectiles) {
@@ -172,23 +182,44 @@ class LobbyScene extends Phaser.Scene {
         const slash = createM1WeaponEffect(this, "weapon.spin_blade", event.x, event.y);
         this.tweens.add({targets: slash, angle: 120, alpha: 0, scale: 1.35, duration: 180,
           onComplete: () => slash.destroy()});
+      } else if (event.type === "weapon.fired" && event.assetId === "weapon.fireball") {
+        const flash = createM1ImpactEffect(this, "vfx.flash", event.x, event.y, 0xffc857);
+        this.tweens.add({targets: flash, alpha: 0, scale: 1.35, duration: 120,
+          onComplete: () => flash.destroy()});
       } else if (event.type === "dash.started") {
         const dash = createM1WeaponEffect(this, "player.dash", event.x, event.y);
         this.tweens.add({targets: dash, alpha: 0, scale: 1.7, duration: 220,
           onComplete: () => dash.destroy()});
       } else if (event.type === "enemy.charge.started") {
-        const warning = this.add.circle(event.x, event.y, 34, 0xff596d, 0.1)
-          .setStrokeStyle(3, 0xffb45e, 0.95).setDepth(1290);
+        const enemy = combat.enemies.get(event.sourceId);
+        const warning = this.add.container(event.x, event.y).setDepth(1290);
+        const ring = this.add.circle(0, 0, 34, 0xff596d, 0.1)
+          .setStrokeStyle(3, 0xffb45e, 0.95);
+        const arrow = this.add.triangle(0, -40, 0, -18, 10, 0, -10, 0, 0xff596d, 0.88);
+        if (enemy && (enemy.chargeDirectionX !== 0 || enemy.chargeDirectionY !== 0)) {
+          arrow.setRotation(Math.atan2(enemy.chargeDirectionY, enemy.chargeDirectionX) + Math.PI / 2);
+        }
+        warning.add([ring, arrow]);
         this.tweens.add({targets: warning, alpha: 0, scale: 1.8, duration: 300,
           onComplete: () => warning.destroy()});
       } else if (event.type === "damage.applied") {
-        const impact = this.add.circle(event.x, event.y, 10, 0xffd36a, 0.8)
-          .setStrokeStyle(2, 0xffffff, 0.8).setDepth(1300);
+        const impact = createM1ImpactEffect(this,
+          event.sourceId.startsWith("enemy:") ? "vfx.flash" : "vfx.explosion",
+          event.x, event.y, event.sourceId.startsWith("enemy:") ? 0xffe6a8 : 0xffc857);
         this.tweens.add({targets: impact, alpha: 0, scale: 1.8, duration: 180, onComplete: () => impact.destroy()});
+        const number = createM1DamageNumber(this, event.amount, event.x, event.y - 24,
+          event.sourceId.startsWith("enemy:") ? "#ffb7bb" : "#ffe3a3");
+        this.tweens.add({targets: number, y: event.y - 54, alpha: 0, duration: 480,
+          onComplete: () => number.destroy()});
       } else if (event.type === "enemy.died") {
-        const death = this.add.circle(event.x, event.y, 18, 0x9c6cff, 0.15)
-          .setStrokeStyle(3, 0xe0c7ff, 0.9).setDepth(1300);
-        this.tweens.add({targets: death, alpha: 0, scale: 2.2, duration: 300, onComplete: () => death.destroy()});
+        const death = createM1ImpactEffect(this, "vfx.explosion", event.x, event.y, 0xff7e54);
+        const smoke = createM1ImpactEffect(this, "vfx.smoke", event.x, event.y, 0xd3c9ff);
+        this.tweens.add({targets: death, alpha: 0, scale: 1.7, duration: 340, onComplete: () => death.destroy()});
+        this.tweens.add({targets: smoke, y: event.y - 18, alpha: 0, scale: 1.4, duration: 500, onComplete: () => smoke.destroy()});
+      } else if (event.type === "player.died") {
+        const death = createM1ImpactEffect(this, "vfx.smoke", event.x, event.y, 0x9c8cff);
+        this.tweens.add({targets: death, y: event.y - 16, alpha: 0, scale: 1.5, duration: 520,
+          onComplete: () => death.destroy()});
       }
     }
     while (this.handledCombatEventIds.size > 4096) {
@@ -231,6 +262,11 @@ const hudHealth = element<HTMLElement>("hud-health");
 const hudDash = element<HTMLElement>("hud-dash");
 const hudKills = element<HTMLElement>("hud-kills");
 const hudDamage = element<HTMLElement>("hud-damage");
+const matchBanner = element<HTMLElement>("match-banner");
+const matchBannerKicker = element<HTMLElement>("match-banner-kicker");
+const matchBannerTitle = element<HTMLElement>("match-banner-title");
+const matchBannerSummary = element<HTMLElement>("match-banner-summary");
+const matchBannerStats = element<HTMLElement>("match-banner-stats");
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
 const list = element<HTMLUListElement>("players");
@@ -253,11 +289,12 @@ function refreshControls(): void {
   copy.disabled = busy || !connected;
   const view = displayedView;
   const localPlayer = view?.players.get(view.sessionId);
-  readyRoom.disabled = busy || !connected || view?.phase !== "LOBBY";
+  readyRoom.disabled = busy || !connected || view?.phase !== "LOBBY" || localPlayer?.connected !== true;
   readyRoom.textContent = localPlayer?.ready ? "取消准备" : "准备并开始";
-  const finished = view?.phase === "RESULT" || view?.phase === "WON" || view?.phase === "LOST";
+  const finished = view?.phase === "RESULT";
   restartRoom.hidden = !finished;
   restartRoom.disabled = busy || !connected || !finished || view?.hostSessionId !== view?.sessionId;
+  restartRoom.textContent = view?.hostSessionId === view?.sessionId ? "房主重新开始" : "等待房主重新开始";
   details.hidden = !connected;
   badge.textContent = connected ? "已连接" : busy ? "连接中" : "未连接";
   badge.classList.toggle("online", connected);
@@ -270,12 +307,12 @@ function render(view: LobbyView | null): void {
   if (view) {
     roomInput.value = view.roomId;
     idDisplay.textContent = view.roomId;
-    count.textContent = String(view.players.size) + "/" + MAX_ROOM_PLAYERS;
+    count.textContent = String([...view.players.values()].filter(player => player.connected).length) + "/" + MAX_ROOM_PLAYERS;
     list.replaceChildren();
     for (const [sid, player] of view.players) {
       const li = document.createElement("li");
       const health = Math.max(0, Math.ceil(player.health));
-      const state = player.alive ? "HP " + health + "/" + Math.ceil(player.maxHealth) : "已倒下";
+      const state = !player.connected ? "已离开" : player.alive ? "HP " + health + "/" + Math.ceil(player.maxHealth) : "已倒下";
       const ready = view.phase === "LOBBY" ? (player.ready ? " · 已准备" : " · 未准备") : "";
       li.textContent = player.nickname + (sid === view.sessionId ? "（你）" : "") + " · " + state +
         ready + " · 击杀 " + player.kills + " · 伤害 " + Math.round(player.totalDamage);
@@ -283,6 +320,7 @@ function render(view: LobbyView | null): void {
     }
   }
   updateHud(view);
+  updateMatchBanner(view);
   refreshControls();
 }
 
@@ -305,8 +343,9 @@ function updateHud(view: LobbyView | null): void {
   const seconds = Math.ceil(remaining / 20);
   matchTimer.textContent = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" +
     String(seconds % 60).padStart(2, "0");
-  const alive = [...view.players.values()].filter(player => player.alive).length;
-  aliveCount.textContent = alive + "/" + view.players.size;
+  const connectedPlayers = [...view.players.values()].filter(player => player.connected);
+  const alive = connectedPlayers.filter(player => player.alive).length;
+  aliveCount.textContent = alive + "/" + connectedPlayers.length;
   const local = view.players.get(view.sessionId);
   if (!local) return;
   hudHealth.textContent = Math.max(0, Math.ceil(local.health)) + "/" + Math.ceil(local.maxHealth);
@@ -314,6 +353,41 @@ function updateHud(view: LobbyView | null): void {
     ? (local.dashCooldownRemainingTicks / 20).toFixed(1) + "s" : "就绪";
   hudKills.textContent = String(local.kills);
   hudDamage.textContent = String(Math.round(local.totalDamage));
+}
+
+function updateMatchBanner(view: LobbyView | null): void {
+  if (!view || view.phase === "RUNNING") {
+    matchBanner.hidden = true;
+    return;
+  }
+  const local = view.players.get(view.sessionId);
+  const connectedPlayers = [...view.players.values()].filter(player => player.connected);
+  const localStats = local
+    ? "你的战绩：击杀 " + local.kills + " · 有效伤害 " + Math.round(local.totalDamage) +
+      " · 承受 " + Math.round(local.damageTaken)
+    : "战绩由服务端记录";
+  matchBanner.hidden = false;
+  if (view.phase === "LOBBY") {
+    matchBannerKicker.textContent = "LOBBY / READY";
+    matchBannerTitle.textContent = "准备进入裂隙";
+    matchBannerSummary.textContent = connectedPlayers.length + " 名玩家在线；所有在线玩家准备后由服务器开始对局。";
+    matchBannerStats.textContent = "房主负责结算后重新开始，普通玩家可随时取消准备。";
+  } else if (view.phase === "WON") {
+    matchBannerKicker.textContent = "TEAM VICTORY";
+    matchBannerTitle.textContent = "裂隙已稳定";
+    matchBannerSummary.textContent = "队伍完成了四分钟生存目标，正在展示结算结果。";
+    matchBannerStats.textContent = localStats;
+  } else if (view.phase === "LOST") {
+    matchBannerKicker.textContent = "TEAM DEFEATED";
+    matchBannerTitle.textContent = "队伍已失守";
+    matchBannerSummary.textContent = "所有仍在对局中的玩家都已倒下，结算将在短暂停留后开放。";
+    matchBannerStats.textContent = localStats;
+  } else {
+    matchBannerKicker.textContent = "RESULT / SERVER RECORDED";
+    matchBannerTitle.textContent = view.winner === "TEAM" ? "胜利结算" : "失败结算";
+    matchBannerSummary.textContent = "战绩来自服务器；房主可以重新开始，所有玩家需要再次准备。";
+    matchBannerStats.textContent = localStats + " · 连接记录 " + connectedPlayers.length + " 人";
+  }
 }
 /** Keyboard state is sampled at the independent 20 Hz input sender. */
 const heldKeys = new Set<string>();
