@@ -1,0 +1,150 @@
+{
+  "package": "Kaishido Dark World - Free Asset Pack v1.0",
+  "source": "https://kaishido.itch.io/dark-world",
+  "license": "CC0-1.0",
+  "redistribution": "allowed",
+  "original_archive_sha256": "8def28bbe2844b52e7d9a356a3e0ca94ebc72b92d2ead15b204b28d5b6fc8df7",
+  "asset_count": 20,
+  "assets": [
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Character/character_sheet.png",
+      "width": 128,
+      "height": 192,
+      "bytes": 4168,
+      "sha256": "3e60e7287f64b5b0f55abfbfb3c712c8e27bb347f6516df03b7a91554d2ba63c"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Environment/mushrooms.png",
+      "width": 80,
+      "height": 64,
+      "bytes": 1234,
+      "sha256": "8f75e77512f7c1ce2338938c20671a7684ebc5e73ea9b89fb71938121d7fe523"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Environment/rock.png",
+      "width": 48,
+      "height": 32,
+      "bytes": 1019,
+      "sha256": "a9a9458305c8338d1646850c79ffc72c7ea5fac02b2d191047bbd2711507fc5d"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Environment/tileset.png",
+      "width": 80,
+      "height": 48,
+      "bytes": 755,
+      "sha256": "0ee52697209b6d5a5c725e6d2a0cf60b3de4f89b1834d9dde6e7133d71e5eb19"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Environment/tree.png",
+      "width": 80,
+      "height": 96,
+      "bytes": 2450,
+      "sha256": "980812060e1f786bc3b617a2c7635ef0595b3c6c24558a06ac173fec19153614"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_bag_frame.png",
+      "width": 214,
+      "height": 171,
+      "bytes": 1918,
+      "sha256": "503435a1dc43487146c5201027ef977ff2ecad3d6cd8b082dd608905e72f4a42"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_apple.png",
+      "width": 12,
+      "height": 12,
+      "bytes": 371,
+      "sha256": "7bfa064fab0455432645e28c47662875c83ac03f77891d12d07bd1ab87ea0fe5"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_berries.png",
+      "width": 36,
+      "height": 34,
+      "bytes": 1152,
+      "sha256": "abed033348487da2983cc6f964811d90e61f9f15489c1fbeeb91f92b3aeeadfa"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_leaves.png",
+      "width": 12,
+      "height": 12,
+      "bytes": 352,
+      "sha256": "accf83045f6ec9b99997318dffa6a17cc39188fc75bc0bc408be9b8c8ed07cb7"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_mushroom.png",
+      "width": 51,
+      "height": 35,
+      "bytes": 761,
+      "sha256": "1e377055daac98126f92783dd20874a9d201c6c3e3108f0ddee391502c72ac8c"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_nectar_large.png",
+      "width": 11,
+      "height": 31,
+      "bytes": 550,
+      "sha256": "a8b4a5aa5554c47ffcd82cbb6a86ef323193d03b6e0d53a6dfeca247a4579c38"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_nectar_small.png",
+      "width": 12,
+      "height": 12,
+      "bytes": 441,
+      "sha256": "823e1a0565d7c3522fb41459bf9a80f7852a8530a841545452a36fa4e5854dc1"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_item_orb.png",
+      "width": 35,
+      "height": 35,
+      "bytes": 991,
+      "sha256": "1f3d26f46d369641ba8ca9d3f3642742d2d91520f03c5455dabeecccde76dbbf"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_layout_single_slot.png",
+      "width": 20,
+      "height": 20,
+      "bytes": 305,
+      "sha256": "6e524012239a1c7177eb2abd916a5a5e5e7ffe466566dfe75e598713a6b5453f"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_slot_1x1.png",
+      "width": 20,
+      "height": 20,
+      "bytes": 316,
+      "sha256": "91843fda0b1439a120901b1789e0f19662268840c22fe35faeaec2c7e28041de"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_slot_1x2.png",
+      "width": 20,
+      "height": 43,
+      "bytes": 332,
+      "sha256": "6551e9678415194a8344ccf238906c36f735cd381fd92cb33673bbec02a46931"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_slot_2x2.png",
+      "width": 43,
+      "height": 43,
+      "bytes": 372,
+      "sha256": "f0f4907be78ab35366dbbc1a206c22f3805bf61859699a6b4f3af1303645c8a5"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_slot_elbow.png",
+      "width": 43,
+      "height": 43,
+      "bytes": 504,
+      "sha256": "bec00a978ba56260131616bd387f03639abecd2d53fa20174fd83aba9e781b49"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_slot_layout.png",
+      "width": 158,
+      "height": 112,
+      "bytes": 1058,
+      "sha256": "c2c7ce6cd93a0cbcb0e65008b9bf3fc9ca49bd97a13b3323c20b08ba350fa1bf"
+    },
+    {
+      "path": "apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/inventory_slot_mushroom.png",
+      "width": 66,
+      "height": 43,
+      "bytes": 566,
+      "sha256": "1c66e6eeb72a6af3498e765ffdb24d74943bc4b19a44a79d9c583fe77d734abb"
+    }
+  ]
+}
