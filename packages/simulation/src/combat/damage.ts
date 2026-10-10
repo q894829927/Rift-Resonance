@@ -1,8 +1,12 @@
-import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID } from "@rift/shared";
+import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID } from "@rift/shared";
 import {
   COMBAT_HIT_PROTECTION_TICKS,
   COMBAT_FIREBALL_EXPLOSION_RADIUS,
   COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO,
+  COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO,
+  WEAPON_DEFINITIONS,
+  clampCombatPosition,
+  type CombatProjectile,
   emitCombatEvent,
   distanceSquared,
   type CombatEnemy,
@@ -41,6 +45,10 @@ export class DamageSystem {
   step(world: CombatWorld, dtSeconds: number): void {
     if (world.phase !== "RUNNING") return;
     for (const [projectileId, projectile] of world.projectiles) {
+      if (projectile.weaponId === SPIN_BLADE_WEAPON_ID && projectile.returningBlade) {
+        this.advanceReturningBlade(world, projectile, dtSeconds);
+        continue;
+      }
       const target = world.enemies.get(projectile.targetEnemyId);
       if (!target || !target.alive) {
         world.projectiles.delete(projectileId);
@@ -100,6 +108,87 @@ export class DamageSystem {
           projectile.y < -32 || projectile.y > WORLD_VIEW_HEIGHT + 32) {
         world.projectiles.delete(projectileId);
       }
+    }
+  }
+
+  /**
+   * Boomerang out-and-back simulation. Damage occurs only along the swept
+   * segment traveled in a fixed server tick; no damage on weapon launch.
+   */
+  private advanceReturningBlade(world: CombatWorld, projectile: CombatProjectile, dtSeconds: number): void {
+    const flight = projectile.returningBlade!;
+    const owner = world.players.get(projectile.sourcePlayerId);
+    if (!owner?.alive || ++flight.ageTicks > 80) {
+      world.projectiles.delete(projectile.id);
+      return;
+    }
+    const prevX = projectile.x, prevY = projectile.y;
+    const travel = projectile.speed * dtSeconds;
+    let recovered = false;
+    if (flight.phase === "outbound") {
+      flight.outwardDistance = Math.min(flight.maxDistance, flight.outwardDistance + travel);
+      const progress = flight.outwardDistance / flight.maxDistance;
+      // Lateral bow expands by 25% at III, while keeping the outbound tip
+      // directly ahead. Both outgoing and returning motion are visible.
+      const arc = Math.sin(progress * Math.PI) * flight.maxDistance * 0.12 *
+        (flight.arcHalfAngle / (Math.PI / 4)) * flight.arcSign;
+      const projected = clampCombatPosition(
+        flight.startX + flight.directionX * flight.outwardDistance - flight.directionY * arc,
+        flight.startY + flight.directionY * flight.outwardDistance + flight.directionX * arc,
+        projectile.radius
+      );
+      projectile.x = projected.x;
+      projectile.y = projected.y;
+    } else {
+      // Follow the owner's CURRENT position: turning or moving during flight
+      // cannot strand the weapon at the old launch point.
+      const dx = owner.x - projectile.x;
+      const dy = owner.y - projectile.y;
+      const distance = Math.hypot(dx, dy);
+      recovered = distance <= travel + projectile.radius;
+      if (recovered) {
+        projectile.x = owner.x;
+        projectile.y = owner.y;
+      } else if (distance > 0) {
+        projectile.x += dx / distance * travel;
+        projectile.y += dy / distance * travel;
+      }
+    }
+    // Swept segment-circle intersection prevents tunneling at 360 units/s.
+    const leg = flight.phase;
+    const legDamage = leg === "outbound" ? projectile.damage :
+      Math.max(1, Math.round(projectile.damage * COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO));
+    for (const enemy of [...world.enemies.values()].filter(e => e.alive).sort((a,b)=>a.id.localeCompare(b.id))) {
+      if (flight.hitEnemiesThisLeg.has(enemy.id)) continue;
+      if (!segmentHitsCircle(prevX, prevY, projectile.x, projectile.y,
+        enemy.x, enemy.y, enemy.collisionRadius + projectile.radius)) continue;
+      // Mark the collision even if it is rejected, to preserve once-per-leg semantics.
+      flight.hitEnemiesThisLeg.add(enemy.id);
+      const applied = this.applyEnemyDamage(world, {
+        actionId: "boomerang:" + projectile.id + ":" + leg + ":" + enemy.id,
+        sourceId: projectile.sourcePlayerId, targetId: enemy.id,
+        amount: legDamage, assetId: projectile.weaponId,
+        x: enemy.x, y: enemy.y
+      });
+      if (!applied || !enemy.alive) continue;
+      const knockX = enemy.x - owner.x;
+      const knockY = enemy.y - owner.y;
+      const knockLength = Math.hypot(knockX, knockY);
+      if (knockLength > 0) {
+        const knock = WEAPON_DEFINITIONS[SPIN_BLADE_WEAPON_ID].knockback;
+        const next = clampCombatPosition(
+          enemy.x + knockX / knockLength * knock,
+          enemy.y + knockY / knockLength * knock, enemy.collisionRadius
+        );
+        enemy.x = next.x;
+        enemy.y = next.y;
+      }
+    }
+    if (recovered) {
+      world.projectiles.delete(projectile.id);
+    } else if (flight.phase === "outbound" && flight.outwardDistance >= flight.maxDistance) {
+      flight.phase = "returning";
+      flight.hitEnemiesThisLeg.clear();
     }
   }
 
@@ -180,4 +269,17 @@ export class DamageSystem {
 export function collides(a: {x: number; y: number; radius: number}, b: {x: number; y: number; radius: number}): boolean {
   const radius = a.radius + b.radius;
   return distanceSquared(a, b) <= radius * radius;
+}
+
+/** Distance from a point to a travel segment, squared; unit-tested against fast projectiles. */
+export function segmentHitsCircle(
+  ax: number, ay: number, bx: number, by: number,
+  cx: number, cy: number, combinedRadius: number
+): boolean {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1,
+    ((cx - ax) * dx + (cy - ay) * dy) / len2));
+  const ox = cx - (ax + dx * t), oy = cy - (ay + dy * t);
+  return ox * ox + oy * oy <= combinedRadius * combinedRadius;
 }
