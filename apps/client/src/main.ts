@@ -21,6 +21,9 @@ import {
   type MatchSnapshot,
   type RenderPosition
 } from "./network/client.js";
+import {
+  playerNameWorldPoint, PLAYER_NAME_FONT_PX
+} from "./art/m2CombatReadability.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
@@ -69,10 +72,14 @@ class LobbyScene extends Phaser.Scene {
       const label = this.nameLabels.get(id);
       if (!label) continue;
       const pos = this.renderPositions.get(id) ?? player;
-      const p = projectWorldToViewport(pos.x, pos.y + 56, this.scale.width, this.scale.height);
-      label.style.left = p.x + "px";
-      label.style.top = p.y + "px";
-      label.style.fontSize = Math.max(13, Math.min(24, Math.round(17 * p.zoom))) + "px";
+      // Place the name ABOVE the HP bar, not below the player's feet.
+      // Keep text at CSS-pixel size; scaling names with camera zoom made them
+      // excessively large and visually dominant over the actual sprites.
+      const point = playerNameWorldPoint(pos.x, pos.y);
+      const p = projectWorldToViewport(point.x, point.y, this.scale.width, this.scale.height);
+      label.style.left = Math.round(Math.max(25, Math.min(this.scale.width - 25, p.x))) + "px";
+      label.style.top = Math.round(Math.max(15, Math.min(this.scale.height - 15, p.y))) + "px";
+      label.style.fontSize = PLAYER_NAME_FONT_PX + "px";
     }
   }
 
@@ -192,17 +199,12 @@ class LobbyScene extends Phaser.Scene {
         this.tweens.add({targets: dash, alpha: 0, scale: 1.7, duration: 220,
           onComplete: () => dash.destroy()});
       } else if (event.type === "enemy.charge.started") {
-        const enemy = combat.enemies.get(event.sourceId);
-        const warning = this.add.container(event.x, event.y).setDepth(1290);
-        const ring = this.add.circle(0, 0, 34, 0xff596d, 0.1)
-          .setStrokeStyle(3, 0xffb45e, 0.95);
-        const arrow = this.add.triangle(0, -40, 0, -18, 10, 0, -10, 0, 0xff596d, 0.88);
-        if (enemy && (enemy.chargeDirectionX !== 0 || enemy.chargeDirectionY !== 0)) {
-          arrow.setRotation(Math.atan2(enemy.chargeDirectionY, enemy.chargeDirectionX) + Math.PI / 2);
-        }
-        warning.add([ring, arrow]);
-        this.tweens.add({targets: warning, alpha: 0, scale: 1.8, duration: 300,
-          onComplete: () => warning.destroy()});
+        // A small ground pulse marks the beginning; the ongoing locked-direction
+        // hazard lane comes from EnemyView.behavior + authoritative direction.
+        const pulse = this.add.ellipse(event.x, event.y + 12, 44, 22, 0xe66868, 0.16)
+          .setStrokeStyle(2, 0xffba83, 0.82).setDepth(990);
+        this.tweens.add({targets: pulse, alpha: 0, scaleX: 1.8, scaleY: 1.6, duration: 300,
+          onComplete: () => pulse.destroy()});
       } else if (event.type === "damage.applied") {
         const impact = createM1ImpactEffect(this,
           event.sourceId.startsWith("enemy:") ? "vfx.flash" : "vfx.explosion",
