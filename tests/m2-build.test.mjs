@@ -111,20 +111,30 @@ test("fireball level III splashes once on each nearby enemy and never repeats pr
   assert.equal(nearby.health, 23);
 });
 
-test("level III spin blade includes enemies between original 45 and widened 56.25 degrees", () => {
-  const make = level => {
-    const w = makeWorld(), p = addCombatPlayer(w, "a", "Alice");
-    start(w, p);
-    p.weaponIds.splice(0, p.weaponIds.length, "weapon.spin_blade");
-    p.weaponLevels.set("weapon.spin_blade", level);
-    p.facingX = 1; p.facingY = 0;
-    const angle = 50 * Math.PI / 180, dist = 85;
-    const enemy = addEnemy(w, "side", p.x + Math.cos(angle)*dist, p.y+Math.sin(angle)*dist);
-    new WeaponSystem(new DamageSystem()).step(w);
-    return enemy.health;
+test("level III thrown blade widens its outbound lateral travel while retaining damage", () => {
+  const sample = level => {
+    const world = makeWorld(), player = addCombatPlayer(world, "a", "Alice");
+    start(world, player);
+    player.weaponIds.splice(0, player.weaponIds.length, "weapon.spin_blade");
+    player.weaponLevels.set("weapon.spin_blade", level);
+    const enemy = addEnemy(world, "target", player.x + 160, player.y);
+    const weapons = new WeaponSystem(new DamageSystem());
+    weapons.step(world);
+    const blade = [...world.projectiles.values()].find(p => p.weaponId === "weapon.spin_blade");
+    assert.ok(blade?.returningBlade);
+    const initialHealth = enemy.health;
+    // Launch creates an entity, not instantaneous melee damage.
+    assert.equal(enemy.health, initialHealth);
+    for (let i = 0; i < 5; i++) new DamageSystem().step(world, 0.05);
+    return {blade, player, originalHealth: initialHealth, enemy};
   };
-  assert.equal(make(2), 35);
-  assert.ok(make(3) < 35);
+  const level2 = sample(2), level3 = sample(3);
+  const lateral2 = Math.abs(level2.blade.y - level2.player.y);
+  const lateral3 = Math.abs(level3.blade.y - level3.player.y);
+  assert.ok(lateral2 > 0);
+  assert.ok(lateral3 > lateral2);
+  assert.ok(Math.abs(lateral3 / lateral2 - 1.25) < 0.001);
+  assert.ok(level3.blade.returningBlade.outwardDistance > 0);
 });
 
 test("reroll and seeded state reset for the next game after result", () => {
