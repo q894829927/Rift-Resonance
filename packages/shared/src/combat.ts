@@ -21,6 +21,7 @@ export type CombatProjectileAssetId = typeof ARCANE_BOLT_PROJECTILE_ASSET_ID
 
 export type CombatEventType =
   | "weapon.fired"
+  | "weapon.explosion"
   | "damage.applied"
   | "enemy.died"
   | "player.died"
@@ -28,6 +29,7 @@ export type CombatEventType =
   | "experience.awarded"
   | "upgrade.started"
   | "upgrade.resolved"
+  | "upgrade.rerolled"
   | "dash.started"
   | "match.started"
   | "match.won"
