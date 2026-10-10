@@ -11,7 +11,7 @@ const server = defineServer({
   rooms: { [ROOM_TYPE]: defineRoom(ScaffoldRoom) },
   express: (app) => {
     // M0-A 仅供本地开发与部署烟测，不返回敏感信息。
-    app.get("/health", (_req, res) => {
+    app.get("/health", (_req: unknown, res: { json: (payload: object) => void }) => {
       res.json({ status: "ok", service: "rift-server", protocolVersion: PROTOCOL_VERSION });
     });
   }
