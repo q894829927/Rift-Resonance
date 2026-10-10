@@ -50,28 +50,47 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
   floor.fillStyle(0x111820, 1);
   floor.fillRect(0, 0, W, H);
 
-  // Handcrafted procedural cobblestone pattern: variation is deterministic,
-  // sparse, and drawn once. No repeating multi-sprite atlas background.
+  // Irregular slab clusters replace the old one-border-per-32px checkerboard.
+  // All noise is deterministic and drawn only once on the background Graphics.
   for (let row = 0; row < Math.ceil(H / 32); row++) {
     for (let col = 0; col < Math.ceil(W / 32); col++) {
       const h = hash(col, row);
+      const cluster = hash(Math.floor(col / 3), Math.floor(row / 2));
       const x = col * 32;
       const y = row * 32;
-      floor.fillStyle(h % 5 === 0 ? 0x343340 : h % 3 === 0 ? 0x252a36 : 0x222834, 0.64);
-      floor.fillRoundedRect(x + 2, y + 2, 29, 29, 3);
-      floor.lineStyle(1, 0x726778, 0.15);
-      floor.strokeRoundedRect(x + 2, y + 2, 29, 29, 3);
-      if (h % 6 === 0) {
-        floor.lineStyle(1, 0x9b849e, 0.31);
-        floor.lineBetween(x + 7, y + 11, x + 14, y + 14);
-        floor.lineBetween(x + 14, y + 14, x + 19, y + 10);
+      const darkZone = cluster % 7 < 2;
+      const base = darkZone ? 0x151d27 : cluster % 5 === 0 ? 0x26303a : 0x1b2530;
+      floor.fillStyle(base, 1);
+      floor.fillRect(x, y, 32, 32);
+      // Only isolated stones receive seams; most borders now visually merge.
+      if (h % 4 === 0) {
+        floor.fillStyle(cluster % 3 === 0 ? 0x323442 : 0x252d39, 0.74);
+        floor.fillRoundedRect(x + 2, y + 2, h % 2 === 0 ? 27 : 29, 28, 2);
+        floor.lineStyle(1, 0x6f6479, 0.16);
+        floor.strokeRoundedRect(x + 2, y + 2, 28, 28, 2);
+      }
+      if (h % 9 === 0) {
+        floor.lineStyle(1, 0x9d819c, 0.25);
+        floor.lineBetween(x + 5, y + 9, x + 14, y + 13);
+        floor.lineBetween(x + 14, y + 13, x + 19, y + 10);
       }
       if (h % 11 === 0) {
-        floor.fillStyle(0x9b859c, 0.25);
+        floor.fillStyle(0x9d879f, 0.2);
         floor.fillCircle(x + 9, y + 21, 1.2);
         floor.fillCircle(x + 14, y + 23, 1);
       }
     }
+  }
+  // Sparse, short fissures away from the center preserve combat readability.
+  for (let i = 0; i < 20; i++) {
+    const seed = hash(i, 117);
+    const x = 42 + seed % (W - 85);
+    const y = 37 + hash(i, 233) % (H - 75);
+    if (Math.abs(x - W / 2) < 160 && Math.abs(y - H / 2) < 120) continue;
+    const length = 13 + seed % 21;
+    floor.lineStyle(2, 0x71657c, 0.16);
+    floor.lineBetween(x, y, x + Math.floor(length * 0.4), y + 5);
+    floor.lineBetween(x + Math.floor(length * 0.4), y + 5, x + length, y + 2);
   }
 
   // Stronger ground texture contrast is independent of pixel-sprite filtering.
