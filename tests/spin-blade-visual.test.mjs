@@ -1,83 +1,124 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { addCombatPlayer, createCombatWorld, DamageSystem, WeaponSystem, startCombatMatch } from
-  "../packages/simulation/dist/index.js";
-import { createEnemy } from "../packages/simulation/dist/combat/types.js";
+import {readFileSync} from "node:fs";
 import {
-  getSpinBladeArc, getSpinBladeSweepAngles,
-  SPIN_BLADE_SWING_DURATION_MS, SPIN_BLADE_VISUAL_RANGE
-} from "../apps/client/src/art/m2SpinBladeGeometry.ts";
+  addCombatPlayer, createCombatWorld, DamageSystem, WeaponSystem,
+  startCombatMatch, resetCombatMatch
+} from "../packages/simulation/dist/index.js";
+import {
+  createEnemy, COMBAT_SPIN_BLADE_THROW_DISTANCE,
+  COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO, COMBAT_SPIN_BLADE_SPEED,
+} from "../packages/simulation/dist/combat/types.js";
+import {segmentHitsCircle} from "../packages/simulation/dist/combat/damage.js";
 
-const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9,
-  "Expected " + actual + " ~= " + expected);
-
-test("server swing sends its actual facing and level as a reliable event snapshot", () => {
+function setup(targetX = 105) {
   const world = createCombatWorld();
-  const player = addCombatPlayer(world, "caster", "Swordsman");
+  const player = addCombatPlayer(world, "caster", "Thrower");
   player.ready = true;
   assert.equal(startCombatMatch(world), true);
-  player.weaponIds.length = 0;
-  player.weaponIds.push("weapon.spin_blade");
-  player.weaponLevels.set("weapon.spin_blade", 3);
-  player.facingX = 0;
-  player.facingY = -1;
-  const enemy = createEnemy("north", "rift_swarm", player.x, player.y - 75);
+  player.weaponIds.splice(0, player.weaponIds.length, "weapon.spin_blade");
+  player.weaponLevels.set("weapon.spin_blade", 2);
+  const enemy = createEnemy("enemy:target", "berserker_beast", player.x + targetX, player.y);
+  enemy.health = 500;
+  enemy.maxHealth = 500;
   world.enemies.set(enemy.id, enemy);
-  new WeaponSystem(new DamageSystem()).step(world);
-  const attacks = world.events.filter(event =>
-    event.type === "weapon.fired" && event.assetId === "weapon.spin_blade");
-  assert.equal(attacks.length, 1);
-  assert.equal(attacks[0].facingX, 0);
-  assert.equal(attacks[0].facingY, -1);
-  assert.equal(attacks[0].weaponLevel, 3);
-  const hp = enemy.health;
-  player.facingX = 1;
-  player.facingY = 0;
-  player.weaponLevels.set("weapon.spin_blade", 1);
-  assert.equal(attacks[0].facingX, 0);
-  assert.equal(attacks[0].weaponLevel, 3);
-  assert.ok(hp < enemy.maxHealth);
+  const damage = new DamageSystem();
+  const weapons = new WeaponSystem(damage);
+  weapons.step(world);
+  const blades = [...world.projectiles.values()].filter(p => p.weaponId === "weapon.spin_blade");
+  assert.equal(blades.length, 1);
+  return {world, player, enemy, damage, weapons, blade: blades[0]};
+}
+
+test("spin blade launch creates projectile and does not apply instant melee damage", () => {
+  const {world, player, enemy, blade} = setup();
+  assert.equal(enemy.health, 500);
+  assert.equal(blade.x, player.x);
+  assert.equal(blade.y, player.y);
+  assert.equal(blade.returningBlade.phase, "outbound");
+  assert.equal(blade.returningBlade.maxDistance, COMBAT_SPIN_BLADE_THROW_DISTANCE);
+  assert.equal(blade.speed, COMBAT_SPIN_BLADE_SPEED);
+  assert.equal(world.events.filter(e => e.type === "weapon.fired").length, 1);
 });
 
-test("animation fans exactly match the authoritative 90 and 112.5 degree tiers", () => {
-  const lvl1 = getSpinBladeArc(1, 0, 1);
-  const lvl2 = getSpinBladeArc(0, -1, 2);
-  const lvl3 = getSpinBladeArc(1, 0, 3);
-  near(lvl1.endAngle - lvl1.startAngle, Math.PI / 2);
-  near(lvl2.endAngle - lvl2.startAngle, Math.PI / 2);
-  near(lvl2.facingAngle, -Math.PI / 2);
-  near(lvl3.endAngle - lvl3.startAngle, Math.PI * 0.625);
-  near(getSpinBladeArc(-1, 0, 1).facingAngle, Math.PI);
-  near(getSpinBladeArc(0, 0, 1).facingAngle, 0);
-  assert.equal(SPIN_BLADE_VISUAL_RANGE, 108);
-  assert.ok(SPIN_BLADE_SWING_DURATION_MS >= 250);
+test("outbound and returning passes each hit an enemy once, then blade is recovered", () => {
+  const {world, player, enemy, damage, weapons, blade} = setup(95);
+  const id = blade.id;
+  const seenPhases = new Set();
+  const positions = [];
+  // Lock out a second throw so we can observe this exact blade to completion.
+  player.nextWeaponTicks.set("weapon.spin_blade", 100000);
+  for (let i = 0; i < 55 && world.projectiles.has(id); i++) {
+    const p = world.projectiles.get(id);
+    seenPhases.add(p.returningBlade.phase);
+    positions.push({x:p.x, y:p.y});
+    damage.step(world, 0.05);
+  }
+  assert.ok(seenPhases.has("outbound"));
+  assert.ok(seenPhases.has("returning"));
+  assert.ok(positions.some(p => p.x > player.x + 110));
+  assert.equal(world.projectiles.has(id), false, "must be recovered, not linger");
+  const hits = world.events.filter(e => e.type === "damage.applied" &&
+    e.assetId === "weapon.spin_blade" && e.targetId === enemy.id);
+  assert.equal(hits.length, 2);
+  assert.equal(hits[0].amount, blade.damage);
+  assert.equal(hits[1].amount, Math.round(blade.damage * COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO));
+  assert.equal(world.stats.get("caster").totalDamage, hits[0].amount + hits[1].amount);
+  weapons.step(world);
+  assert.equal(world.projectiles.size, 0, "cooldown blocks immediate next throw");
 });
 
-test("the visible crescent progressively sweeps, then fades behind its blade tip", () => {
-  const arc = getSpinBladeArc(0, 1, 3);
-  const first = getSpinBladeSweepAngles(arc, 0);
-  const mid = getSpinBladeSweepAngles(arc, 0.5);
-  const last = getSpinBladeSweepAngles(arc, 1);
-  near(first.headAngle, arc.startAngle);
-  near(mid.headAngle, arc.facingAngle);
-  near(last.headAngle, arc.endAngle);
-  assert.ok(mid.headAngle > mid.tailAngle);
-  assert.ok(last.tailAngle > arc.startAngle);
-  near(getSpinBladeSweepAngles(arc, 2).headAngle, arc.endAngle);
-  near(getSpinBladeSweepAngles(arc, -3).headAngle, arc.startAngle);
+test("a return tracks the player's current location and never creates overlapping same-owner blades", () => {
+  const {world, player, weapons, damage, blade} = setup(100);
+  for (let i = 0; i < 12; i++) {
+    weapons.step(world);
+    assert.equal(world.projectiles.size, 1);
+    damage.step(world, 0.05);
+  }
+  assert.equal(blade.returningBlade.phase, "returning");
+  player.x -= 55;
+  player.y += 40;
+  player.nextWeaponTicks.set("weapon.spin_blade", 100000);
+  for (let i = 0; i < 60 && world.projectiles.has(blade.id); i++) {
+    damage.step(world, 0.05);
+  }
+  assert.equal(world.projectiles.size, 0);
+  assert.ok(Math.hypot(blade.x - player.x, blade.y - player.y) <= blade.radius + 18);
 });
 
-test("client triggers animation from server event rather than local aim or static PNG tween", () => {
+test("server restores no in-flight blades on new run and pauses during upgrade", () => {
+  const {world, damage, blade} = setup();
+  const start = {x:blade.x,y:blade.y};
+  world.phase = "UPGRADING";
+  damage.step(world, 0.05);
+  assert.equal(blade.x, start.x);
+  assert.equal(blade.y, start.y);
+  world.phase = "RUNNING";
+  damage.step(world, 0.05);
+  assert.notEqual(blade.x, start.x);
+  world.phase = "RESULT";
+  assert.equal(resetCombatMatch(world), true);
+  assert.equal(world.projectiles.size, 0);
+});
+
+test("swept segment-circle intersection catches high-speed tunneling", () => {
+  assert.equal(segmentHitsCircle(0, 0, 45, 0, 22, 5, 6), true);
+  assert.equal(segmentHitsCircle(0, 0, 45, 0, 22, 13, 6), false);
+  assert.equal(segmentHitsCircle(0, 0, 45, 0, -20, 0, 6), false);
+  assert.equal(segmentHitsCircle(0, 0, 0, 0, 3, 4, 5), true);
+});
+
+test("client animates a rotating network projectile instead of a near-field slash", () => {
   const read = path => readFileSync(new URL("../" + path, import.meta.url), "utf8");
-  const client = read("apps/client/src/main.ts");
-  const vfx = read("apps/client/src/art/m2SpinBladeVfx.ts");
+  const main = read("apps/client/src/main.ts");
+  const visuals = read("apps/client/src/art/m1Visuals.ts");
   const projection = read("apps/server/src/projection/lobbyProjection.ts");
-  const clientNetwork = read("apps/client/src/network/client.ts");
-  assert.match(client, /playSpinBladeSwing\(this, event\.x, event\.y,[\s\S]*?event\.facingX, event\.facingY, event\.weaponLevel\)/);
-  assert.match(vfx, /getSpinBladeSweepAngles/);
-  assert.match(vfx, /fillPoints\(points, true\)/);
-  assert.match(projection, /target\.facingX = event\.facingX/);
-  assert.match(clientNetwork, /facingX: Number\(event\.facingX/);
-  assert.doesNotMatch(client, /targets: slash, angle: 120/);
+  const client = read("apps/client/src/network/client.ts");
+  assert.match(main, /projectile.weaponId === "weapon.spin_blade"/);
+  assert.match(visuals, /assetId === "weapon.spin_blade"/);
+  assert.match(visuals, /rotation = scene.tweens.add/);
+  assert.match(visuals, /repeat: -1/);
+  assert.match(projection, /target.phase = projectile.returningBlade\?\.phase/);
+  assert.match(client, /phase: projectile.phase \?\? ""/);
+  assert.doesNotMatch(main, /playSpinBladeSwing/);
 });
