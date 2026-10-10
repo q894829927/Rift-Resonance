@@ -56,6 +56,7 @@ export interface EnemyView {
 }
 export interface ProjectileView {
   weaponId: string;
+  phase: string;
   x: number;
   y: number;
 }
@@ -375,6 +376,7 @@ export class LobbyConnection {
     for (const [id, projectile] of state.projectiles ?? []) {
       projectiles.set(id, {
         weaponId: projectile.weaponId,
+        phase: projectile.phase ?? "",
         x: projectile.x,
         y: projectile.y
       });
