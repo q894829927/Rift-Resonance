@@ -200,6 +200,9 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.y = event.y;
     target.amount = event.amount;
     target.rawAmount = event.rawAmount;
+    target.facingX = event.facingX ?? 0;
+    target.facingY = event.facingY ?? 0;
+    target.weaponLevel = event.weaponLevel ?? 0;
   }
   for (const id of [...state.events.keys()]) {
     if (!eventIds.has(id)) state.events.delete(id);
