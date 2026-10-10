@@ -188,6 +188,16 @@ export class DamageSystem {
     } else if (flight.phase === "outbound" && flight.outwardDistance >= flight.maxDistance) {
       flight.phase = "returning";
       flight.hitEnemiesThisLeg.clear();
+      // Server confirms the exact 168-unit apex; 10Hz position patches may
+      // otherwise interpolate past the turnaround before it becomes visible.
+      emitCombatEvent(world, {
+        type: "weapon.returning",
+        sourceId: projectile.sourcePlayerId,
+        targetId: projectile.id,
+        assetId: SPIN_BLADE_WEAPON_ID,
+        x: projectile.x, y: projectile.y,
+        amount: flight.outwardDistance
+      });
     }
   }
 
