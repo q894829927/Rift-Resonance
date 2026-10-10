@@ -46,6 +46,10 @@ export interface CombatEvent {
   readonly x: number;
   readonly y: number;
   readonly amount: number;
+  /** Snapshot of authoritative swing direction and tier at fire time (zero for other events). */
+  readonly facingX?: number;
+  readonly facingY?: number;
+  readonly weaponLevel?: number;
   /** Requested damage for damage events; equals amount for other events. */
   readonly rawAmount: number;
 }
