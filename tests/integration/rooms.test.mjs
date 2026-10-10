@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Client, Callbacks } from "@colyseus/sdk";
-import { ROOM_TYPE } from "../../packages/shared/dist/index.js";
+import { ROOM_TYPE, PLAYER_COLLISION_RADIUS, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT } from "../../packages/shared/dist/index.js";
 
 const client = new Client(process.env.TEST_SERVER_URL || "http://127.0.0.1:2567");
 async function waitUntil(check, label, ms = 5000) {
@@ -149,7 +149,8 @@ test("diagonal movement is not faster than cardinal movement, server clamps edge
     const dx=entity.x-x0,dy=entity.y-y0;
     assert.ok(dx>0 && dy>0,"diagonal intent reaches server");
     assert.ok(Math.hypot(dx,dy)<=160,"diagonal movement speed bounded");
-    assert.ok(entity.x>=22 && entity.x<=938 && entity.y>=22 && entity.y<=518);
+    assert.ok(entity.x >= PLAYER_COLLISION_RADIUS && entity.x <= WORLD_VIEW_WIDTH - PLAYER_COLLISION_RADIUS &&
+      entity.y >= PLAYER_COLLISION_RADIUS && entity.y <= WORLD_VIEW_HEIGHT - PLAYER_COLLISION_RADIUS);
   } finally {
     await Promise.allSettled(rooms.map(r=>r.leave()));
   }
