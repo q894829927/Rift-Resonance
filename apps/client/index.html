@@ -3,79 +3,149 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>异界共振 · M2-A 生存对局</title>
+  <meta name="theme-color" content="#090d16" />
+  <title>异界共振 · Rift Resonance</title>
 </head>
 <body>
-  <main class="shell">
-    <header class="masthead">
-      <div>
-        <p class="eyebrow">RIFT RESONANCE / M2-A SHARED XP</p>
-        <h1>异界共振</h1>
-        <p class="subhead">M2-A 团队共享经验 · Kenney CC0 交互原型</p>
+  <main class="game-shell" id="game-shell" data-ui-phase="LOBBY">
+    <header class="topbar">
+      <div class="brand-lockup" aria-label="异界共振">
+        <span class="brand-sigil" aria-hidden="true">◇</span>
+        <div class="brand-copy">
+          <span class="brand-en">RIFT <span>RESONANCE</span></span>
+          <span class="brand-sub">异界共振 <span class="brand-divider">/</span> THE BROKEN ALTAR</span>
+        </div>
       </div>
-      <span id="connection-badge" class="badge">未连接</span>
+      <div class="topbar-actions">
+        <span id="tick-monitor" class="dev-tick" title="服务器逻辑 Tick">Tick --</span>
+        <span id="connection-badge" class="connection-badge" role="status">未连接</span>
+        <button id="leave-room" class="text-button danger" disabled>退出房间</button>
+      </div>
     </header>
+
     <div class="layout">
-      <section class="arena" aria-label="响应式玩家实体展示区">
-        <div id="app" aria-hidden="true"><div id="player-name-layer" class="player-name-layer"></div></div>
-        <div class="arena-overlay" aria-hidden="true">
-          <div class="arena-heading">
-            <div class="arena-brand">RIFT RESONANCE</div>
-            <div class="arena-subtitle">破碎祭坛 · 持续刷怪与服务器权威生存战斗</div>
+      <section class="arena" aria-label="异界共振游戏场景">
+        <div id="app" aria-hidden="true">
+          <div id="player-name-layer" class="player-name-layer"></div>
+        </div>
+        <div class="arena-vignette" aria-hidden="true"></div>
+        <div class="arena-overlay">
+          <!-- Only shown outside gameplay; no duplicate giant title on the screen. -->
+          <section id="lobby-hero" class="lobby-hero" aria-labelledby="hero-title">
+            <p class="eyebrow">THE RIFT IS AWAKENING</p>
+            <div class="hero-ornament" aria-hidden="true">✦ ─── ◇ ─── ✦</div>
+            <h1 id="hero-title">异界共振</h1>
+            <p class="hero-english">RIFT RESONANCE</p>
+            <p class="hero-description">踏入破碎祭坛，与同伴抵御裂隙怪潮。</p>
+            <p class="hero-caption">最多四人协作 · 四分钟生存挑战</p>
+            <div class="hero-instruction"><span class="hero-dot"></span> 在右侧创建或加入房间，所有队员准备后开始</div>
+          </section>
+
+          <!-- UI bound exclusively to authoritative match snapshots. -->
+          <div id="match-hud" class="match-hud" aria-label="战斗状态">
+            <div class="hud-player">
+              <div class="hud-caption-row">
+                <span id="team-level" class="hud-level">Lv 1</span>
+                <span class="hud-caption">生命 <strong id="hud-health">--</strong></span>
+              </div>
+              <div class="bar health-track" role="presentation"><span id="hud-health-fill" class="bar-fill health-fill"></span></div>
+              <div class="xp-caption"><span>团队经验</span><span id="team-xp-label">0 / 50</span></div>
+              <div class="bar xp-track" role="presentation"><span id="team-xp-fill" class="bar-fill xp-fill"></span></div>
+            </div>
+            <div class="hud-match">
+              <span id="match-phase" class="match-phase">等待准备</span>
+              <strong id="match-timer" class="match-timer">04:00</strong>
+              <span class="match-caption">破碎祭坛 · 生存挑战</span>
+            </div>
+            <div class="hud-score">
+              <span class="hud-caption">存活 <strong id="alive-count">0/0</strong></span>
+              <span class="hud-caption">击杀 <strong id="hud-kills">0</strong></span>
+              <span class="hud-caption">伤害 <strong id="hud-damage">0</strong></span>
+            </div>
           </div>
-          <div id="match-hud" class="match-hud" aria-live="polite">
-            <span id="match-phase">大厅</span>
-            <span>团队 <strong id="team-level">Lv 1</strong></span>
-            <span class="team-xp" aria-label="团队经验"><span id="team-xp-fill"></span></span>
-            <span>剩余 <strong id="match-timer">--:--</strong></span>
-            <span>存活 <strong id="alive-count">0/0</strong></span>
-            <span>HP <strong id="hud-health">--</strong></span>
-            <span>冲刺 <strong id="hud-dash">就绪</strong></span>
-            <span>击杀 <strong id="hud-kills">0</strong></span>
-            <span>伤害 <strong id="hud-damage">0</strong></span>
+
+          <div id="combat-dock" class="combat-dock" aria-label="技能状态">
+            <div class="skill-slot">
+              <span class="skill-symbol fire" aria-hidden="true">✹</span>
+              <span id="skill-slot-1" class="skill-name">火焰弹</span>
+              <span class="skill-key">自动</span>
+            </div>
+            <div class="skill-slot">
+              <span class="skill-symbol blade" aria-hidden="true">⚔</span>
+              <span id="skill-slot-2" class="skill-name">未解锁</span>
+              <span class="skill-key">自动</span>
+            </div>
+            <div class="skill-slot dash-slot">
+              <span class="skill-symbol dash" aria-hidden="true">➤</span>
+              <span class="skill-name">冲刺</span>
+              <span id="hud-dash" class="skill-key">Shift · 就绪</span>
+            </div>
           </div>
-          <section id="upgrade-panel" class="upgrade-panel" hidden aria-live="assertive">
-            <p class="upgrade-kicker">TEAM LEVEL UP</p>
-            <h2>选择团队升级</h2>
-            <p id="upgrade-status">等待队友选择 · 10 秒后服务器自动选择</p>
+
+          <section id="upgrade-panel" class="upgrade-panel" role="dialog"
+            aria-modal="true" aria-labelledby="upgrade-heading" hidden>
+            <p class="modal-eyebrow">TEAM LEVEL UP</p>
+            <h2 id="upgrade-heading">共振之力觉醒</h2>
+            <div class="modal-divider" aria-hidden="true">✦ ─── ◇ ─── ✦</div>
+            <p id="upgrade-status" aria-live="polite">选择一项能力，等待队友确认</p>
             <div id="upgrade-choices" class="upgrade-choices"></div>
           </section>
-          <section id="match-banner" class="match-banner" hidden aria-live="assertive">
-            <p id="match-banner-kicker" class="match-banner-kicker"></p>
+
+          <section id="match-banner" class="match-banner" role="dialog"
+            aria-modal="true" aria-labelledby="match-banner-title" hidden>
+            <p id="match-banner-kicker" class="modal-eyebrow">RESULT</p>
             <h2 id="match-banner-title"></h2>
-            <p id="match-banner-summary"></p>
-            <div id="match-banner-stats" class="match-banner-stats"></div>
+            <div class="modal-divider" aria-hidden="true">✦ ─── ◇ ─── ✦</div>
+            <p id="match-banner-summary" class="result-summary"></p>
+            <div id="match-banner-stats" class="result-stats"></div>
+            <button id="restart-room" class="gold-button" hidden>开启下一场挑战</button>
+            <p class="result-hint">由服务器结算 · 返回大厅后可再次准备</p>
           </section>
+
           <div class="arena-footer">
-            <span>WASD / 方向键移动 · 20 Hz 服务端判定</span>
-            <span id="tick-monitor">20 Hz 逻辑 · Tick --</span>
+            <span class="game-controls">WASD / 方向键移动 <span class="control-divider">·</span> Shift 冲刺</span>
+            <span class="arena-location">THE BROKEN ALTAR</span>
           </div>
         </div>
       </section>
-      <aside class="panel">
-        <h2>联机大厅</h2>
-        <label for="nickname">玩家昵称</label>
-        <input id="nickname" maxlength="16" placeholder="2～16 个字符" value="旅行者" autocomplete="nickname"/>
-        <button id="create-room" class="primary">创建新房间</button>
-        <label for="room-id-input">房间 ID</label>
-        <div class="join-row">
-          <input id="room-id-input" placeholder="粘贴好友的房间 ID" spellcheck="false"/>
-          <button id="join-room">加入</button>
+
+      <aside class="panel" id="lobby-panel" aria-labelledby="lobby-heading">
+        <div class="panel-heading">
+          <p class="eyebrow">ADVENTURER'S HALL</p>
+          <h2 id="lobby-heading">集结队伍</h2>
+          <p>建立房间，邀请伙伴踏入裂隙。</p>
         </div>
-        <section id="room-details" class="details" hidden>
-          <h3>当前房间</h3>
-          <p class="label">房间 ID：<code id="current-room-id"></code></p>
-          <button id="copy-room-id">复制房间 ID</button>
-          <p>人数：<strong id="player-count">0/4</strong></p>
-          <ul id="players" class="player-list" aria-live="polite"></ul>
-          <button id="ready-room" class="primary">准备并开始</button>
-          <button id="restart-room" hidden>重新开始</button>
-          <button id="leave-room" class="danger">退出房间</button>
-        </section>
-        <p id="status" class="status" role="status" aria-live="polite">输入昵称后创建房间，或者按房间 ID 加入。</p>
-        <p class="note">M1-D 使用 Dark World、Kenney CC0 和显式占位素材；阶段、计时、战斗判定和战绩均由服务端决定。房间 ID 并非密码，请勿直接公开部署。</p>
+
+        <div class="panel-body">
+          <label for="nickname">冒险者名称</label>
+          <input id="nickname" maxlength="16" placeholder="输入你的昵称" value="旅行者" autocomplete="nickname"/>
+          <button id="create-room" class="gold-button">创建冒险房间 <span aria-hidden="true">↗</span></button>
+
+          <div class="separator"><span>或使用房间邀请码</span></div>
+          <label for="room-id-input">房间 ID</label>
+          <div class="join-row">
+            <input id="room-id-input" placeholder="输入好友分享的房间 ID" spellcheck="false" autocomplete="off"/>
+            <button id="join-room" class="outline-button">加入</button>
+          </div>
+
+          <section id="room-details" class="room-details" hidden aria-label="当前房间">
+            <div class="room-details-title"><h3>当前队伍</h3><strong id="player-count">0/4</strong></div>
+            <div class="room-code">
+              <span>邀请代码</span><code id="current-room-id"></code>
+              <button id="copy-room-id" class="copy-button" title="复制房间 ID">复制</button>
+            </div>
+            <ul id="players" class="player-list" aria-live="polite"></ul>
+            <button id="ready-room" class="gold-button">准备出发</button>
+          </section>
+          <p id="status" class="status" role="status" aria-live="polite">尚未连接 · 创建房间或输入邀请码</p>
+        </div>
+        <p class="panel-footnote">免费 CC0 美术原型 <span>·</span> 服务器权威战斗</p>
       </aside>
     </div>
+    <footer class="site-footer">
+      <span>RIFT RESONANCE <span class="footer-dim">· M2 UI PROTOTYPE</span></span>
+      <span>游戏开发版本 · 美术资产持续完善中</span>
+    </footer>
   </main>
   <script type="module" src="/src/main.ts"></script>
 </body>
