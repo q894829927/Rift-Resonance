@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { MAX_ROOM_PLAYERS, PROTOCOL_VERSION } from "@rift/shared";
+import { MAX_ROOM_PLAYERS, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom } from "@rift/shared";
 import { LobbyConnection, getServerEndpoint, type LobbyView } from "./network/client.js";
 import "./style.css";
 
@@ -8,15 +8,20 @@ class LobbyScene extends Phaser.Scene {
   constructor() { super("LobbyScene"); }
   create(): void {
     this.cameras.main.setBackgroundColor("#111b2a");
-    this.add.text(480, 70, "RIFT RESONANCE", {
-      fontFamily: "Arial, sans-serif", fontSize: "36px", fontStyle: "bold", color: "#e8f4ff"
-    }).setOrigin(0.5);
-    this.add.text(480, 120, "M0-B 房间同步 / Protocol v" + PROTOCOL_VERSION, {
-      fontFamily: "Arial, sans-serif", fontSize: "17px", color: "#a9b8d4"
-    }).setOrigin(0.5);
-    this.add.text(480, 515, "固定出生点展示 · M0-C 才会实现移动", {
-      fontFamily: "Arial, sans-serif", fontSize: "15px", color: "#8eabc1"
-    }).setOrigin(0.5);
+    this.fitCamera();
+    this.scale.on("resize", this.fitCamera, this);
+    this.events.once("shutdown", () => {
+      this.scale.off("resize", this.fitCamera, this);
+    });
+  }
+
+  /** The canvas tracks real CSS size; camera maps the same fixed world to every viewport. */
+  private fitCamera(): void {
+    const width = Math.max(1, this.scale.width);
+    const height = Math.max(1, this.scale.height);
+    const zoom = calculateCameraZoom(width, height);
+    this.cameras.main.setZoom(zoom);
+    this.cameras.main.centerOn(WORLD_VIEW_WIDTH / 2, WORLD_VIEW_HEIGHT / 2);
   }
 
   showLobby(view: LobbyView | null): void {
@@ -42,7 +47,14 @@ class LobbyScene extends Phaser.Scene {
 }
 
 const scene = new LobbyScene();
-new Phaser.Game({ type: Phaser.AUTO, parent: "app", width: 960, height: 540, scene: [scene] });
+new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: "app",
+  scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT },
+  resolution: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
+  pixelArt: true,
+  scene: [scene]
+});
 
 function element<T extends HTMLElement>(id: string): T {
   const e = document.getElementById(id);
@@ -58,6 +70,7 @@ const copy = element<HTMLButtonElement>("copy-room-id");
 const badge = element<HTMLElement>("connection-badge");
 const details = element<HTMLElement>("room-details");
 const status = element<HTMLElement>("status");
+const tickMonitor = element<HTMLElement>("tick-monitor");
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
 const list = element<HTMLUListElement>("players");
@@ -82,6 +95,7 @@ function refreshControls(): void {
 }
 function render(view: LobbyView | null): void {
   displayedView = view;
+  if (!view) tickMonitor.textContent = "20 Hz 逻辑 · Tick --";
   connected = view !== null;
   if (scene.scene && scene.scene.isActive()) scene.showLobby(view);
   if (view) {
@@ -103,6 +117,8 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
 }, (message) => {
   render(null);
   showStatus(message, true);
+}, (tick) => {
+  tickMonitor.textContent = "20 Hz 逻辑 · Tick " + tick;
 });
 async function start(action: () => Promise<void>): Promise<void> {
   if (busy || connected) return;

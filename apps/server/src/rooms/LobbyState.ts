@@ -10,6 +10,7 @@ export type PlayerNetworkState = SchemaType<typeof PlayerNetworkState>;
 
 export const LobbyNetworkState = schema({
   phase: t.string().default("LOBBY"),
+  serverTick: t.number().default(0),
   players: t.map(PlayerNetworkState)
 }, "RiftLobbyNetworkState");
 export type LobbyNetworkState = SchemaType<typeof LobbyNetworkState>;

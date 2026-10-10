@@ -33,6 +33,10 @@ test("two players see the same server state and departure", { timeout: 20000 }, 
     assert.equal(a.state.players.get(a.sessionId)?.nickname, "Alice");
     assert.equal(b.state.players.get(b.sessionId)?.nickname, "Bob");
     assert.equal(a.state.phase, "LOBBY");
+    await waitUntil(() => a.state.serverTick >= 4 && b.state.serverTick >= 4, "synced fixed world tick");
+    const tickBefore = a.state.serverTick;
+    await waitUntil(() => a.state.serverTick >= tickBefore + 4, "continued tick progress");
+    assert.ok(b.state.serverTick > 0);
     const pa = a.state.players.get(a.sessionId);
     const pb = b.state.players.get(b.sessionId);
     assert.notDeepEqual([pa.x, pa.y], [pb.x, pb.y]);

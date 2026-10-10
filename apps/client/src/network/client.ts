@@ -19,7 +19,12 @@ export class LobbyConnection {
   private readonly client: Client;
   private room: Room | null = null;
   private readonly players = new Map<string, LobbyPlayerView>();
-  constructor(endpoint: string, private onView: LobbyListener, private onDropped: (message: string) => void) {
+  constructor(
+    endpoint: string,
+    private onView: LobbyListener,
+    private onDropped: (message: string) => void,
+    private onTick: (tick: number) => void = () => {}
+  ) {
     this.client = new Client(endpoint);
   }
 
@@ -54,6 +59,9 @@ export class LobbyConnection {
     });
     callbacks.listen("phase", () => {
       if (this.room === room) this.emit();
+    });
+    callbacks.listen("serverTick", (value: unknown) => {
+      if (this.room === room && typeof value === "number") this.onTick(value);
     });
     room.onLeave((code: number) => {
       if (this.room !== room) return;

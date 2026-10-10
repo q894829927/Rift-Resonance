@@ -1,7 +1,7 @@
 name: Rift Resonance Verify
 on:
   push:
-    branches: [main, codex/m0-b-room-state]
+    branches: [main, codex/m0-c-fixedtick-responsive]
   pull_request:
   workflow_dispatch:
 

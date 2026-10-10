@@ -3,20 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>异界共振 · M0-B</title>
+  <title>异界共振 · M0-C</title>
 </head>
 <body>
   <main class="shell">
     <header class="masthead">
       <div>
-        <p class="eyebrow">RIFT RESONANCE / M0-B</p>
+        <p class="eyebrow">RIFT RESONANCE / M0-C</p>
         <h1>异界共振</h1>
-        <p class="subhead">多人房间与玩家状态同步 · 暂无移动和战斗</p>
+        <p class="subhead">独立固定 Tick · 自适应游戏画面 · 房间同步</p>
       </div>
       <span id="connection-badge" class="badge">未连接</span>
     </header>
     <div class="layout">
-      <section class="arena" aria-label="玩家实体展示区"><div id="app"></div></section>
+      <section class="arena" aria-label="响应式玩家实体展示区">
+        <div id="app" aria-hidden="true"></div>
+        <div class="arena-overlay" aria-hidden="true">
+          <div class="arena-heading">
+            <div class="arena-brand">RIFT RESONANCE</div>
+            <div class="arena-subtitle">M0-C 固定模拟 / Protocol v1</div>
+          </div>
+          <div class="arena-footer">
+            <span>固定出生点 · M0-D 才会实现移动</span>
+            <span id="tick-monitor">20 Hz 逻辑 · Tick --</span>
+          </div>
+        </div>
+      </section>
       <aside class="panel">
         <h2>联机大厅</h2>
         <label for="nickname">玩家昵称</label>
@@ -36,7 +48,7 @@
           <button id="leave-room" class="danger">退出房间</button>
         </section>
         <p id="status" class="status" role="status" aria-live="polite">输入昵称后创建房间，或者按房间 ID 加入。</p>
-        <p class="note">房间 ID 并非密码。M0-B 仅供本地测试，不要直接公开部署。</p>
+        <p class="note">房间 ID 并非密码。当前仅供本地测试，不要直接公开部署。</p>
       </aside>
     </div>
   </main>
