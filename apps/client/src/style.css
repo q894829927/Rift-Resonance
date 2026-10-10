@@ -260,6 +260,15 @@ button:focus-visible, input:focus-visible {
 }
 .upgrade-choice strong { font-size: 14px; }
 .upgrade-choice small { font-size: 10px; color: #ad95bf; }
+.upgrade-description { display: block; font-size: 11px; color: #dfd2df;
+  line-height: 1.5; min-height: 34px; }
+.upgrade-actions { display: flex; justify-content: center; align-items: center;
+  flex-wrap: wrap; gap: 12px; margin: 13px auto 0; }
+.upgrade-actions .outline-button { padding: 9px 14px; min-height: 36px; flex: none; }
+#upgrade-reroll-hint { color: #a89ab5; font-size: 10px; }
+.build-summary { margin-top: 15px; padding: 10px; border-top: 1px solid #544764;
+  color: #dec39a; font-size: 11px; line-height: 1.55; }
+
 .result-stats { font-variant-numeric: tabular-nums; margin: 15px 0 20px; padding: 13px; border: 1px solid #4e445b; border-radius: 6px; color: #f5d8a5; background: rgba(8,12,19,.7); font-size: 13px; }
 #restart-room { min-width: 206px; margin: 0 auto; }
 .result-hint { font-size: 10px; color: #857b95; margin: 15px 0 0; }
