@@ -1,4 +1,4 @@
-name: M0-B Verify
+name: Rift Resonance Verify
 on:
   push:
     branches: [main, codex/m0-b-room-state]
@@ -9,15 +9,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Resolve direct dependency lock (temporary on feature branch)
-        run: npm install --package-lock-only --ignore-scripts
-      - name: Install
+          cache: npm
+      - name: Install locked dependencies
         run: npm ci
       - name: Build and unit tests
         run: npm run verify
@@ -37,15 +36,5 @@ jobs:
           node -e 'const d=require("/tmp/rift-health.json");if(d.status!=="ok"||d.protocolVersion!==1)process.exit(1)'
           grep -q '异界共振' /tmp/rift-index.html
           npm run test:integration
-      - name: Production dependency audit
+      - name: Production dependency audit (high severity gate)
         run: npm audit --omit=dev --audit-level=high
-      - name: Persist lock on feature branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/m0-b-room-state'
-        run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore(m0-b): update npm dependency lock"
-            git push origin HEAD:codex/m0-b-room-state
-          fi
