@@ -235,9 +235,12 @@ new Phaser.Game({
   type: Phaser.AUTO,
   parent: "app",
   scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT, expandParent: false },
-  // Smooth vector placeholder shapes. Future pixel sprites can be individually
-  // configured for nearest-neighbor filtering without degrading circular UI.
-  pixelArt: false,
+  // Pixel-art assets use nearest-neighbor sampling, not bilinear blur.
+  // Keep the 960x540 world-fit camera so CSS nameplates, server edges and
+  // multiplayer predictions stay aligned on every desktop viewport.
+  pixelArt: true,
+  antialias: false,
+  roundPixels: true,
   scene: [scene]
 });
 
