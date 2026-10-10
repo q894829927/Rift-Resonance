@@ -147,8 +147,9 @@ export class LobbyConnection {
       // SDK performs acknowledgment-driven rollback/replay; send before reading.
       const steps = predictor.tick(now);
       for (let i = 0; i < steps; i++) {
-        input.data.moveX = this.axes.moveX;
-        input.data.moveY = this.axes.moveY;
+        const wire = input.data as { moveX: number; moveY: number };
+        wire.moveX = this.axes.moveX;
+        wire.moveY = this.axes.moveY;
         input.send();
       }
 
