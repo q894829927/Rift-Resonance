@@ -283,6 +283,9 @@ const matchBannerStats = element<HTMLElement>("match-banner-stats");
 const upgradePanel = element<HTMLElement>("upgrade-panel");
 const upgradeStatus = element<HTMLElement>("upgrade-status");
 const upgradeChoices = element<HTMLElement>("upgrade-choices");
+const upgradeReroll = element<HTMLButtonElement>("upgrade-reroll");
+const upgradeRerollHint = element<HTMLElement>("upgrade-reroll-hint");
+const buildSummary = element<HTMLElement>("build-summary");
 let renderedUpgradeKey = "";
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
@@ -401,13 +404,30 @@ function updateUpgradePanel(view: LobbyView | null): void {
   if (!local) {
     upgradeStatus.textContent = "等待服务器同步升级选项";
     upgradeChoices.replaceChildren();
+    upgradeReroll.disabled = true;
     return;
   }
   upgradeStatus.textContent = local.upgradeSelected
-    ? "已提交选择，等待其他在线玩家（服务器将按时结算）"
-    : "请选择一项；未选择时服务器会自动采用第一项";
+    ? "已提交选择，等待队友（超时由服务器自动选择）"
+    : "请选择一项强化；升级阶段战斗计时暂停";
+  upgradeReroll.disabled = local.upgradeSelected || local.upgradeRerollUsed ||
+    local.upgradeChoices.length === 0;
+  upgradeReroll.textContent = local.upgradeRerollUsed ? "本局已重抽" : "重新抽取（1 次机会）";
+  upgradeRerollHint.textContent = local.upgradeRerollUsed
+    ? "重抽次数已用完" : "由服务器抽取新候选，同一局仅可重抽一次";
+  const weapons = local.weaponIds.map(id =>
+    (id === "weapon.fireball" ? "火焰弹" : id === "weapon.spin_blade" ? "回旋刃" : id) +
+    " Lv" + (local.weaponLevels[id] ?? 1));
+  const passives = Object.entries(local.passiveLevels)
+    .filter(([, lvl]) => lvl > 0)
+    .map(([id, level]) => (id === "passive.rage" ? "狂怒之心" :
+      id === "passive.swift_cast" ? "迅捷施法" :
+      id === "passive.fortitude" ? "坚韧体魄" : id) + " " + level + "级");
+  buildSummary.textContent = "当前构筑：" + [...weapons, ...passives].join(" · ");
   const renderKey = [view.upgradeId, local.upgradeSelected ? "selected" : "pending",
-    ...local.upgradeChoices.map(choice => choice.id + ":" + choice.label)].join("|");
+    local.upgradeRerollUsed ? "rerolled" : "fresh",
+    ...local.upgradeChoices.map(choice =>
+      choice.id + ":" + choice.nextLevel + ":" + choice.description)].join("|");
   if (renderedUpgradeKey === renderKey) return;
   renderedUpgradeKey = renderKey;
   upgradeChoices.replaceChildren();
@@ -418,15 +438,18 @@ function updateUpgradePanel(view: LobbyView | null): void {
     const title = document.createElement("strong");
     title.textContent = choice.label;
     const kind = document.createElement("small");
-    kind.textContent = choice.kind === "new_weapon" ? "新武器" :
-      choice.kind === "weapon_upgrade" ? "武器强化" :
-      choice.kind === "passive" ? "被动强化" : choice.kind;
-    button.append(title, kind);
+    kind.textContent = (choice.kind === "weapon_unlock" ? "解锁武器" :
+      choice.kind === "weapon_power" ? "武器强化" : "被动") +
+      " · " + choice.nextLevel + "级";
+    const description = document.createElement("span");
+    description.className = "upgrade-description";
+    description.textContent = choice.description;
+    button.append(kind, title, description);
     button.addEventListener("click", () => connection.selectUpgrade(choice.id));
     upgradeChoices.append(button);
   }
   if (local.upgradeChoices.length === 0) {
-    upgradeStatus.textContent = "当前没有可用升级，等待服务器恢复战斗";
+    upgradeStatus.textContent = "当前无可选强化，等待服务器恢复战斗";
   }
 }
 
@@ -546,6 +569,12 @@ readyRoom.addEventListener("click", () => {
   if (player) connection.setReady(!player.ready);
 });
 restartRoom.addEventListener("click", () => connection.restartMatch());
+upgradeReroll.addEventListener("click", () => {
+  const view = displayedView;
+  const player = view?.players.get(view.sessionId);
+  if (view?.phase === "UPGRADING" && player &&
+      !player.upgradeSelected && !player.upgradeRerollUsed) connection.rerollUpgrade();
+});
 leave.addEventListener("click", async () => {
   if (busy || !connected) return;
   busy = true;
