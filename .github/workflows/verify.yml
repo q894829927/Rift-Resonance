@@ -9,16 +9,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      # 发生受控的直接依赖变更时刷新 lock；之后 npm ci 进行严格复现。
-      - name: Resolve dependency lock
-        run: npm install --package-lock-only --ignore-scripts
-      - name: Install dependencies
+          cache: npm
+      - name: Install locked dependencies
         run: npm ci
       - name: Verify types, build and core tests
         run: npm run verify
@@ -41,20 +39,3 @@ jobs:
           grep -q '异界共振' /tmp/rift-index.html
       - name: Production dependency audit (high severity gate)
         run: npm audit --omit=dev --audit-level=high
-      - name: Persist initial lock on feature branch only
-        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/m0-a-scaffold'
-        run: |
-          if ! git ls-files --error-unmatch package-lock.json >/dev/null 2>&1 || ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore(m0-a): lock npm dependency tree"
-            git push origin HEAD:codex/m0-a-scaffold
-          fi
-      - name: Archive dependency lock
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: m0-a-package-lock
-          path: package-lock.json
-          if-no-files-found: ignore
