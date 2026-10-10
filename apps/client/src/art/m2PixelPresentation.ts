@@ -1,9 +1,9 @@
 /**
  * M2-UI-B: visual-only pixel presentation rules.
- * World coordinates, collision radii, dash distances and network patches remain
- * unchanged. Each scale below is an integer relative to its native PNG frame.
+ * This file defines visual scale only; shared movement.ts owns the
+ * player collision radius (16 world units). Each scale is integer to avoid blur.
  */
-export const PIXEL_CHARACTER_SCALE = 3;        // 32px source -> 96 world px; actual nontransparent figure is smaller
+export const PIXEL_CHARACTER_SCALE = 2;        // 32px source -> 64 world px; actual figure is smaller
 export const PIXEL_COMMON_ENEMY_SCALE = 3;     // 16px source -> 48 world px
 export const PIXEL_LARGE_ENEMY_SCALE = 6;      // 16px source -> 96 world px
 export const PIXEL_ENVIRONMENT_SCALE = 1;      // source PNGs are already 48-96px
