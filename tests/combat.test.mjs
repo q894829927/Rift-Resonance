@@ -186,7 +186,7 @@ test("berserker emits a charge warning and enters the charge state", () => {
   assert.ok(enemy.chargeSequence >= 1);
 });
 
-test("spin blade uses its fan and configurable damage, while dash is authoritative and protected", () => {
+test("spin blade launches returning projectile and dash remains authoritative and protected", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
   player.weaponIds.push("weapon.spin_blade");
