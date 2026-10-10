@@ -29,6 +29,9 @@ export {
 export {
   advanceCombatUpgrade,
   applyCombatUpgrade,
+  rerollCombatUpgrade,
+  draftCombatUpgradeChoices,
+  nextUpgradeRandom,
   awardEnemyExperience,
   experienceRewardForEnemy,
   experienceThresholdForLevel,
