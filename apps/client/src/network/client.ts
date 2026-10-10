@@ -40,14 +40,16 @@ export class LobbyConnection {
     this.room = room;
     this.players.clear();
     const callbacks = Callbacks.get(room);
-    callbacks.onAdd("players", (player: LobbyPlayerView, sessionId: string) => {
-      if (this.room !== room) return;
+    callbacks.onAdd("players", (value: unknown, key: unknown) => {
+      if (this.room !== room || typeof key !== "string" || !isLobbyPlayerView(value)) return;
+      const player = value;
+      const sessionId = key;
       this.players.set(sessionId, { nickname: player.nickname, x: player.x, y: player.y });
       this.emit();
     });
-    callbacks.onRemove("players", (_player: LobbyPlayerView, sessionId: string) => {
-      if (this.room !== room) return;
-      this.players.delete(sessionId);
+    callbacks.onRemove("players", (_player: unknown, key: unknown) => {
+      if (this.room !== room || typeof key !== "string") return;
+      this.players.delete(key);
       this.emit();
     });
     callbacks.listen("phase", () => {
@@ -59,7 +61,7 @@ export class LobbyConnection {
       this.players.clear();
       this.onDropped("房间连接已关闭，代码：" + code);
     });
-    room.onError((code: number, message: string) => {
+    room.onError((code: number, message?: string) => {
       if (this.room === room) this.onDropped("网络异常：" + code + " " + message);
     });
     this.emit();
@@ -92,4 +94,10 @@ export function getServerEndpoint(): string {
   const env = import.meta.env.VITE_SERVER_URL as string | undefined;
   if (env?.trim()) return env.trim();
   return window.location.protocol + "//" + window.location.hostname + ":2567";
+}
+
+function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
+  if (typeof value !== "object" || value === null) return false;
+  const item = value as Record<string, unknown>;
+  return typeof item.nickname === "string" && typeof item.x === "number" && typeof item.y === "number";
 }
