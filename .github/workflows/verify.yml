@@ -23,6 +23,26 @@ jobs:
         run: npm ci
       - name: Verify types, build and core tests
         run: npm run verify
+      - name: Smoke test server and static client
+        run: |
+          set -euo pipefail
+          npm run start -w @rift/server > /tmp/rift-server.log 2>&1 &
+          SERVER_PID=$!
+          npm run preview -w @rift/client -- --port 4173 > /tmp/rift-client.log 2>&1 &
+          CLIENT_PID=$!
+          trap 'kill "$SERVER_PID" "$CLIENT_PID" 2>/dev/null || true; cat /tmp/rift-server.log; cat /tmp/rift-client.log' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:2567/health -o /tmp/rift-health.json &&
+               curl --fail --silent http://127.0.0.1:4173/ -o /tmp/rift-index.html; then
+              break
+            fi
+            sleep 1
+          done
+          node -e 'const fs=require("node:fs");const d=JSON.parse(fs.readFileSync("/tmp/rift-health.json","utf8"));if(d.status!=="ok"||d.protocolVersion!==1) process.exit(1)'
+          grep -q '异界共振' /tmp/rift-index.html
+      - name: Production dependency audit (non-blocking review)
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
       - name: Persist initial lock on feature branch only
         if: github.event_name == 'push' && github.ref == 'refs/heads/codex/m0-a-scaffold'
         run: |
