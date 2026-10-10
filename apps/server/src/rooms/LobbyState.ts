@@ -29,7 +29,8 @@ export const PlayerNetworkState = schema({
   passiveLevels: t.string().default("{}"),
   upgradeChoices: t.string().default("[]"),
   upgradeSelectionId: t.string().default(""),
-  upgradeSelected: t.boolean().default(false)
+  upgradeSelected: t.boolean().default(false),
+  upgradeRerollUsed: t.boolean().default(false)
 }, "RiftPlayerNetworkState");
 export type PlayerNetworkState = SchemaType<typeof PlayerNetworkState>;
 
