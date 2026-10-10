@@ -36,9 +36,12 @@ export function renderM1Backdrop(scene: Phaser.Scene): void {
     .setStrokeStyle(1, 0xc3a6e8, 0.52).setDepth(-780);
 
   if (scene.textures.exists(M1_ART.altarMark)) {
-    for (const [x, y] of [[64, 64], [WORLD_VIEW_WIDTH - 64, 64],
-                          [64, WORLD_VIEW_HEIGHT - 64],
-                          [WORLD_VIEW_WIDTH - 64, WORLD_VIEW_HEIGHT - 64]]) {
+    const marks: ReadonlyArray<readonly [number, number]> = [
+      [64, 64], [WORLD_VIEW_WIDTH - 64, 64],
+      [64, WORLD_VIEW_HEIGHT - 64],
+      [WORLD_VIEW_WIDTH - 64, WORLD_VIEW_HEIGHT - 64]
+    ];
+    for (const [x, y] of marks) {
       scene.add.image(x, y, M1_ART.altarMark).setScale(2)
         .setTint(0x7f86aa).setAlpha(0.58).setDepth(-775);
     }
@@ -61,8 +64,10 @@ export function createM1PlayerAvatar(
     ? scene.add.image(0, 0, key).setScale(3)
     : scene.add.rectangle(0, 0, 44, 44, color)
       .setStrokeStyle(3, self ? 0xffffff : 0x203349);
-  return scene.add.container(x, y, [shadow, identification, body])
+  const entity = scene.add.container(x, y, [shadow, identification, body])
     .setDepth(1000 + y);
+  addM1HealthBar(entity, 46, -34, 0x63d4e9);
+  return entity;
 }
 
 /** Reusable visual fallback for future server-synchronized enemy renderers. */
@@ -77,8 +82,42 @@ export function createM1EnemyPlaceholder(
     ? scene.add.image(0, 0, spec.id).setScale(id === "enemy.elite" ? 4 : 2.5)
     : scene.add.rectangle(0, 0, size, size, 0x6c5772, 0.85)
       .setStrokeStyle(2, 0xff596d, 0.9);
-  // No fake enemy spawns in the M0 lobby. Caller supplies authoritative position.
-  return scene.add.container(x, y, [shadow, body]).setDepth(1000 + y);
+  const entity = scene.add.container(x, y, [shadow, body]).setDepth(1000 + y);
+  addM1HealthBar(entity, size, -size / 2 - 9, 0xff596d);
+  return entity;
+}
+
+export function createM1Projectile(
+  scene: Phaser.Scene, assetId: "weapon.arcane_bolt", x: number, y: number
+): Phaser.GameObjects.Container {
+  const key = assetId as M1AssetId;
+  let body: Phaser.GameObjects.GameObject;
+  if (scene.textures.exists(key)) {
+    body = scene.add.image(0, 0, key).setScale(1.5);
+  } else {
+    body = scene.add.circle(0, 0, 7, 0xffc857, 1);
+  }
+  return scene.add.container(x, y, [body]).setDepth(1200);
+}
+
+export function updateM1HealthBar(
+  entity: Phaser.GameObjects.Container, health: number, maxHealth: number, alive: boolean
+): void {
+  const bar = entity.getData("m1HealthBar") as {fill: Phaser.GameObjects.Rectangle; width: number} | undefined;
+  if (!bar) return;
+  const ratio = maxHealth > 0 ? Math.max(0, Math.min(1, health / maxHealth)) : 0;
+  bar.fill.setDisplaySize(bar.width * ratio, 4);
+  entity.setAlpha(alive ? 1 : 0.22);
+}
+
+function addM1HealthBar(
+  entity: Phaser.GameObjects.Container, width: number, y: number, color: number
+): void {
+  const background = entity.scene.add.rectangle(0, y, width, 4, 0x101722, 0.9);
+  const fill = entity.scene.add.rectangle(-width / 2, y, width, 4, color, 0.95)
+    .setOrigin(0, 0.5);
+  entity.add([background, fill]);
+  entity.setData("m1HealthBar", {fill, width});
 }
 
 /** Effects are still placeholders until corresponding server skill events exist. */

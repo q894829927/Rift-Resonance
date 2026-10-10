@@ -1,10 +1,14 @@
 import { Room, type Client } from "colyseus";
 import { MAX_ROOM_PLAYERS, NETWORK_PATCH_HZ, SIMULATION_TICK_HZ, validateNickname, type MovementInput } from "@rift/shared";
 import {
-  createLobbyWorld, stepLobbyWorld, addLobbyMember, removeLobbyMember, type LobbyWorld
+  addCombatPlayer,
+  createCombatWorld,
+  removeCombatPlayer,
+  stepCombatWorld,
+  type CombatWorld
 } from "@rift/simulation";
 import { LobbyNetworkState } from "./LobbyState.js";
-import { projectMemberJoined, projectMemberLeft, projectMemberPositions } from "../projection/lobbyProjection.js";
+import { projectCombatState, projectMemberJoined, projectMemberLeft } from "../projection/lobbyProjection.js";
 import { MoveInput } from "./MoveInput.js";
 import { registerRoom, unregisterRoom, recordRoomTick, recordRoomClients } from "../telemetry/metrics.js";
 
@@ -15,7 +19,7 @@ import { registerRoom, unregisterRoom, recordRoomTick, recordRoomClients } from 
 export class ScaffoldRoom extends Room {
   maxClients = MAX_ROOM_PLAYERS;
   state = new LobbyNetworkState();
-  private readonly world: LobbyWorld = createLobbyWorld();
+  private readonly world: CombatWorld = createCombatWorld();
   // Colyseus owns the per-session buffered stream and acknowledgement sequence.
   inputs = this.defineInput(MoveInput, {
     bufferMaxSize: 8,
@@ -37,8 +41,8 @@ export class ScaffoldRoom extends Room {
           moveY: input?.moveY ?? 0
         });
       }
-      stepLobbyWorld(this.world, context.dtMs, commands);
-      projectMemberPositions(this.state, this.world.players.values());
+      stepCombatWorld(this.world, context.dtMs, commands);
+      projectCombatState(this.state, this.world);
       this.state.serverTick = this.world.tick;
       recordRoomTick(this.roomId, startedAt, performance.now() - startedAt);
     }, SIMULATION_TICK_HZ);
@@ -47,7 +51,7 @@ export class ScaffoldRoom extends Room {
   onJoin(client: Client, options: unknown): void {
     const raw = typeof options === "object" && options !== null && "nickname" in options
       ? options.nickname : undefined;
-    const member = addLobbyMember(this.world, client.sessionId, validateNickname(raw));
+    const member = addCombatPlayer(this.world, client.sessionId, validateNickname(raw));
     projectMemberJoined(this.state, member);
     recordRoomClients(this.roomId, this.world.players.size);
     console.info("[room " + this.roomId + "] joined, count=" + this.world.players.size);
@@ -58,7 +62,7 @@ export class ScaffoldRoom extends Room {
   }
 
   onLeave(client: Client): void {
-    if (removeLobbyMember(this.world, client.sessionId)) {
+    if (removeCombatPlayer(this.world, client.sessionId)) {
       projectMemberLeft(this.state, client.sessionId);
     }
     recordRoomClients(this.roomId, this.world.players.size);

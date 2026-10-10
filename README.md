@@ -4,18 +4,19 @@
 
 ## M1 美术开发策略（开发优先）
 
-当前分支 `codex/m1-art-cc0-bootstrap`：已入库 Kenney CC0 453 张 PNG，先使用这些免费素材；
-角色、怪物和技能缺口全部由现有精灵、通用粒子或几何占位，不提前生成 AI 图片。
-当前仍是联机移动原型，尚未实现权威怪物/伤害/掉落，不应将美术占位误认为战斗功能完成。
+当前分支 `codex/m1-art-cc0-bootstrap`：已入库共 473 张 Kenney / Kaishido CC0 PNG 免费素材；
+M1-A 已打通一个追击怪物与一把自动攻击武器的基础战斗闭环。角色、怪物和技能缺口继续由现有精灵、通用粒子或几何占位，不提前生成 AI 图片。
+当前仍是基础战斗原型，掉落、共振和复杂内容尚未实现；不应将美术占位误认为正式素材完成。
 
 - 开发/占位登记：[`docs/art/M1-ASSET-PLACEHOLDER-PLAN.md`](docs/art/M1-ASSET-PLACEHOLDER-PLAN.md)
+- M1-A 基础战斗实现：[`docs/technical/M1-A-IMPLEMENTATION.md`](docs/technical/M1-A-IMPLEMENTATION.md)
 - 资源映射：[`apps/client/src/art/m1AssetCatalog.ts`](apps/client/src/art/m1AssetCatalog.ts)
-- 作者提供的 Kaishido Dark World v1.0 资源可按 [导入脚本](tools/art/import_dark_world.py) 放入公共资源目录（20 张 PNG），但**未直接由仓库导入完成**。
+- 作者提供的 Kaishido Dark World v1.0 资源已按 [导入脚本](tools/art/import_dark_world.py) 导入公共资源目录（20 张 PNG，Git LFS）；后续拉取需执行 `git lfs pull`。
 - 原始 M0-F 的真实浏览器弱网/ECS 综合验收后置；保留构建安全检查，优先使 M1 基础战斗可玩。
 
 ## 项目状态
 
-- 当前阶段：**M0-F 验收工具已实现；30 分钟与 ECS 实机验收待执行**
+- 当前阶段：**M1-A 单怪物/单武器基础战斗已实现；第二种怪物、第二种武器及长期验收后置**
 - GDD 版本：**V1.0（待原型验证）**
 - 战斗定位：**70% 割草 + 30% 弹幕躲避**
 - 平台：**桌面浏览器优先**
@@ -81,7 +82,7 @@ M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机
 
 访问地址仍为 `http://127.0.0.1:5173`，服务端健康接口为 `http://127.0.0.1:2567/health`。
 
-> GDD 数值待游戏原型测试。此阶段无战斗功能；公网开放前还需进行依赖安全审查、网络与合规配置。
+> GDD 数值待游戏原型测试。M1-A 仍是基础战斗原型；公网开放前还需进行依赖安全审查、网络与合规配置。
 
 ## M0-C 本地验收
 

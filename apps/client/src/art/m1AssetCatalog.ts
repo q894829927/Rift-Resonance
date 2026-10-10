@@ -6,7 +6,7 @@
  * These are rendering IDs, not simulation entity IDs.
  */
 export type M1AssetSource = "cc0" | "placeholder";
-export type M1AssetCategory = "character" | "enemy" | "environment" | "effect" | "ui";
+export type M1AssetCategory = "character" | "enemy" | "environment" | "effect" | "ui" | "weapon";
 export interface M1AssetSpec {
   readonly id: string;
   readonly source: M1AssetSource;
@@ -40,6 +40,8 @@ export const M1_ASSETS = {
     url: tiny(98), replacement: "普通怪 C：原创轮廓与移动/受击/死亡帧" },
   "enemy.elite": { id: "enemy.elite", source: "placeholder", category: "enemy",
     url: tiny(89), replacement: "精英怪：64×96 逻辑体量与独特攻击动作" },
+  "weapon.arcane_bolt": { id: "weapon.arcane_bolt", source: "cc0", category: "weapon",
+    url: particle("fire_01"), replacement: "奥术弹：独特弹体与命中特效" },
   "vfx.melee": { id: "vfx.melee", source: "cc0", category: "effect",
     url: particle("slash_02"), replacement: "独特回旋刃特效动画" },
   "vfx.fire": { id: "vfx.fire", source: "cc0", category: "effect",

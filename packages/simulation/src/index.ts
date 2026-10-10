@@ -11,3 +11,19 @@ export type { LobbyWorld, LobbyMember } from "./lobby.js";
 import { createLobbyWorld } from "./lobby.js";
 export const createEmptyWorld = createLobbyWorld;
 export { moveMember } from "./movement.js";
+export {
+  createCombatWorld,
+  stepCombatWorld,
+  addCombatPlayer,
+  removeCombatPlayer,
+  DamageSystem,
+  EnemySystem,
+  SpawnSystem,
+  WeaponSystem
+} from "./combat/world.js";
+export type {
+  CombatEnemy,
+  CombatPlayer,
+  CombatProjectile,
+  CombatWorld
+} from "./combat/world.js";

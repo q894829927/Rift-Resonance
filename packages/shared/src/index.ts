@@ -9,3 +9,15 @@ export { WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom } from "./view
 export { projectWorldToViewport } from "./viewport.js";
 export { movementAxis, isMovementInput, PLAYER_MOVE_SPEED, PLAYER_COLLISION_RADIUS, MOVE_SEND_HZ, NEUTRAL_MOVEMENT } from "./movement.js";
 export type { MoveAxis, MovementInput } from "./movement.js";
+export {
+  ENEMY_SLIME_ASSET_ID,
+  ARCANE_BOLT_WEAPON_ID,
+  ARCANE_BOLT_PROJECTILE_ASSET_ID
+} from "./combat.js";
+export type {
+  EnemyAssetId,
+  WeaponId,
+  CombatProjectileAssetId,
+  CombatEvent,
+  CombatEventType
+} from "./combat.js";

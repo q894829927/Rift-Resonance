@@ -8,6 +8,39 @@ export interface LobbyPlayerView {
   nickname: string;
   x: number;
   y: number;
+  health: number;
+  maxHealth: number;
+  alive: boolean;
+}
+export interface EnemyView {
+  assetId: string;
+  x: number;
+  y: number;
+  health: number;
+  maxHealth: number;
+  alive: boolean;
+}
+export interface ProjectileView {
+  weaponId: string;
+  x: number;
+  y: number;
+}
+export interface CombatEventView {
+  id: string;
+  tick: number;
+  type: string;
+  sourceId: string;
+  targetId: string;
+  assetId: string;
+  x: number;
+  y: number;
+  amount: number;
+}
+export interface CombatRenderState {
+  enemies: ReadonlyMap<string, EnemyView>;
+  projectiles: ReadonlyMap<string, ProjectileView>;
+  /** Only events not previously observed by this client connection. */
+  events: readonly CombatEventView[];
 }
 export interface LobbyView {
   roomId: string;
@@ -17,7 +50,7 @@ export interface LobbyView {
 }
 export interface RenderPosition { x: number; y: number }
 export type LobbyListener = (view: LobbyView) => void;
-export type RenderListener = (positions: ReadonlyMap<string, RenderPosition>) => void;
+export type RenderListener = (positions: ReadonlyMap<string, RenderPosition>, combat: CombatRenderState) => void;
 
 /**
  * M0-E network adapter. Colyseus owns input sequence IDs, acknowledgement and replay.
@@ -27,6 +60,7 @@ export class LobbyConnection {
   private readonly client: Client;
   private room: Room | null = null;
   private readonly players = new Map<string, LobbyPlayerView>();
+  private readonly seenEventIds = new Set<string>();
   private axes = { moveX: 0, moveY: 0 } as const as {moveX: -1 | 0 | 1; moveY: -1 | 0 | 1};
   private animationFrame: number | undefined;
 
@@ -59,14 +93,29 @@ export class LobbyConnection {
     const callbacks = Callbacks.get(room);
     callbacks.onAdd("players", (value: unknown, key: unknown) => {
       if (this.room !== room || typeof key !== "string" || !isLobbyPlayerView(value)) return;
-      this.players.set(key, { nickname: value.nickname, x: value.x, y: value.y });
+      this.players.set(key, {
+        nickname: value.nickname,
+        x: value.x,
+        y: value.y,
+        health: value.health,
+        maxHealth: value.maxHealth,
+        alive: value.alive
+      });
       // Ordinary patches update the decoded schema instance itself. Rendering is
       // driven by Predict.value() once per frame, not by patch-driven DOM rebuilds.
       callbacks.onChange(value as never, () => {
         if (this.room !== room || !isLobbyPlayerView(value)) return;
         const old = this.players.get(key);
-        if (old && old.nickname !== value.nickname) {
-          this.players.set(key, { nickname: value.nickname, x: value.x, y: value.y });
+        if (old && (old.nickname !== value.nickname || old.health !== value.health ||
+          old.maxHealth !== value.maxHealth || old.alive !== value.alive)) {
+          this.players.set(key, {
+            nickname: value.nickname,
+            x: value.x,
+            y: value.y,
+            health: value.health,
+            maxHealth: value.maxHealth,
+            alive: value.alive
+          });
           this.emit();
         }
       });
@@ -88,6 +137,7 @@ export class LobbyConnection {
       this.stopInputs();
       this.room = null;
       this.players.clear();
+      this.seenEventIds.clear();
       this.onDropped("房间连接已关闭，代码：" + code);
     });
     room.onError((code: number, message?: string) => {
@@ -123,7 +173,12 @@ export class LobbyConnection {
 
     const frame = (now: number): void => {
       if (this.room !== room) return;
-      const state = room.state as {players?: Map<string, LobbyPlayerView>};
+      const state = room.state as {
+        players?: Map<string, LobbyPlayerView>;
+        enemies?: Map<string, EnemyView>;
+        projectiles?: Map<string, ProjectileView>;
+        events?: Map<string, Omit<CombatEventView, "id">>;
+      };
       const players = state.players;
 
       // Initial Schema collection callbacks may arrive after the join promise.
@@ -160,7 +215,7 @@ export class LobbyConnection {
           const y = predictor.value(player, "y");
           if (Number.isFinite(x) && Number.isFinite(y)) positions.set(id, { x, y });
         }
-        this.onRender(positions);
+        this.onRender(positions, this.readCombatState(state));
       }
 
       this.animationFrame = window.requestAnimationFrame(frame);
@@ -183,6 +238,7 @@ export class LobbyConnection {
     this.stopInputs();
     this.room = null;
     this.players.clear();
+    this.seenEventIds.clear();
     await room.leave();
   }
 
@@ -196,6 +252,46 @@ export class LobbyConnection {
       players: new Map(this.players)
     });
   }
+
+  private readCombatState(state: {
+    enemies?: Map<string, EnemyView>;
+    projectiles?: Map<string, ProjectileView>;
+    events?: Map<string, Omit<CombatEventView, "id">>;
+  }): CombatRenderState {
+    const enemies = new Map<string, EnemyView>();
+    for (const [id, enemy] of state.enemies ?? []) {
+      enemies.set(id, {
+        assetId: enemy.assetId,
+        x: enemy.x,
+        y: enemy.y,
+        health: enemy.health,
+        maxHealth: enemy.maxHealth,
+        alive: enemy.alive
+      });
+    }
+
+    const projectiles = new Map<string, ProjectileView>();
+    for (const [id, projectile] of state.projectiles ?? []) {
+      projectiles.set(id, {
+        weaponId: projectile.weaponId,
+        x: projectile.x,
+        y: projectile.y
+      });
+    }
+
+    const events: CombatEventView[] = [];
+    for (const [id, event] of state.events ?? []) {
+      if (this.seenEventIds.has(id)) continue;
+      this.seenEventIds.add(id);
+      events.push({ id, ...event });
+    }
+    while (this.seenEventIds.size > 4096) {
+      const oldest = this.seenEventIds.values().next().value as string | undefined;
+      if (!oldest) break;
+      this.seenEventIds.delete(oldest);
+    }
+    return { enemies, projectiles, events };
+  }
 }
 
 export function getServerEndpoint(): string {
@@ -207,5 +303,6 @@ export function getServerEndpoint(): string {
 function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
   if (typeof value !== "object" || value === null) return false;
   const item = value as Record<string, unknown>;
-  return typeof item.nickname === "string" && typeof item.x === "number" && typeof item.y === "number";
+  return typeof item.nickname === "string" && typeof item.x === "number" && typeof item.y === "number" &&
+    typeof item.health === "number" && typeof item.maxHealth === "number" && typeof item.alive === "boolean";
 }

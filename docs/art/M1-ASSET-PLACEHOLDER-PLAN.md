@@ -13,7 +13,7 @@
 | Kenney Pixel UI Pack | 36 PNG 已在仓库 | 可作为图标、九宫格边框；还未接入 |
 | Kenney Particle Pack | 80 PNG 已在仓库 | 回旋刃、火焰与通用 VFX 候选；未绑定战斗事件 |
 | Kenney Smoke Particles | 77 PNG 已在仓库 | 烟、爆发等候选；还未接入 |
-| Kaishido Dark World v1.0 | 用户提供了原始 ZIP，包含 20 PNG；**仓库内仍须执行导入脚本** | 环境、树、岩石、蘑菇；角色行走动画；背包 UI |
+| Kaishido Dark World v1.0 | 用户提供的原始 ZIP 已校验并将 20 PNG 以 Git LFS 入库 | 环境、树、岩石、蘑菇；角色行走动画；背包 UI |
 
 来源清单见 `docs/art/ASSET-SOURCES.md`。Kaishido 作者页面
 https://kaishido.itch.io/dark-world 明确说明 CC0 1.0、可以复制修改分发。
@@ -21,7 +21,7 @@ https://kaishido.itch.io/dark-world 明确说明 CC0 1.0、可以复制修改分
 
 ## Kaishido 本地导入
 
-将作者提供的 `Dark World - Free Asset Pack - v1.0.zip` 放在本地任意目录执行：
+如需从原始 ZIP 重建或校验来源，将作者提供的 `Dark World - Free Asset Pack - v1.0.zip` 放在本地任意目录执行：
 
 ```powershell
 python tools/art/import_dark_world.py "D:\Downloads\Dark World - Free Asset Pack - v1.0.zip"
@@ -43,6 +43,15 @@ git push origin codex/m1-art-cc0-bootstrap
 - **UI**：保留 HTML/CSS 清晰文本，使用 Kenney 九宫格素材作装饰；升级三选一、血量等必须绑定真实战斗状态，没有数据不展示伪造数据。
 - **纹理丢失**：允许退回几何占位，不能影响服务端移动、碰撞和伤害。
 - **严格不变**：服务器 20Hz Tick、10Hz 网络补丁、960×540 逻辑视口、服务端权威判定和玩家预测／插值。
+
+## M1-A 当前启用的稳定 ID
+
+| 稳定 ID | 当前来源 | 当前用途 | 状态 |
+| --- | --- | --- | --- |
+| `enemy.slime` | Kenney Tiny Dungeon 临时图 | 一个服务器权威追击怪物 | 已接入，仍为显式占位 |
+| `weapon.arcane_bolt` | Kenney Particle Pack `fire_01.png` | 自动攻击弹体与命中事件 | 已接入，等待正式武器图 |
+
+这些 ID 不绑定文件名以外的玩法含义，服务端事件与客户端渲染均通过 ID 传递。第二种怪物、第二种武器和正式动画素材等基础闭环稳定后再加入。
 
 ## 后期集中 AI 生成清单（当前均未生成）
 

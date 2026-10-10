@@ -1,11 +1,27 @@
 import Phaser from "phaser";
-import { preloadM1VisualAssets, renderM1Backdrop, createM1PlayerAvatar } from "./art/m1Visuals.js";
+import {
+  preloadM1VisualAssets,
+  renderM1Backdrop,
+  createM1EnemyPlaceholder,
+  createM1PlayerAvatar,
+  createM1Projectile,
+  updateM1HealthBar
+} from "./art/m1Visuals.js";
 import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
-import { LobbyConnection, getServerEndpoint, type LobbyView, type RenderPosition } from "./network/client.js";
+import {
+  LobbyConnection,
+  getServerEndpoint,
+  type CombatRenderState,
+  type LobbyView,
+  type RenderPosition
+} from "./network/client.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
   private readonly avatars = new Map<string, Phaser.GameObjects.Container>();
+  private readonly enemies = new Map<string, Phaser.GameObjects.Container>();
+  private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
+  private readonly handledCombatEventIds = new Set<string>();
   private readonly nameLabels = new Map<string, HTMLSpanElement>();
   private nameLayer: HTMLElement | null = null;
   private latestView: LobbyView | null = null;
@@ -23,7 +39,12 @@ class LobbyScene extends Phaser.Scene {
     this.events.once("shutdown", () => {
       this.scale.off("resize", this.fitCamera, this);
       for (const obj of this.avatars.values()) obj.destroy();
+      for (const obj of this.enemies.values()) obj.destroy();
+      for (const obj of this.projectiles.values()) obj.destroy();
       this.avatars.clear();
+      this.enemies.clear();
+      this.projectiles.clear();
+      this.handledCombatEventIds.clear();
       this.nameLayer?.replaceChildren();
       this.nameLabels.clear();
     });
@@ -59,7 +80,13 @@ class LobbyScene extends Phaser.Scene {
       this.nameLabels.get(id)?.remove();
       this.nameLabels.delete(id);
     }
-    if (!view) return;
+    if (!view) {
+      for (const entity of this.enemies.values()) entity.destroy();
+      for (const entity of this.projectiles.values()) entity.destroy();
+      this.enemies.clear();
+      this.projectiles.clear();
+      return;
+    }
 
     const colors = [0x63d4e9, 0xd4adff, 0xf1ba74, 0x82e4ad];
     for (const [id, player] of view.players) {
@@ -82,12 +109,13 @@ class LobbyScene extends Phaser.Scene {
       // Position changes are applied once per render frame by showPositions().
       // On join, raw authoritative position provides a safe initial fallback.
       if (!this.renderPositions.has(id)) entity.setPosition(player.x, player.y);
+      updateM1HealthBar(entity, player.health, player.maxHealth, player.alive);
     }
     this.positionNames();
   }
 
   /** Render-only interpolation/prediction, never write positions back to Schema. */
-  showPositions(positions: ReadonlyMap<string, RenderPosition>): void {
+  showPositions(positions: ReadonlyMap<string, RenderPosition>, combat: CombatRenderState): void {
     for (const [id, pos] of positions) {
       const entity = this.avatars.get(id);
       if (!entity) continue;
@@ -95,7 +123,62 @@ class LobbyScene extends Phaser.Scene {
       entity.setDepth(1000 + pos.y);
       this.renderPositions.set(id, pos);
     }
+    this.showCombat(combat);
     this.positionNames();
+  }
+
+  private showCombat(combat: CombatRenderState): void {
+    for (const [id, entity] of this.enemies) {
+      if (combat.enemies.has(id)) continue;
+      entity.destroy();
+      this.enemies.delete(id);
+    }
+    for (const [id, enemy] of combat.enemies) {
+      let entity = this.enemies.get(id);
+      if (!entity) {
+        const assetId = enemy.assetId === "enemy.slime" || enemy.assetId === "enemy.skeleton" ||
+          enemy.assetId === "enemy.bat" || enemy.assetId === "enemy.elite"
+          ? enemy.assetId : "enemy.slime";
+        entity = createM1EnemyPlaceholder(this, assetId, enemy.x, enemy.y);
+        this.enemies.set(id, entity);
+      }
+      entity.setPosition(enemy.x, enemy.y);
+      entity.setDepth(1000 + enemy.y);
+      updateM1HealthBar(entity, enemy.health, enemy.maxHealth, enemy.alive);
+    }
+
+    for (const [id, entity] of this.projectiles) {
+      if (combat.projectiles.has(id)) continue;
+      entity.destroy();
+      this.projectiles.delete(id);
+    }
+    for (const [id, projectile] of combat.projectiles) {
+      let entity = this.projectiles.get(id);
+      if (!entity && projectile.weaponId === "weapon.arcane_bolt") {
+        entity = createM1Projectile(this, projectile.weaponId, projectile.x, projectile.y);
+        this.projectiles.set(id, entity);
+      }
+      entity?.setPosition(projectile.x, projectile.y);
+    }
+
+    for (const event of combat.events) {
+      if (this.handledCombatEventIds.has(event.id)) continue;
+      this.handledCombatEventIds.add(event.id);
+      if (event.type === "damage.applied") {
+        const impact = this.add.circle(event.x, event.y, 10, 0xffd36a, 0.8)
+          .setStrokeStyle(2, 0xffffff, 0.8).setDepth(1300);
+        this.tweens.add({targets: impact, alpha: 0, scale: 1.8, duration: 180, onComplete: () => impact.destroy()});
+      } else if (event.type === "enemy.died") {
+        const death = this.add.circle(event.x, event.y, 18, 0x9c6cff, 0.15)
+          .setStrokeStyle(3, 0xe0c7ff, 0.9).setDepth(1300);
+        this.tweens.add({targets: death, alpha: 0, scale: 2.2, duration: 300, onComplete: () => death.destroy()});
+      }
+    }
+    while (this.handledCombatEventIds.size > 4096) {
+      const oldest = this.handledCombatEventIds.values().next().value as string | undefined;
+      if (!oldest) break;
+      this.handledCombatEventIds.delete(oldest);
+    }
   }
 }
 const scene = new LobbyScene();
@@ -158,7 +241,9 @@ function render(view: LobbyView | null): void {
     list.replaceChildren();
     for (const [sid, player] of view.players) {
       const li = document.createElement("li");
-      li.textContent = player.nickname + (sid === view.sessionId ? "（你）" : "");
+      const health = Math.max(0, Math.ceil(player.health));
+      const state = player.alive ? "HP " + health + "/" + Math.ceil(player.maxHealth) : "已倒下";
+      li.textContent = player.nickname + (sid === view.sessionId ? "（你）" : "") + " · " + state;
       list.append(li);
     }
   }
@@ -204,8 +289,8 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
   showStatus(message, true);
 }, (tick) => {
   tickMonitor.textContent = "20 Hz 逻辑 · Tick " + tick;
-}, (positions) => {
-  if (scene.scene && scene.scene.isActive()) scene.showPositions(positions);
+}, (positions, combat) => {
+  if (scene.scene && scene.scene.isActive()) scene.showPositions(positions, combat);
 });
 async function start(action: () => Promise<void>): Promise<void> {
   if (busy || connected) return;
