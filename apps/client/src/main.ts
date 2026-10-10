@@ -79,7 +79,7 @@ class LobbyScene extends Phaser.Scene {
   showLobby(view: LobbyView | null): void {
     this.latestView = view;
     for (const [id, container] of this.avatars) {
-      if (view?.players.has(id)) continue;
+      if (view?.players.get(id)?.connected) continue;
       container.destroy();
       this.avatars.delete(id);
       this.renderPositions.delete(id);
@@ -97,6 +97,7 @@ class LobbyScene extends Phaser.Scene {
 
     const colors = [0x63d4e9, 0xd4adff, 0xf1ba74, 0x82e4ad];
     for (const [id, player] of view.players) {
+      if (!player.connected) continue; // Preserve result records without rendering ghost avatars.
       let entity = this.avatars.get(id);
       if (!entity) {
         // Stable player color across clients and network updates.
@@ -245,6 +246,7 @@ function element<T extends HTMLElement>(id: string): T {
   if (!e) throw new Error("UI element missing: " + id);
   return e as T;
 }
+const uiShell = element<HTMLElement>("game-shell");
 const nickname = element<HTMLInputElement>("nickname");
 const roomInput = element<HTMLInputElement>("room-id-input");
 const create = element<HTMLButtonElement>("create-room");
@@ -259,6 +261,10 @@ const matchPhase = element<HTMLElement>("match-phase");
 const matchTimer = element<HTMLElement>("match-timer");
 const teamLevel = element<HTMLElement>("team-level");
 const teamXpFill = element<HTMLElement>("team-xp-fill");
+const teamXpLabel = element<HTMLElement>("team-xp-label");
+const hudHealthFill = element<HTMLElement>("hud-health-fill");
+const skillSlot1 = element<HTMLElement>("skill-slot-1");
+const skillSlot2 = element<HTMLElement>("skill-slot-2");
 const aliveCount = element<HTMLElement>("alive-count");
 const hudHealth = element<HTMLElement>("hud-health");
 const hudDash = element<HTMLElement>("hud-dash");
@@ -306,7 +312,8 @@ function refreshControls(): void {
 }
 function render(view: LobbyView | null): void {
   displayedView = view;
-  if (!view) tickMonitor.textContent = "20 Hz 逻辑 · Tick --";
+  uiShell.dataset.uiPhase = view?.phase ?? "LOBBY";
+  if (!view) tickMonitor.textContent = "Tick --";
   connected = view !== null;
   if (scene.scene && scene.scene.isActive()) scene.showLobby(view);
   if (view) {
@@ -336,6 +343,10 @@ function updateHud(view: LobbyView | null): void {
     matchTimer.textContent = "--:--";
     teamLevel.textContent = "Lv 1";
     teamXpFill.style.width = "0%";
+    teamXpLabel.textContent = "0 / 50";
+    hudHealthFill.style.width = "0%";
+    skillSlot1.textContent = "未装备";
+    skillSlot2.textContent = "未解锁";
     aliveCount.textContent = "0/0";
     hudHealth.textContent = "--";
     hudDash.textContent = "就绪";
@@ -348,6 +359,7 @@ function updateHud(view: LobbyView | null): void {
   };
   matchPhase.textContent = phaseText[view.phase] ?? view.phase;
   teamLevel.textContent = "Lv " + view.teamLevel;
+  teamXpLabel.textContent = view.teamExperience + " / " + view.teamNextLevelExperience;
   teamXpFill.style.width = Math.min(100, Math.max(0,
     view.teamExperience / Math.max(1, view.teamNextLevelExperience) * 100)) + "%";
   const remaining = Math.max(0, view.matchDurationTicks - view.matchElapsedTicks);
@@ -360,6 +372,11 @@ function updateHud(view: LobbyView | null): void {
   const local = view.players.get(view.sessionId);
   if (!local) return;
   hudHealth.textContent = Math.max(0, Math.ceil(local.health)) + "/" + Math.ceil(local.maxHealth);
+  hudHealthFill.style.width = Math.max(0, Math.min(100, local.health / Math.max(1, local.maxHealth) * 100)) + "%";
+  const weaponLabel = (id: string): string => id === "weapon.fireball" ? "火焰弹" :
+    id === "weapon.spin_blade" ? "回旋刃" : "未知武器";
+  skillSlot1.textContent = local.weaponIds[0] ? weaponLabel(local.weaponIds[0]) : "未装备";
+  skillSlot2.textContent = local.weaponIds[1] ? weaponLabel(local.weaponIds[1]) : "未解锁";
   hudDash.textContent = local.dashActive ? "冲刺中" : local.dashCooldownRemainingTicks > 0
     ? (local.dashCooldownRemainingTicks / 20).toFixed(1) + "s" : "就绪";
   hudKills.textContent = String(local.kills);
@@ -387,7 +404,13 @@ function updateUpgradePanel(view: LobbyView | null): void {
     const button = document.createElement("button");
     button.className = "upgrade-choice";
     button.disabled = local.upgradeSelected;
-    button.innerHTML = "<strong>" + choice.label + "</strong><small>" + choice.kind + "</small>";
+    const title = document.createElement("strong");
+    title.textContent = choice.label;
+    const kind = document.createElement("small");
+    kind.textContent = choice.kind === "new_weapon" ? "新武器" :
+      choice.kind === "weapon_upgrade" ? "武器强化" :
+      choice.kind === "passive" ? "被动强化" : choice.kind;
+    button.append(title, kind);
     button.addEventListener("click", () => connection.selectUpgrade(choice.id));
     upgradeChoices.append(button);
   }
@@ -397,7 +420,7 @@ function updateUpgradePanel(view: LobbyView | null): void {
 }
 
 function updateMatchBanner(view: LobbyView | null): void {
-  if (!view || view.phase === "RUNNING" || view.phase === "UPGRADING") {
+  if (!view || view.phase === "LOBBY" || view.phase === "RUNNING" || view.phase === "UPGRADING") {
     matchBanner.hidden = true;
     return;
   }
@@ -408,12 +431,7 @@ function updateMatchBanner(view: LobbyView | null): void {
       " · 承受 " + Math.round(local.damageTaken)
     : "战绩由服务端记录";
   matchBanner.hidden = false;
-  if (view.phase === "LOBBY") {
-    matchBannerKicker.textContent = "LOBBY / READY";
-    matchBannerTitle.textContent = "准备进入裂隙";
-    matchBannerSummary.textContent = connectedPlayers.length + " 名玩家在线；所有在线玩家准备后由服务器开始对局。";
-    matchBannerStats.textContent = "房主负责结算后重新开始，普通玩家可随时取消准备。";
-  } else if (view.phase === "WON") {
+  if (view.phase === "WON") {
     matchBannerKicker.textContent = "TEAM VICTORY";
     matchBannerTitle.textContent = "裂隙已稳定";
     matchBannerSummary.textContent = "队伍完成了四分钟生存目标，正在展示结算结果。";
@@ -480,8 +498,22 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
   render(null);
   showStatus(message, true);
 }, (tick, match: MatchSnapshot) => {
-  tickMonitor.textContent = "20 Hz 逻辑 · Tick " + tick;
-  if (displayedView) render({...displayedView, ...match});
+  tickMonitor.textContent = "Tick " + tick;
+  if (displayedView) {
+    const previous = displayedView;
+    const next = {...previous, ...match};
+    displayedView = next;
+    uiShell.dataset.uiPhase = next.phase;
+    updateHud(next);
+    // The server tick is 20 Hz: do not recreate lobby rows or upgrade buttons
+    // every tick, which would steal keyboard focus during upgrade selection.
+    if (next.phase !== previous.phase || next.upgradeId !== previous.upgradeId) {
+      if (scene.scene?.isActive()) scene.showLobby(next);
+      updateMatchBanner(next);
+      updateUpgradePanel(next);
+      refreshControls();
+    }
+  }
 }, (positions, combat) => {
   if (scene.scene && scene.scene.isActive()) scene.showPositions(positions, combat);
 });
