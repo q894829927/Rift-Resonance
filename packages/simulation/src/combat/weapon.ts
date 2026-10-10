@@ -11,6 +11,8 @@ import {
   emitCombatEvent,
   getWeaponCooldownTicks,
   getWeaponDamage,
+  getWeaponLevel,
+  COMBAT_SPIN_BLADE_III_FAN_MULTIPLIER,
   WEAPON_DEFINITIONS,
   type CombatEnemy,
   type CombatPlayer,
@@ -71,13 +73,16 @@ export class WeaponSystem {
     const facingLength = Math.hypot(player.facingX, player.facingY);
     const facingX = facingLength > 0 ? player.facingX / facingLength : 1;
     const facingY = facingLength > 0 ? player.facingY / facingLength : 0;
+    const halfAngleCos = getWeaponLevel(player, SPIN_BLADE_WEAPON_ID) >= 3
+      ? Math.cos(Math.acos(definition.fanHalfAngleCos) * COMBAT_SPIN_BLADE_III_FAN_MULTIPLIER)
+      : definition.fanHalfAngleCos;
     const targets = [...world.enemies.values()]
       .filter(enemy => enemy.alive && distanceSquared(player, enemy) <= definition.range ** 2)
       .filter(enemy => {
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
         const length = Math.hypot(dx, dy);
-        return length > 0 && (dx / length) * facingX + (dy / length) * facingY >= definition.fanHalfAngleCos;
+        return length > 0 && (dx / length) * facingX + (dy / length) * facingY >= halfAngleCos;
       })
       .sort((a, b) => a.id.localeCompare(b.id));
     if (targets.length === 0) return;
