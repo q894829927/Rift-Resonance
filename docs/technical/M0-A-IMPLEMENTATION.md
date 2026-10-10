@@ -2,7 +2,7 @@
 
 **基线：** [M0 技术设计评审](M0-TDR.md) · [GDD](../GDD.md)  
 **范围：** 工作区、前后端空壳、独立共享/模拟包、版本及构建脚本。**不包含**双人联机和战斗逻辑。  
-**状态：** 工程文件已编写；GitHub Actions 云端 Node.js 24 下依赖安装、TypeScript 构建、Vite 打包与两个基础单元测试已通过。尚未执行浏览器交互或服务启动烟测。
+**状态：** 已完成工程骨架、依赖锁定、构建测试及 HTTP 启动烟测（GitHub Actions）。尚未执行真实浏览器渲染或多人联机测试。
 
 ## 目录
 
@@ -22,10 +22,10 @@
 | Colyseus（server） | 0.18.1 |
 | Colyseus SDK | 0.18.5 |
 | TypeScript | 5.8.3 |
-| Vite | 7.1.0 |
+| Vite | 7.3.7 |
 | tsx | 4.20.3 |
 
-正式可重复构建依赖 **package-lock.json**。在 npm 仓库可达的环境执行 `npm install` 生成 lock，审核后提交至仓库，之后所有 CI 与安装均使用 `npm ci`。已由 [CI 运行 #38036839152](https://github.com/q894829927/Rift-Resonance/actions/runs/38036839152) 成功生成和提交初始锁文件。后续将优先采用已提交锁文件运行 `npm ci`。
+正式可重复构建依赖 **package-lock.json**。已通过首次受控依赖解析生成 lock，后续 CI 使用 `npm ci` 严格复现。已由 [CI 运行 #38036839152](https://github.com/q894829927/Rift-Resonance/actions/runs/38036839152) 成功生成和提交初始锁文件。后续将优先采用已提交锁文件运行 `npm ci`。
 
 ## 本地验证步骤
 
@@ -64,8 +64,14 @@ npm run dev:client
 
 - 工作流：[`M0-A Verify` #38036839152](https://github.com/q894829927/Rift-Resonance/actions/runs/38036839152)；结论 **Success**。
 - 已验证：Node.js 24.21.0 / npm 11.19.0；npm install / npm ci；shared、simulation、server 和 client 的类型检查与构建；2 个 Node 单元测试。
-- 初始锁文件：自动提交到 `codex/m0-a-scaffold`；后续需使用已提交锁文件再执行工作流验证。
-- npm 安全报告：首次安装输出 **17 个依赖告警（13 low、3 moderate、1 high）**；未做安全修复和部署许可评审，不应直接发布到公网。
-- 尚未验证：浏览器实际渲染、服务端 `/health` 的真实 HTTP 响应、不同设备联网、ECS 资源占用。
+- 锁文件：已提交到 `codex/m0-a-scaffold`，包含 275 个工作区及依赖条目；后续使用 `npm ci` 复现。
+- npm 安全报告：首次扫描出现 17 项告警（13 low、3 moderate、1 high）。已将 Vite 从 7.1.0 升级到 **7.3.7** 并在 CI 增设生产依赖高危漏洞门禁，最新门禁通过；仍需持续审核低/中危及实际运行暴露面。
+- 启动烟测：已用 CI 启动 Node 服务与 Vite 预览，验证 `/health` JSON 和网页 HTTP 返回成功。
+- 尚未验证：浏览器实际渲染、不同设备联网、ECS 资源占用。
 
-**M0-A 不等于 M0 完成**。正式进入 M0-B 前应完成浏览器与健康接口的本地烟测，并对 npm 依赖漏洞进行分级评估。
+**M0-A 不等于 M0 完成**。正式进入 M0-B 前应进行本地浏览器视觉检查，并继续审查 npm 非高危依赖告警。
+
+## 最终验证入口
+
+- [升级后完整 CI（构建 + HTTP 烟测 + 高危门禁）](https://github.com/q894829927/Rift-Resonance/actions/runs/38037081950)：全部步骤通过。
+- 临时的 CI 自动写回 lock 工作流已移除，正式工作流只读并使用 `npm ci`。后续修改依赖须在有 npm 网络的开发环境更新、审查并提交 lock。
