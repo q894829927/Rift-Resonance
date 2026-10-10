@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { RoomTelemetry, summarize } from "../../apps/server/dist/telemetry/metrics.js";
+import { RoomTelemetry, summarize } from "../apps/server/dist/telemetry/metrics.js";
 
 test("telemetry reports nearest-rank percentiles and bounded data", () => {
   assert.deepEqual(summarize([]), {count:0,mean:null,p95:null,p99:null,max:null});
