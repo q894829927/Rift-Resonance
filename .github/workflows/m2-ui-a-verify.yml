@@ -11,6 +11,8 @@ on:
       - tests/ui-pixel.test.mjs
       - tests/ui-readability.test.mjs
       - tests/player-hitbox.test.mjs
+      - tests/movement.test.mjs
+      - tests/integration/**
       - .github/workflows/m2-ui-a-verify.yml
   workflow_dispatch:
 permissions:
