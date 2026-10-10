@@ -61,7 +61,7 @@ export const M1_ASSETS = {
   "weapon.arcane_bolt": { id: "weapon.arcane_bolt", source: "cc0", category: "weapon",
     url: particle("fire_01"), replacement: "奥术弹：独特弹体与命中特效" },
   "weapon.fireball": { id: "weapon.fireball", source: "cc0", category: "weapon",
-    url: particle("fire_01"), replacement: "火焰弹：缺少追踪动画，复用已入库 Kenney 粒子" },
+    url: particle("fire_01"), replacement: "火焰弹当前使用独立的 Phaser 程序化火球与定向尾焰，本粒子贴图仅保留备用" },
   "weapon.spin_blade": { id: "weapon.spin_blade", source: "cc0", category: "weapon",
     url: particle("slash_02"), replacement: "回旋刃：缺少扇形动画，复用已入库 Kenney 斩击粒子" },
   "player.dash": { id: "player.dash", source: "cc0", category: "effect",
