@@ -2,7 +2,7 @@
 
 **基线：** [M0 技术设计评审](M0-TDR.md) · [GDD](../GDD.md)  
 **范围：** 工作区、前后端空壳、独立共享/模拟包、版本及构建脚本。**不包含**双人联机和战斗逻辑。  
-**状态：** 工程文件已编写；依赖安装、完整构建与服务启动以 CI 实际结果为准。
+**状态：** 工程文件已编写；GitHub Actions 云端 Node.js 24 下依赖安装、TypeScript 构建、Vite 打包与两个基础单元测试已通过。尚未执行浏览器交互或服务启动烟测。
 
 ## 目录
 
@@ -25,7 +25,7 @@
 | Vite | 7.1.0 |
 | tsx | 4.20.3 |
 
-正式可重复构建依赖 **package-lock.json**。在 npm 仓库可达的环境执行 `npm install` 生成 lock，审核后提交至仓库，之后所有 CI 与安装均使用 `npm ci`。当前工作流在 lock 不存在时自动生成并作为构建产物上传；不应把这一步视作“已经锁定全部传递依赖”。
+正式可重复构建依赖 **package-lock.json**。在 npm 仓库可达的环境执行 `npm install` 生成 lock，审核后提交至仓库，之后所有 CI 与安装均使用 `npm ci`。已由 [CI 运行 #38036839152](https://github.com/q894829927/Rift-Resonance/actions/runs/38036839152) 成功生成和提交初始锁文件。后续将优先采用已提交锁文件运行 `npm ci`。
 
 ## 本地验证步骤
 
@@ -59,3 +59,13 @@ npm run dev:client
 3. 验证 Node server 健康接口和 Phaser 占位画面。
 4. 记录提交 SHA 与运行输出。
 5. 之后才开始 M0-B 房间玩家生命周期、Schema 网络投影，不提前开发战斗。
+
+## CI 验证记录（2026-10-10）
+
+- 工作流：[`M0-A Verify` #38036839152](https://github.com/q894829927/Rift-Resonance/actions/runs/38036839152)；结论 **Success**。
+- 已验证：Node.js 24.21.0 / npm 11.19.0；npm install / npm ci；shared、simulation、server 和 client 的类型检查与构建；2 个 Node 单元测试。
+- 初始锁文件：自动提交到 `codex/m0-a-scaffold`；后续需使用已提交锁文件再执行工作流验证。
+- npm 安全报告：首次安装输出 **17 个依赖告警（13 low、3 moderate、1 high）**；未做安全修复和部署许可评审，不应直接发布到公网。
+- 尚未验证：浏览器实际渲染、服务端 `/health` 的真实 HTTP 响应、不同设备联网、ECS 资源占用。
+
+**M0-A 不等于 M0 完成**。正式进入 M0-B 前应完成浏览器与健康接口的本地烟测，并对 npm 依赖漏洞进行分级评估。
