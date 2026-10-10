@@ -172,6 +172,7 @@ class LobbyScene extends Phaser.Scene {
 
     for (const [id, entity] of this.projectiles) {
       if (combat.projectiles.has(id)) continue;
+      this.tweens.killTweensOf(entity);
       entity.destroy();
       this.projectiles.delete(id);
     }
@@ -181,7 +182,21 @@ class LobbyScene extends Phaser.Scene {
         entity = createM1Projectile(this, projectile.weaponId, projectile.x, projectile.y);
         this.projectiles.set(id, entity);
       }
-      entity?.setPosition(projectile.x, projectile.y);
+      if (!entity) continue;
+      if (projectile.weaponId === "weapon.spin_blade") {
+        // Server patches are 10Hz, so interpolate only when authoritative
+        // destination changes; never restart a tween every render frame.
+        const last = entity.getData("boomerangTarget") as {x:number;y:number}|undefined;
+        if (!last || last.x !== projectile.x || last.y !== projectile.y) {
+          entity.setData("boomerangTarget", {x:projectile.x,y:projectile.y});
+          this.tweens.killTweensOf(entity);
+          this.tweens.add({targets:entity,x:projectile.x,y:projectile.y,
+            duration:95,ease:"Linear"});
+        }
+        entity.setAlpha(projectile.phase === "returning" ? 0.88 : 1);
+      } else {
+        entity.setPosition(projectile.x, projectile.y);
+      }
     }
 
     for (const event of combat.events) {
