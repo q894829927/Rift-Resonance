@@ -8,12 +8,9 @@ export const M1_ART = {
   guardian: "player.guardian", mage: "player.mage"
 } as const;
 
-const DISPLAYED: readonly M1AssetId[] = [
-  "env.floor", "env.stone", "env.rune", "player.guardian", "player.mage"
-];
-
 export function preloadM1VisualAssets(scene: Phaser.Scene): void {
-  for (const id of DISPLAYED) {
+  // Load the small active M1 CC0/placeholder catalog, not all 453 vendor files.
+  for (const id of Object.keys(M1_ASSETS) as M1AssetId[]) {
     scene.load.image(id, assetUrl(id));
   }
 }
