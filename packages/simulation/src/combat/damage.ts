@@ -1,6 +1,8 @@
-import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH } from "@rift/shared";
+import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID } from "@rift/shared";
 import {
   COMBAT_HIT_PROTECTION_TICKS,
+  COMBAT_FIREBALL_EXPLOSION_RADIUS,
+  COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO,
   emitCombatEvent,
   distanceSquared,
   type CombatEnemy,
@@ -52,15 +54,40 @@ export class DamageSystem {
       if (distance <= travel + target.collisionRadius + projectile.radius) {
         projectile.x = target.x;
         projectile.y = target.y;
-        this.applyEnemyDamage(world, {
+        const impactX = target.x;
+        const impactY = target.y;
+        const hit = this.applyEnemyDamage(world, {
           actionId: "projectile-hit:" + projectile.id,
           sourceId: projectile.sourcePlayerId,
           targetId: target.id,
           amount: projectile.damage,
           assetId: projectile.weaponId,
-          x: target.x,
-          y: target.y
+          x: impactX,
+          y: impactY
         });
+        // Level-III fireball hits the primary target once and splashes distinct
+        // nearby enemies once each. IDs include projectile+enemy to be idempotent.
+        if (hit && projectile.weaponId === FIREBALL_WEAPON_ID &&
+            (world.players.get(projectile.sourcePlayerId)?.weaponLevels.get(FIREBALL_WEAPON_ID) ?? 1) >= 3) {
+          emitCombatEvent(world, {
+            type: "weapon.explosion", sourceId: projectile.sourcePlayerId,
+            targetId: target.id, assetId: FIREBALL_WEAPON_ID,
+            x: impactX, y: impactY, amount: COMBAT_FIREBALL_EXPLOSION_RADIUS
+          });
+          const splash = Math.max(1, Math.round(projectile.damage * COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO));
+          for (const nearby of [...world.enemies.values()].filter(other =>
+            other.alive && other.id !== target.id &&
+            distanceSquared(other, {x: impactX, y: impactY}) <=
+              (COMBAT_FIREBALL_EXPLOSION_RADIUS + other.collisionRadius) ** 2
+          ).sort((a, b) => a.id.localeCompare(b.id))) {
+            this.applyEnemyDamage(world, {
+              actionId: "fireball-splash:" + projectile.id + ":" + nearby.id,
+              sourceId: projectile.sourcePlayerId, targetId: nearby.id,
+              amount: splash, assetId: FIREBALL_WEAPON_ID,
+              x: nearby.x, y: nearby.y
+            });
+          }
+        }
         world.projectiles.delete(projectileId);
         continue;
       }
