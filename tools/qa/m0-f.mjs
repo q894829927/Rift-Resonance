@@ -139,7 +139,7 @@ const report = {
   methodology:"Real Colyseus SDK clients over per-client FIFO TCP-delay proxies. Traffic includes game websocket frames after matchmaking baseline. Jitter is delay variation, not packet loss.",
   result:"running"
 };
-const proxies=[], rooms=[], senders=[], observations=[], endpoints=[];
+const proxies=[], rooms=[], senders=[], observations=[], endpoints=[], setupFailures=[];
 let firstMetrics=null, peakRss=0, maxTickP99=0, endedMetrics=null, monitor=null;
 let startedAt=0, endedAt=0;
 
@@ -156,9 +156,20 @@ try {
     proxies.push(proxy);
     endpoints.push(endpoint);
     const client=new Client(endpoint);
-    const room=i===0
-      ?await client.create(ROOM_TYPE,{nickname:"Load"+i})
-      :await client.joinById(rooms[0].roomId,{nickname:"Load"+i});
+    let room;
+    for(let attempt=0;attempt<3;attempt++){
+      try {
+        room=i===0
+          ?await client.create(ROOM_TYPE,{nickname:"Load"+i})
+          :await client.joinById(rooms[0].roomId,{nickname:"Load"+i});
+        break;
+      } catch(error) {
+        setupFailures.push({player:i,attempt:attempt+1,message:String(error)});
+        if(attempt===2)throw error;
+        await sleep(300 + rttMs*2);
+      }
+    }
+    if(!room)throw new Error("No room obtained after retries");
     rooms.push(room);
     observations.push({player:i,positions:0,tickSamples:0,lastTick:null,disconnects:0});
     const stat=observations[i];
@@ -281,7 +292,7 @@ try {
   const outKBps=roomOutBytes/1024/elapsedSeconds;
   if(outKBps>maxOutKBps)throw new Error("Room downstream bandwidth exceeds budget: "+outKBps.toFixed(2)+" KB/s");
   report.measured={
-    elapsedSeconds,roomOutBytes,roomInBytes,outKBps,
+    elapsedSeconds,roomOutBytes,roomInBytes,outKBps,setupFailures,
     inKBps:roomInBytes/1024/elapsedSeconds,
     clients:traffic, observations: observations.map(item=>({...item})),
     observedHttpRttMs:{ samples:observedHttpRtts, p50:httpRttP50, p95:quantile(observedHttpRtts,.95) },
@@ -314,7 +325,8 @@ try {
     observedHttpRttP50Ms:Number(httpRttP50.toFixed(1)),
     tickP95Ms:endedMetrics?.rooms?.[0]?.tickDurationMs?.p95,
     tickP99Ms:endedMetrics?.rooms?.[0]?.tickDurationMs?.p99,
-    disconnectedAndRejoined:rejoined
+    disconnectedAndRejoined:rejoined,
+    setupFailures:setupFailures.length
   }));
 } catch(error) {
   report.result="fail";
