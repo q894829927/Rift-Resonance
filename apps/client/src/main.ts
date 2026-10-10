@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { preloadM1VisualAssets, renderM1Backdrop, createM1PlayerAvatar } from "./art/m1Visuals.js";
 import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
 import { LobbyConnection, getServerEndpoint, type LobbyView, type RenderPosition } from "./network/client.js";
 import "./style.css";
@@ -11,10 +12,12 @@ class LobbyScene extends Phaser.Scene {
   private readonly renderPositions = new Map<string, RenderPosition>();
 
   constructor() { super("LobbyScene"); }
+  preload(): void { preloadM1VisualAssets(this); }
   create(): void {
     this.nameLayer = document.getElementById("player-name-layer");
     if (!this.nameLayer) throw new Error("Missing player name overlay");
     this.cameras.main.setBackgroundColor("#111b2a");
+    renderM1Backdrop(this);
     this.fitCamera();
     this.scale.on("resize", this.fitCamera, this);
     this.events.once("shutdown", () => {
@@ -67,11 +70,7 @@ class LobbyScene extends Phaser.Scene {
         for (const c of id) hash = ((hash * 31) + c.charCodeAt(0)) | 0;
         const color = colors[(hash >>> 0) % colors.length]!;
         const self = id === view.sessionId;
-        entity = this.add.container(player.x, player.y, [
-          this.add.ellipse(0, 31, 84, 22, 0x050b13, .75),
-          this.add.circle(0, 0, 47, color, .10).setStrokeStyle(self ? 3 : 1, color, .7),
-          this.add.rectangle(0, 0, 44, 44, color).setStrokeStyle(3, self ? 0xffffff : 0x203349)
-        ]);
+        entity = createM1PlayerAvatar(this, player.x, player.y, color, self, hash);
         this.avatars.set(id, entity);
 
         const name = document.createElement("span");
@@ -93,6 +92,7 @@ class LobbyScene extends Phaser.Scene {
       const entity = this.avatars.get(id);
       if (!entity) continue;
       entity.setPosition(pos.x, pos.y);
+      entity.setDepth(1000 + pos.y);
       this.renderPositions.set(id, pos);
     }
     this.positionNames();
