@@ -22,10 +22,8 @@ h3 { font-size: 16px; margin: 4px 0 14px; }
 }
 #app { width: 100%; aspect-ratio: 16 / 9; position: relative; }
 #app canvas {
+  /* Phaser Scale Manager owns canvas dimensions, avoiding CSS-only scaling. */
   display: block;
-  /* Phaser Scale.RESIZE allocates the drawing surface at the container size;
-     do not CSS-upscale the old 960x540 backing buffer. */
-  width: 100%; height: 100%;
 }
 .arena-overlay {
   position: absolute; inset: 0; display: flex; flex-direction: column;
