@@ -74,7 +74,8 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
     }
   }
 
-  // Stronger ground texture contrast is independent of pixel-sprite filtering.\n  // Frame/map border sits BELOW all gameplay units. No fake blocking geometry.
+  // Stronger ground texture contrast is independent of pixel-sprite filtering.
+  // Frame/map border sits BELOW all gameplay units. No fake blocking geometry.
   const rim = scene.add.graphics().setDepth(-945);
   rim.fillStyle(0x050a11, 0.68);
   rim.fillRect(0, 0, W, 29);
@@ -124,7 +125,7 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
 
   if (scene.textures.exists("env.rune")) {
     for (const [x, y] of [[55, 58], [W - 55, 58], [55, H - 58], [W - 55, H - 58]] as const) {
-      scene.add.image(x, y, "env.rune").setScale(1.8)
+      scene.add.image(x, y, "env.rune").setScale(2)
         .setTint(0x876c9d).setAlpha(0.6).setDepth(-790);
     }
   }
