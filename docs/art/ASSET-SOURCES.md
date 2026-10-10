@@ -9,7 +9,7 @@
 | particle-pack | https://kenney.nl/assets/particle-pack | 80 | CC0 |
 | smoke-particles | https://kenney.nl/assets/smoke-particles | 77 | CC0 |
 | pixel-ui-pack | https://kenney.nl/assets/pixel-ui-pack | 36 | CC0 |
-| Kaishido Dark World | https://kaishido.itch.io/dark-world | 0 (pending original download) | source page CC0 |
+| Kaishido Dark World | https://kaishido.itch.io/dark-world | 0 (user ZIP received; 20 PNG, import pending) | CC0 (author page) |
 
 Kenney fixed mirror: https://github.com/shorepine/kenney/tree/3694c6879e487c108f55677be7dd2ca75b07cc3b
 
