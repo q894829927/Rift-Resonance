@@ -34,6 +34,7 @@ class LobbyScene extends Phaser.Scene {
   private readonly handledCombatEventIds = new Set<string>();
   private readonly nameLabels = new Map<string, HTMLSpanElement>();
   private nameLayer: HTMLElement | null = null;
+  private bladeDebug: HTMLOutputElement | null = null;
   private latestView: LobbyView | null = null;
   private readonly renderPositions = new Map<string, RenderPosition>();
 
@@ -41,6 +42,23 @@ class LobbyScene extends Phaser.Scene {
   preload(): void { preloadM1VisualAssets(this); }
   create(): void {
     this.nameLayer = document.getElementById("player-name-layer");
+    // Optional live proof of the authoritative phase/distance. It also
+    // exposes a stale server: old Colyseus schemas report maxDistance=0.
+    if (new URLSearchParams(window.location.search).has("debugBlade")) {
+      const display = document.createElement("output");
+      display.id = "blade-debug";
+      display.setAttribute("aria-live", "off");
+      display.textContent = "Fixed-168 / 0.7s · 等待回旋刃投掷";
+      Object.assign(display.style, {
+        position: "absolute", left: "14px", top: "92px", zIndex: "200",
+        padding: "7px 10px", fontSize: "12px", fontFamily: "Consolas, monospace",
+        background: "rgba(8, 13, 24, .92)", color: "#ddc7ff",
+        border: "1px solid #9c78d3", borderRadius: "5px",
+        pointerEvents: "none", whiteSpace: "pre-line"
+      });
+      document.querySelector(".arena")?.append(display);
+      this.bladeDebug = display;
+    }
     if (!this.nameLayer) throw new Error("Missing player name overlay");
     this.cameras.main.setBackgroundColor("#111b2a");
     renderM1Backdrop(this);
@@ -57,6 +75,8 @@ class LobbyScene extends Phaser.Scene {
       this.handledCombatEventIds.clear();
       this.nameLayer?.replaceChildren();
       this.nameLabels.clear();
+      this.bladeDebug?.remove();
+      this.bladeDebug = null;
     });
   }
 
@@ -199,10 +219,28 @@ class LobbyScene extends Phaser.Scene {
       }
     }
 
+    if (this.bladeDebug) {
+      const blade = [...combat.projectiles.values()].find(p => p.weaponId === "weapon.spin_blade");
+      this.bladeDebug.textContent = !blade
+        ? "Fixed-168 / 0.7s · 等待投掷（若始终是近战斩击，请核查是否运行旧服务端）"
+        : blade.maxDistance > 0
+          ? "回旋刃 Fixed-168 | " + (blade.phase === "returning" ? "RETURN" : "OUT") +
+            " " + blade.outwardDistance.toFixed(0) + "/" + blade.maxDistance.toFixed(0) +
+            " | " + blade.x.toFixed(0) + "," + blade.y.toFixed(0)
+          : "回旋刃检测到旧服务端 Schema（没有射程进度）\n请完全停止并重启服务端";
+    }
+
     for (const event of combat.events) {
       if (this.handledCombatEventIds.has(event.id)) continue;
       this.handledCombatEventIds.add(event.id);
-      if (event.type === "weapon.fired" && event.assetId === "weapon.spin_blade") {
+      if (event.type === "weapon.returning" && event.assetId === "weapon.spin_blade") {
+        // Distinct apex marker from the authoritative 168-unit turnaround.
+        // Never infer a turn from a delayed position patch or local animation.
+        const apex = this.add.circle(event.x, event.y, 22, 0xe6cbff, 0.28)
+          .setStrokeStyle(3, 0xf4dbff, 0.96).setDepth(1460);
+        this.tweens.add({targets:apex, scale:1.55, alpha:0, duration:340,
+          onComplete:()=>apex.destroy()});
+      } else if (event.type === "weapon.fired" && event.assetId === "weapon.spin_blade") {
         // The blade itself is a persistent, rotating server projectile.
         // Only a short launch flash is spawned here, never an instant slash.
         const launch = this.add.circle(event.x, event.y, 18, 0xd4b7ff, 0.32)
