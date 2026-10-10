@@ -45,21 +45,21 @@ export function createM1PlayerAvatar(
   scene: Phaser.Scene, x: number, y: number, color: number,
   self: boolean, stableHash: number
 ): Phaser.GameObjects.Container {
-  const shadow = scene.add.ellipse(0, 20, 49, 12, 0x050b13, 0.68);
-  const identification = scene.add.circle(0, 9, 25, color, 0.045)
+  const shadow = scene.add.ellipse(0, 15, 36, 10, 0x050b13, 0.68);
+  const identification = scene.add.circle(0, 7, 17, color, 0.045)
     .setStrokeStyle(self ? 2 : 1, color, self ? 0.9 : 0.7);
   const key = (stableHash & 1) === 0 ? M1_ART.guardian : M1_ART.mage;
   // Frame 12 is a populated front-facing idle frame. Old hash%4 could select
   // transparent frames 2/3 and render an apparently missing player.
   const body = scene.textures.exists(key)
-    ? scene.add.sprite(0, -10, key, 12).setScale(PIXEL_CHARACTER_SCALE)
-    : scene.add.rectangle(0, -10, 48, 60, color)
+    ? scene.add.sprite(0, -8, key, 12).setScale(PIXEL_CHARACTER_SCALE)
+    : scene.add.rectangle(0, -8, 36, 42, color)
       .setStrokeStyle(3, self ? 0xffffff : 0x203349);
   const entity = scene.add.container(x, y, [shadow, identification, body])
     .setDepth(1000 + y);
   entity.setData("m1PlayerBody", body);
   entity.setData("m1PlayerRing", identification);
-  addM1HealthBar(entity, 56, -58, 0x63d4e9);
+  addM1HealthBar(entity, 44, -44, 0x63d4e9);
   return entity;
 }
 
