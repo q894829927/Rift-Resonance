@@ -1,0 +1,35 @@
+name: M1 Import Free CC0 Assets
+on:
+  push:
+    branches:
+      - codex/m1-art-cc0-bootstrap
+    paths:
+      - .github/workflows/m1-import-cc0.yml
+      - tools/art/import_cc0_assets.py
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout M1 art branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Import verified CC0 image resources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/art/import_cc0_assets.py
+      - name: Record imported assets in the branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/client/public/assets/vendor/kenney docs/art/ASSET-SOURCES.md docs/art/CC0-IMPORT-REPORT.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "assets(m1): vendor verified Kenney CC0 UI and VFX PNGs"
+            git push origin HEAD:refs/heads/codex/m1-art-cc0-bootstrap
+          fi
