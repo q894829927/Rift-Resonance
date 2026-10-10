@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
-import { LobbyConnection, getServerEndpoint, type LobbyView } from "./network/client.js";
+import { LobbyConnection, getServerEndpoint, type LobbyView, type RenderPosition } from "./network/client.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
@@ -8,6 +8,7 @@ class LobbyScene extends Phaser.Scene {
   private readonly nameLabels = new Map<string, HTMLSpanElement>();
   private nameLayer: HTMLElement | null = null;
   private latestView: LobbyView | null = null;
+  private readonly renderPositions = new Map<string, RenderPosition>();
 
   constructor() { super("LobbyScene"); }
   create(): void {
@@ -50,6 +51,7 @@ class LobbyScene extends Phaser.Scene {
       if (view?.players.has(id)) continue;
       container.destroy();
       this.avatars.delete(id);
+      this.renderPositions.delete(id);
       this.nameLabels.get(id)?.remove();
       this.nameLabels.delete(id);
     }
@@ -77,9 +79,9 @@ class LobbyScene extends Phaser.Scene {
         this.nameLayer?.append(name);
         this.nameLabels.set(id, name);
       }
-      // M0-D: deliberately apply authoritative positions with no prediction/lerp.
-      // Smoothing and reconciliation belong to M0-E.
-      entity.setPosition(player.x, player.y);
+      // Position changes are applied once per render frame by showPositions().
+      // On join, raw authoritative position provides a safe initial fallback.
+      if (!this.renderPositions.has(id)) entity.setPosition(player.x, player.y);
     }
     this.positionNames();
   }
@@ -190,6 +192,8 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
   showStatus(message, true);
 }, (tick) => {
   tickMonitor.textContent = "20 Hz 逻辑 · Tick " + tick;
+}, (positions) => {
+  if (scene.scene && scene.scene.isActive()) scene.showPositions(positions);
 });
 async function start(action: () => Promise<void>): Promise<void> {
   if (busy || connected) return;

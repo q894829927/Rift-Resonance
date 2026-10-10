@@ -1,5 +1,8 @@
-import { Client, Callbacks, type Room } from "@colyseus/sdk";
-import { ROOM_TYPE, MOVE_SEND_HZ, validateNickname, validateRoomId, type MovementInput } from "@rift/shared";
+import { Client, Callbacks, Predict, type Room } from "@colyseus/sdk";
+import {
+  ROOM_TYPE, MOVE_SEND_HZ, isMovementInput, validateNickname, validateRoomId
+} from "@rift/shared";
+import { moveMember } from "@rift/simulation";
 
 export interface LobbyPlayerView {
   nickname: string;
@@ -12,20 +15,27 @@ export interface LobbyView {
   phase: string;
   players: Map<string, LobbyPlayerView>;
 }
+export interface RenderPosition { x: number; y: number }
 export type LobbyListener = (view: LobbyView) => void;
+export type RenderListener = (positions: ReadonlyMap<string, RenderPosition>) => void;
 
-/** All network and room lifecycle concerns live behind this adapter. */
+/**
+ * M0-E network adapter. Colyseus owns input sequence IDs, acknowledgement and replay.
+ * The client never mutates authoritative Schema positions.
+ */
 export class LobbyConnection {
   private readonly client: Client;
   private room: Room | null = null;
   private readonly players = new Map<string, LobbyPlayerView>();
-  private axes: MovementInput = {moveX: 0, moveY: 0};
-  private inputTimer: number | undefined;
+  private axes = { moveX: 0, moveY: 0 } as const as {moveX: -1 | 0 | 1; moveY: -1 | 0 | 1};
+  private animationFrame: number | undefined;
+
   constructor(
     endpoint: string,
     private onView: LobbyListener,
     private onDropped: (message: string) => void,
-    private onTick: (tick: number) => void = () => {}
+    private onTick: (tick: number) => void = () => {},
+    private onRender: RenderListener = () => {}
   ) {
     this.client = new Client(endpoint);
   }
@@ -49,14 +59,16 @@ export class LobbyConnection {
     const callbacks = Callbacks.get(room);
     callbacks.onAdd("players", (value: unknown, key: unknown) => {
       if (this.room !== room || typeof key !== "string" || !isLobbyPlayerView(value)) return;
-      const player = value;
-      const sessionId = key;
-      this.players.set(sessionId, { nickname: player.nickname, x: player.x, y: player.y });
-      // Movement is a property change on a child schema, not a collection add.
+      this.players.set(key, { nickname: value.nickname, x: value.x, y: value.y });
+      // Ordinary patches update the decoded schema instance itself. Rendering is
+      // driven by Predict.value() once per frame, not by patch-driven DOM rebuilds.
       callbacks.onChange(value as never, () => {
         if (this.room !== room || !isLobbyPlayerView(value)) return;
-        this.players.set(sessionId, {nickname: value.nickname, x: value.x, y: value.y});
-        this.emit();
+        const old = this.players.get(key);
+        if (old && old.nickname !== value.nickname) {
+          this.players.set(key, { nickname: value.nickname, x: value.x, y: value.y });
+          this.emit();
+        }
       });
       this.emit();
     });
@@ -72,44 +84,93 @@ export class LobbyConnection {
       if (this.room === room && typeof value === "number") this.onTick(value);
     });
     room.onLeave((code: number) => {
-      this.stopInputs();
       if (this.room !== room) return;
+      this.stopInputs();
       this.room = null;
       this.players.clear();
       this.onDropped("房间连接已关闭，代码：" + code);
     });
     room.onError((code: number, message?: string) => {
-      if (this.room === room) this.onDropped("网络异常：" + code + " " + message);
+      if (this.room === room) this.onDropped("网络异常：" + code + " " + (message ?? ""));
     });
-    this.startInputs(room);
-    this.emit();
+    try {
+      this.startPrediction(room);
+      this.emit();
+    } catch (error) {
+      this.stopInputs();
+      this.room = null;
+      this.players.clear();
+      await room.leave();
+      throw error;
+    }
   }
 
-  /** Set local intent only. No coordinates or health can be sent by the client. */
-  setMoveDirection(axes: MovementInput): void {
+  /** Only input intent is sent to the server; never the predicted coordinates. */
+  setMoveDirection(axes: {moveX: -1 | 0 | 1; moveY: -1 | 0 | 1}): void {
     this.axes = axes;
   }
 
-  private startInputs(room: Room): void {
+  private startPrediction(room: Room): void {
     this.stopInputs();
-    const channel = room.input(); // Colyseus 0.18 schema comes from server handshake.
-    if (channel.tickRate !== MOVE_SEND_HZ) {
-      void room.leave();
+    const input = room.input();
+    if (input.tickRate !== MOVE_SEND_HZ) {
       throw new Error("服务端移动 Tick 频率与客户端不一致");
     }
-    this.inputTimer = window.setInterval(() => {
+
+    const predictor = Predict.get(room, { mode: "lerp", delay: 100 });
+    predictor.attachAll("players", { mode: "lerp", fields: ["x", "y"] });
+    let localReconcilerAttached = false;
+
+    const frame = (now: number): void => {
       if (this.room !== room) return;
-      const data = channel.data as MovementInput;
-      data.moveX = this.axes.moveX;
-      data.moveY = this.axes.moveY;
-      channel.send(); // one movement intent per 50ms, independently of browser FPS
-    }, 1000 / MOVE_SEND_HZ);
+      const state = room.state as {players?: Map<string, LobbyPlayerView>};
+      const players = state.players;
+
+      // Initial Schema collection callbacks may arrive after the join promise.
+      // Construct the local controller only once the authoritative self exists.
+      if (!localReconcilerAttached) {
+        const self = players?.get(room.sessionId);
+        if (self) {
+          predictor.reconciler(self, {
+            input,
+            fields: ["x", "y"],
+            smoothMs: 65,
+            snap: 150,
+            step: (ctx, pose, cmd) => {
+              if (isMovementInput(cmd)) moveMember(pose, cmd, ctx.dt);
+            }
+          });
+          localReconcilerAttached = true;
+        }
+      }
+
+      // SDK performs acknowledgment-driven rollback/replay; send before reading.
+      const steps = predictor.tick(now);
+      for (let i = 0; i < steps; i++) {
+        input.data.moveX = this.axes.moveX;
+        input.data.moveY = this.axes.moveY;
+        input.send();
+      }
+
+      if (players) {
+        const positions = new Map<string, RenderPosition>();
+        for (const [id, player] of players) {
+          const x = predictor.value(player, "x");
+          const y = predictor.value(player, "y");
+          if (Number.isFinite(x) && Number.isFinite(y)) positions.set(id, { x, y });
+        }
+        this.onRender(positions);
+      }
+
+      this.animationFrame = window.requestAnimationFrame(frame);
+    };
+    this.animationFrame = window.requestAnimationFrame(frame);
   }
 
   private stopInputs(): void {
-    if (this.inputTimer !== undefined) window.clearInterval(this.inputTimer);
-    this.inputTimer = undefined;
-    this.axes = {moveX: 0, moveY: 0};
+    if (this.animationFrame !== undefined) window.cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = undefined;
+    this.axes = { moveX: 0, moveY: 0 };
   }
 
   get connected(): boolean { return this.room !== null; }
@@ -130,7 +191,7 @@ export class LobbyConnection {
     this.onView({
       roomId: room.roomId,
       sessionId: room.sessionId,
-      phase: (room.state as { phase?: string }).phase ?? "LOBBY",
+      phase: (room.state as {phase?: string}).phase ?? "LOBBY",
       players: new Map(this.players)
     });
   }

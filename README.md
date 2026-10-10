@@ -22,6 +22,7 @@
 - [M0-B 房间管理与状态同步](docs/technical/M0-B-IMPLEMENTATION.md) — 创建/加入/退出、状态投影、测试和验收方法。
 - [M0-C 固定逻辑 Tick 与响应式显示](docs/technical/M0-C-IMPLEMENTATION.md) — 20 Hz 模拟、10 Hz 网络补丁和跨窗口分辨率验收。
 - [M0-D 服务端权威移动](docs/technical/M0-D-IMPLEMENTATION.md) — 输入流、20 Hz 固定移动、边界与位置同步、测试方式。
+- [M0-E 客户端预测与插值](docs/technical/M0-E-IMPLEMENTATION.md) — Colyseus SDK 预测与校正、远端插值、验收及边界。
 
 ## 初步技术选型（尚未开始实现）
 
@@ -83,3 +84,8 @@ M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机
 ## M0-D 本地操作
 
 同上启动服务端和客户端，创建房间后在**游戏区域外的表单不具有焦点时**按 WASD 或方向键移动。移动由服务端 20 Hz 固定 Tick 计算，再每 100ms 同步一次；双人窗口均可看到相同权威位置。按键松开、窗口失去焦点或网络空闲时停止。**本阶段没有本地预测/插值**，远端人物可能按 10 Hz 网络节奏跳步，M0-E 再解决移动平滑性。详见 [M0-D 实施说明](docs/technical/M0-D-IMPLEMENTATION.md)。
+
+
+## M0-E 体验验收
+
+本地运行步骤不变。按 WASD 控制自己的角色，客户端立即进行 20 Hz 预测并按服务器快照自动校正；其他玩家按约 100ms 的缓冲插值显示。角色与昵称使用同一份每帧渲染坐标，不再受 10 Hz 网络补丁限制。联机房间仍以服务端状态为权威。人工测试详见 [M0-E 实施说明](docs/technical/M0-E-IMPLEMENTATION.md)。
