@@ -248,11 +248,13 @@ test("M2-A starts with one weapon and produces only valid server-owned choices",
   const player = addCombatPlayer(world, "player-a", "Alice");
   assert.deepEqual(player.weaponIds, ["weapon.fireball"]);
   const choices = getCombatUpgradeChoices(player);
-  assert.equal(choices.length, 3);
+  assert.equal(choices.length, 5); // full legal pool; server drafts three
   assert.deepEqual(choices.map(choice => choice.id), [
     "upgrade.weapon.spin_blade",
     "upgrade.weapon.fireball.power",
-    "passive.vitality"
+    "passive.rage",
+    "passive.swift_cast",
+    "passive.fortitude"
   ]);
   assert.equal(new Set(choices.map(choice => choice.id)).size, choices.length);
 });
