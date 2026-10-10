@@ -51,7 +51,7 @@ export const M1_ASSETS = {
   "vfx.resonance": { id: "vfx.resonance", source: "placeholder", category: "effect",
     url: particle("twirl_02"), replacement: "双环火雷超载共振特效" },
   "ui.frame": { id: "ui.frame", source: "cc0", category: "ui",
-    url: adventure("panel_grey.png".replace(".png", "")), replacement: "暗黑哥特 HUD 装饰帧" }
+    url: adventure("panel_grey"), replacement: "暗黑哥特 HUD 装饰帧" }
 } as const satisfies Record<string, M1AssetSpec>;
 
 export type M1AssetId = keyof typeof M1_ASSETS;
