@@ -36,23 +36,28 @@ function startBlade({enemyDistance=null, x=400, y=270, facingX=1, facingY=0, lev
 test("close enemy never shortens fixed flight: turnaround only at 168 world units",()=>{
   const {world,player,blade,damage,enemy}=startBlade({enemyDistance:24});
   close(blade.returningBlade.maxDistance,168);
-  for(let i=0;i<9;i++){
+  for(let i=0;i<13;i++){
     damage.step(world,0.05);
     assert.equal(blade.returningBlade.phase,"outbound");
     assert.ok(blade.returningBlade.outwardDistance<168);
   }
-  assert.equal(blade.returningBlade.outwardDistance,162);
+  assert.equal(blade.returningBlade.outwardDistance,156);
+  assert.equal(world.events.some(e=>e.type==="weapon.returning"),false);
   damage.step(world,0.05);
   assert.equal(blade.returningBlade.phase,"returning");
   close(blade.returningBlade.outwardDistance,168);
   close(Math.hypot(blade.x-player.x,blade.y-player.y),168);
+  assert.equal(world.events.filter(e=>e.type==="weapon.returning").length,1);
+  const apex=world.events.find(e=>e.type==="weapon.returning");
+  close(apex.amount,168);
+  close(Math.hypot(apex.x-player.x,apex.y-player.y),168);
 });
 
 test("no-target throws the same full range along player facing, not zero distance",()=>{
   const {world,player,blade,damage}=startBlade({facingX:0,facingY:-1});
   assert.equal(blade.targetEnemyId,"");
   assert.equal(blade.returningBlade.phase,"outbound");
-  for(let i=0;i<9;i++) {
+  for(let i=0;i<13;i++) {
     damage.step(world,0.05);
     assert.equal(blade.returningBlade.phase,"outbound");
   }
@@ -68,9 +73,9 @@ test("losing the targeted enemy cannot trigger an early turnaround",()=>{
   assert.ok(enemy);
   damage.step(world,0.05);
   world.enemies.delete(enemy.id);
-  for(let i=0;i<8;i++) damage.step(world,0.05);
+  for(let i=0;i<12;i++) damage.step(world,0.05);
   assert.equal(blade.returningBlade.phase,"outbound");
-  close(blade.returningBlade.outwardDistance,162);
+  close(blade.returningBlade.outwardDistance,156);
   damage.step(world,0.05);
   assert.equal(blade.returningBlade.phase,"returning");
   close(blade.returningBlade.outwardDistance,COMBAT_SPIN_BLADE_THROW_DISTANCE);
@@ -85,7 +90,7 @@ test("near arena edges changes launch direction instead of truncating range",()=
     const f=blade.returningBlade;
     const norm=Math.hypot(f.directionX,f.directionY);
     close(norm,1);
-    for(let i=0;i<10;i++){
+    for(let i=0;i<14;i++){
       damage.step(world,0.05);
       assert.ok(blade.x>=COMBAT_SPIN_BLADE_PROJECTILE_RADIUS-0.01);
       assert.ok(blade.x<=WORLD_VIEW_WIDTH-COMBAT_SPIN_BLADE_PROJECTILE_RADIUS+0.01);
@@ -108,5 +113,5 @@ test("outbound shape reaches exact 168-unit apex with both level arcs",()=>{
     close(Math.hypot(half.x-480,half.y-270)>0?1:0,1);
     close(Math.hypot(dir.x,dir.y),1);
   }
-  close(COMBAT_SPIN_BLADE_SPEED*0.05,18);
+  close(COMBAT_SPIN_BLADE_SPEED*0.05,12);
 });
