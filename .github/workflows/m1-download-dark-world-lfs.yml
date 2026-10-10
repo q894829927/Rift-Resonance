@@ -1,0 +1,70 @@
+name: Import original Dark World files via Git LFS
+on:
+  push:
+    branches: [codex/m1-art-cc0-bootstrap]
+    paths:
+      - .github/workflows/m1-download-dark-world-lfs.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Download original free author package
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/itch-dl" --no-audit --no-fund itchio-downloader
+          mkdir -p "$RUNNER_TEMP/dark-world-original"
+          "$RUNNER_TEMP/itch-dl/node_modules/.bin/itchio-downloader" --url "https://kaishido.itch.io/dark-world" --downloadDirectory "$RUNNER_TEMP/dark-world-original"
+          find "$RUNNER_TEMP/dark-world-original" -type f -maxdepth 3 -print
+      - name: Verify original archive matches the supplied upload
+        run: |
+          set -euo pipefail
+          mapfile -d '' zips < <(find "$RUNNER_TEMP/dark-world-original" -type f -iname '*.zip' -print0)
+          test "${#zips[@]}" -eq 1
+          printf '8def28bbe2844b52e7d9a356a3e0ca94ebc72b92d2ead15b204b28d5b6fc8df7  %s\n' "${zips[0]}" | sha256sum -c -
+          python3 tools/art/import_dark_world.py "${zips[0]}"
+      - name: Enable Git LFS for the 20 original PNGs
+        run: |
+          set -euo pipefail
+          git lfs version
+          git lfs install --local
+          git lfs track 'apps/client/public/assets/vendor/kaishido/dark-world-v1/Character/*.png'
+          git lfs track 'apps/client/public/assets/vendor/kaishido/dark-world-v1/Environment/*.png'
+          git lfs track 'apps/client/public/assets/vendor/kaishido/dark-world-v1/Inventory/*.png'
+          git add .gitattributes apps/client/public/assets/vendor/kaishido/dark-world-v1
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          files=list(Path("apps/client/public/assets/vendor/kaishido/dark-world-v1").rglob("*.png"))
+          assert len(files)==20, len(files)
+          for p in files:
+              pointer=subprocess.check_output(["git","show",":"+str(p)],text=True)
+              assert pointer.startswith("version https://git-lfs.github.com/spec/v1"), str(p)
+          print("Verified all 20 staged files use Git LFS pointers.")
+          PY
+      - name: Record source and push LFS objects
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path("docs/art/ASSET-SOURCES.md")
+          s=path.read_text()
+          before="| Kaishido Dark World | https://kaishido.itch.io/dark-world | 0 (user ZIP received; 20 PNG, import pending) | CC0 (author page) |"
+          after="| Kaishido Dark World | https://kaishido.itch.io/dark-world | 20 original PNG (Git LFS) | CC0 (author page) |"
+          if before not in s: raise ValueError("Unexpected current source table")
+          path.write_text(s.replace(before,after))
+          PY
+          git add docs/art/ASSET-SOURCES.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "assets(m1): store 20 exact Dark World PNGs via Git LFS"
+          git push origin HEAD:refs/heads/codex/m1-art-cc0-bootstrap
