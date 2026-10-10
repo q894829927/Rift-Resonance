@@ -92,7 +92,7 @@ export const COMBAT_FIREBALL_EXPLOSION_RADIUS = 56;
 export const COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO = 0.5; // M2-B prototype balance
 /** Returning boomerang balance, server authoritative at 20Hz. */
 export const COMBAT_SPIN_BLADE_THROW_DISTANCE = 168;
-export const COMBAT_SPIN_BLADE_SPEED = 360;
+export const COMBAT_SPIN_BLADE_SPEED = 240; // fixed 168-unit outbound: 0.7 s at 20 Hz, visually legible
 export const COMBAT_SPIN_BLADE_PROJECTILE_RADIUS = 12;
 export const COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO = 0.65;
 export const COMBAT_SPIN_BLADE_ARC_HALF_ANGLE = Math.PI / 4;
