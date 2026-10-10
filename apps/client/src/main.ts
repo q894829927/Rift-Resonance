@@ -1,13 +1,14 @@
 import Phaser from "phaser";
-import { MAX_ROOM_PLAYERS, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
+import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
 import { LobbyConnection, getServerEndpoint, type LobbyView } from "./network/client.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
-  private readonly avatars: Phaser.GameObjects.GameObject[] = [];
+  private readonly avatars = new Map<string, Phaser.GameObjects.Container>();
   private readonly nameLabels = new Map<string, HTMLSpanElement>();
   private nameLayer: HTMLElement | null = null;
   private latestView: LobbyView | null = null;
+
   constructor() { super("LobbyScene"); }
   create(): void {
     this.nameLayer = document.getElementById("player-name-layer");
@@ -17,62 +18,72 @@ class LobbyScene extends Phaser.Scene {
     this.scale.on("resize", this.fitCamera, this);
     this.events.once("shutdown", () => {
       this.scale.off("resize", this.fitCamera, this);
+      for (const obj of this.avatars.values()) obj.destroy();
+      this.avatars.clear();
       this.nameLayer?.replaceChildren();
       this.nameLabels.clear();
     });
   }
 
-  /** The canvas tracks real CSS size; camera maps the same fixed world to every viewport. */
   private fitCamera(): void {
-    const width = Math.max(1, this.scale.width);
-    const height = Math.max(1, this.scale.height);
-    const zoom = calculateCameraZoom(width, height);
-    this.cameras.main.setZoom(zoom);
+    const w = Math.max(1, this.scale.width), h = Math.max(1, this.scale.height);
+    this.cameras.main.setZoom(calculateCameraZoom(w, h));
     this.cameras.main.centerOn(WORLD_VIEW_WIDTH / 2, WORLD_VIEW_HEIGHT / 2);
     this.positionNames();
   }
 
   private positionNames(): void {
     if (!this.latestView) return;
-    for (const [sessionId, player] of this.latestView.players) {
-      const label = this.nameLabels.get(sessionId);
+    for (const [id, player] of this.latestView.players) {
+      const label = this.nameLabels.get(id);
       if (!label) continue;
-      const position = projectWorldToViewport(player.x, player.y + 56, this.scale.width, this.scale.height);
-      label.style.left = position.x + "px";
-      label.style.top = position.y + "px";
-      label.style.fontSize = Math.max(13, Math.min(24, Math.round(17 * position.zoom))) + "px";
+      const p = projectWorldToViewport(player.x, player.y + 56, this.scale.width, this.scale.height);
+      label.style.left = p.x + "px";
+      label.style.top = p.y + "px";
+      label.style.fontSize = Math.max(13, Math.min(24, Math.round(17 * p.zoom))) + "px";
     }
   }
 
   showLobby(view: LobbyView | null): void {
     this.latestView = view;
-    this.nameLabels.clear();
-    this.nameLayer?.replaceChildren();
-    for (const item of this.avatars) item.destroy();
-    this.avatars.length = 0;
+    for (const [id, container] of this.avatars) {
+      if (view?.players.has(id)) continue;
+      container.destroy();
+      this.avatars.delete(id);
+      this.nameLabels.get(id)?.remove();
+      this.nameLabels.delete(id);
+    }
     if (!view) return;
+
     const colors = [0x63d4e9, 0xd4adff, 0xf1ba74, 0x82e4ad];
-    let index = 0;
     for (const [id, player] of view.players) {
-      const self = id === view.sessionId;
-      const color = colors[index++ % colors.length]!;
-      const shadow = this.add.ellipse(player.x, player.y + 31, 84, 22, 0x050b13, .75);
-      const ring = this.add.circle(player.x, player.y, 47, color, .10)
-        .setStrokeStyle(self ? 3 : 1, color, .7);
-      const avatar = this.add.rectangle(player.x, player.y, 44, 44, color)
-        .setStrokeStyle(3, self ? 0xffffff : 0x203349);
-      // Browser-rendered names stay crisp at fractional zoom and high DPI.
-      const name = document.createElement("span");
-      name.className = self ? "player-name player-name--self" : "player-name";
-      name.textContent = player.nickname + (self ? "（你）" : "");
-      this.nameLayer?.append(name);
-      this.nameLabels.set(id, name);
-      this.avatars.push(shadow, ring, avatar);
+      let entity = this.avatars.get(id);
+      if (!entity) {
+        // Stable player color across clients and network updates.
+        let hash = 0;
+        for (const c of id) hash = ((hash * 31) + c.charCodeAt(0)) | 0;
+        const color = colors[(hash >>> 0) % colors.length]!;
+        const self = id === view.sessionId;
+        entity = this.add.container(player.x, player.y, [
+          this.add.ellipse(0, 31, 84, 22, 0x050b13, .75),
+          this.add.circle(0, 0, 47, color, .10).setStrokeStyle(self ? 3 : 1, color, .7),
+          this.add.rectangle(0, 0, 44, 44, color).setStrokeStyle(3, self ? 0xffffff : 0x203349)
+        ]);
+        this.avatars.set(id, entity);
+
+        const name = document.createElement("span");
+        name.className = self ? "player-name player-name--self" : "player-name";
+        name.textContent = player.nickname + (self ? "（你）" : "");
+        this.nameLayer?.append(name);
+        this.nameLabels.set(id, name);
+      }
+      // M0-D: deliberately apply authoritative positions with no prediction/lerp.
+      // Smoothing and reconciliation belong to M0-E.
+      entity.setPosition(player.x, player.y);
     }
     this.positionNames();
   }
 }
-
 const scene = new LobbyScene();
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -139,10 +150,42 @@ function render(view: LobbyView | null): void {
   }
   refreshControls();
 }
+/** Keyboard state is sampled at the independent 20 Hz input sender. */
+const heldKeys = new Set<string>();
+function updateMovement(): void {
+  connection.setMoveDirection({
+    moveX: movementAxis(heldKeys.has("KeyA") || heldKeys.has("ArrowLeft"), heldKeys.has("KeyD") || heldKeys.has("ArrowRight")),
+    moveY: movementAxis(heldKeys.has("KeyW") || heldKeys.has("ArrowUp"), heldKeys.has("KeyS") || heldKeys.has("ArrowDown"))
+  });
+}
+function releaseKeys(): void {
+  heldKeys.clear();
+  updateMovement();
+}
+window.addEventListener("keydown", event => {
+  if (!connection.connected || event.repeat && heldKeys.has(event.code)) return;
+  if (document.activeElement instanceof HTMLInputElement) return;
+  if (!/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(event.code)) return;
+  event.preventDefault();
+  heldKeys.add(event.code);
+  updateMovement();
+});
+window.addEventListener("keyup", event => {
+  if (!/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(event.code)) return;
+  heldKeys.delete(event.code);
+  updateMovement();
+  if (connection.connected) event.preventDefault();
+});
+window.addEventListener("blur", releaseKeys);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) releaseKeys();
+});
+
 const connection = new LobbyConnection(getServerEndpoint(), (view) => {
   render(view);
   showStatus("已加入房间 " + view.roomId + " · " + view.players.size + " 人在线");
 }, (message) => {
+  releaseKeys();
   render(null);
   showStatus(message, true);
 }, (tick) => {
@@ -166,6 +209,7 @@ leave.addEventListener("click", async () => {
   refreshControls();
   try {
     await connection.leave();
+    releaseKeys();
     render(null);
     showStatus("已退出房间");
   } catch (error) {
@@ -180,6 +224,7 @@ copy.addEventListener("click", async () => {
   } catch { showStatus("复制失败，可手动选择房间 ID", true); }
 });
 window.addEventListener("beforeunload", () => {
+  releaseKeys();
   if (connection.connected) void connection.leave();
 });
 scene.events.once("create", () => scene.showLobby(displayedView));

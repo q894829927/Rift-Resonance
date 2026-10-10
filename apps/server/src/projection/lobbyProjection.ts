@@ -10,3 +10,13 @@ export function projectMemberJoined(state: LobbyNetworkState, player: LobbyMembe
 export function projectMemberLeft(state: LobbyNetworkState, sessionId: string): void {
   state.players.delete(sessionId);
 }
+
+/** Called by the authoritative fixed world tick, never by raw client messages. */
+export function projectMemberPositions(state: LobbyNetworkState, members: Iterable<LobbyMember>): void {
+  for (const member of members) {
+    const target = state.players.get(member.sessionId);
+    if (!target) continue;
+    if (target.x !== member.x) target.x = member.x;
+    if (target.y !== member.y) target.y = member.y;
+  }
+}

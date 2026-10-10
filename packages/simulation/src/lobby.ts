@@ -1,10 +1,11 @@
-import { MAX_ROOM_PLAYERS, SIMULATION_TICK_HZ } from "@rift/shared";
+import { MAX_ROOM_PLAYERS, SIMULATION_TICK_HZ, isMovementInput, type MovementInput } from "@rift/shared";
+import { moveMember } from "./movement.js";
 
 export interface LobbyMember {
   readonly sessionId: string;
   readonly nickname: string;
-  readonly x: number;
-  readonly y: number;
+  x: number;
+  y: number;
 }
 
 /**
@@ -29,12 +30,25 @@ export function createLobbyWorld(): LobbyWorld {
 }
 
 /** M0-C: deterministic 20 Hz time advancement. Movement begins in M0-D. */
-export function stepLobbyWorld(world: LobbyWorld, dtMs: number): void {
+export function stepLobbyWorld(
+  world: LobbyWorld, dtMs: number,
+  commands: ReadonlyMap<string, MovementInput> = new Map()
+): void {
   if (!Number.isFinite(dtMs) || Math.abs(dtMs - FIXED_STEP_MS) > 0.0001) {
     throw new RangeError("Lobby world requires a fixed " + FIXED_STEP_MS + "ms step");
   }
   if (world.tick >= Number.MAX_SAFE_INTEGER) {
     throw new RangeError("World tick exceeds safe integer range");
+  }
+  // Validate the whole frame before mutating any player.
+  for (const [sessionId, command] of commands) {
+    if (world.players.has(sessionId) && !isMovementInput(command)) {
+      throw new RangeError("Invalid movement from " + sessionId);
+    }
+  }
+  for (const [sessionId, member] of world.players) {
+    const command = commands.get(sessionId);
+    if (command) moveMember(member, command, dtMs / 1000);
   }
   world.tick++;
   world.elapsedMs = world.tick * FIXED_STEP_MS;

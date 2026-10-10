@@ -21,6 +21,7 @@
 - [M0-A 工程骨架及验证](docs/technical/M0-A-IMPLEMENTATION.md) — 前后端空壳、版本、运行命令、构建记录与后续门槛。
 - [M0-B 房间管理与状态同步](docs/technical/M0-B-IMPLEMENTATION.md) — 创建/加入/退出、状态投影、测试和验收方法。
 - [M0-C 固定逻辑 Tick 与响应式显示](docs/technical/M0-C-IMPLEMENTATION.md) — 20 Hz 模拟、10 Hz 网络补丁和跨窗口分辨率验收。
+- [M0-D 服务端权威移动](docs/technical/M0-D-IMPLEMENTATION.md) — 输入流、20 Hz 固定移动、边界与位置同步、测试方式。
 
 ## 初步技术选型（尚未开始实现）
 
@@ -77,3 +78,8 @@ M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机
 ### M0-C 显示清晰度修复
 
 角色头顶/脚下昵称现由随世界坐标定位的 HTML/CSS 渲染，不再生成随 Canvas 放大的 Phaser 字体纹理。当前圆环与方块是矢量占位图形，已关闭全局 pixelArt 最近邻采样，避免圆弧锯齿。未来真正的像素素材再单独启用最近邻采样。请检查不同浏览器缩放和窗口宽度下昵称与角色是否对齐。
+
+
+## M0-D 本地操作
+
+同上启动服务端和客户端，创建房间后在**游戏区域外的表单不具有焦点时**按 WASD 或方向键移动。移动由服务端 20 Hz 固定 Tick 计算，再每 100ms 同步一次；双人窗口均可看到相同权威位置。按键松开、窗口失去焦点或网络空闲时停止。**本阶段没有本地预测/插值**，远端人物可能按 10 Hz 网络节奏跳步，M0-E 再解决移动平滑性。详见 [M0-D 实施说明](docs/technical/M0-D-IMPLEMENTATION.md)。

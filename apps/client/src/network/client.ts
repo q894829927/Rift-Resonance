@@ -1,5 +1,5 @@
 import { Client, Callbacks, type Room } from "@colyseus/sdk";
-import { ROOM_TYPE, validateNickname, validateRoomId } from "@rift/shared";
+import { ROOM_TYPE, MOVE_SEND_HZ, validateNickname, validateRoomId, type MovementInput } from "@rift/shared";
 
 export interface LobbyPlayerView {
   nickname: string;
@@ -19,6 +19,8 @@ export class LobbyConnection {
   private readonly client: Client;
   private room: Room | null = null;
   private readonly players = new Map<string, LobbyPlayerView>();
+  private axes: MovementInput = {moveX: 0, moveY: 0};
+  private inputTimer: number | undefined;
   constructor(
     endpoint: string,
     private onView: LobbyListener,
@@ -50,6 +52,12 @@ export class LobbyConnection {
       const player = value;
       const sessionId = key;
       this.players.set(sessionId, { nickname: player.nickname, x: player.x, y: player.y });
+      // Movement is a property change on a child schema, not a collection add.
+      callbacks.onChange(value as never, () => {
+        if (this.room !== room || !isLobbyPlayerView(value)) return;
+        this.players.set(sessionId, {nickname: value.nickname, x: value.x, y: value.y});
+        this.emit();
+      });
       this.emit();
     });
     callbacks.onRemove("players", (_player: unknown, key: unknown) => {
@@ -64,6 +72,7 @@ export class LobbyConnection {
       if (this.room === room && typeof value === "number") this.onTick(value);
     });
     room.onLeave((code: number) => {
+      this.stopInputs();
       if (this.room !== room) return;
       this.room = null;
       this.players.clear();
@@ -72,7 +81,35 @@ export class LobbyConnection {
     room.onError((code: number, message?: string) => {
       if (this.room === room) this.onDropped("网络异常：" + code + " " + message);
     });
+    this.startInputs(room);
     this.emit();
+  }
+
+  /** Set local intent only. No coordinates or health can be sent by the client. */
+  setMoveDirection(axes: MovementInput): void {
+    this.axes = axes;
+  }
+
+  private startInputs(room: Room): void {
+    this.stopInputs();
+    const channel = room.input(); // Colyseus 0.18 schema comes from server handshake.
+    if (channel.tickRate !== MOVE_SEND_HZ) {
+      void room.leave();
+      throw new Error("服务端移动 Tick 频率与客户端不一致");
+    }
+    this.inputTimer = window.setInterval(() => {
+      if (this.room !== room) return;
+      const data = channel.data as MovementInput;
+      data.moveX = this.axes.moveX;
+      data.moveY = this.axes.moveY;
+      channel.send(); // one movement intent per 50ms, independently of browser FPS
+    }, 1000 / MOVE_SEND_HZ);
+  }
+
+  private stopInputs(): void {
+    if (this.inputTimer !== undefined) window.clearInterval(this.inputTimer);
+    this.inputTimer = undefined;
+    this.axes = {moveX: 0, moveY: 0};
   }
 
   get connected(): boolean { return this.room !== null; }
@@ -81,6 +118,7 @@ export class LobbyConnection {
   async leave(): Promise<void> {
     const room = this.room;
     if (!room) return;
+    this.stopInputs();
     this.room = null;
     this.players.clear();
     await room.leave();

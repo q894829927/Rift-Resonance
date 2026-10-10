@@ -1,7 +1,7 @@
 name: Rift Resonance Verify
 on:
   push:
-    branches: [main, codex/m0-c-crisp-names]
+    branches: [main, codex/m0-d-authoritative-movement]
   pull_request:
   workflow_dispatch:
 

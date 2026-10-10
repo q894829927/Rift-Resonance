@@ -66,3 +66,64 @@ test("four players maximum and fifth rejected", { timeout: 20000 }, async () => 
 test("server rejects an invalid nickname", { timeout: 15000 }, async () => {
   await assert.rejects(() => client.create(ROOM_TYPE, { nickname: "<bad>" }));
 });
+
+test("server moves only the sending session, with fixed-rate input and neutral stop", { timeout: 20000 }, async () => {
+  const rooms=[];
+  let sender;
+  try {
+    const alice=await client.create(ROOM_TYPE,{nickname:"Alice"});
+    rooms.push(alice);
+    const bob=await client.joinById(alice.roomId,{nickname:"Bob"});
+    rooms.push(bob);
+    await waitUntil(()=>alice.state?.players?.size===2 && bob.state?.players?.size===2,"both players");
+    const startAlice={x:alice.state.players.get(alice.sessionId).x,y:alice.state.players.get(alice.sessionId).y};
+    const startBob={x:alice.state.players.get(bob.sessionId).x,y:alice.state.players.get(bob.sessionId).y};
+    const input=alice.input();
+    assert.equal(input.tickRate,20);
+    input.data.moveX=1;
+    input.data.moveY=0;
+    sender=setInterval(()=>input.send(),50);
+    await waitUntil(()=>alice.state.players.get(alice.sessionId).x >= startAlice.x+48,"authoritative move");
+    clearInterval(sender); sender=undefined;
+    // Send neutral commands for a few ticks to consume any queued movement.
+    input.data.moveX=0;
+    input.data.moveY=0;
+    for(let i=0;i<8;i++){input.send();await new Promise(r=>setTimeout(r,50));}
+    const stopped=alice.state.players.get(alice.sessionId).x;
+    await new Promise(r=>setTimeout(r,250));
+    const still=alice.state.players.get(alice.sessionId).x;
+    assert.equal(still,stopped,"idle ticks must not keep moving");
+    assert.equal(alice.state.players.get(alice.sessionId).y,startAlice.y);
+    assert.deepEqual({
+      x:alice.state.players.get(bob.sessionId).x,
+      y:alice.state.players.get(bob.sessionId).y
+    },startBob,"Alice must not move Bob");
+    await waitUntil(()=>bob.state.players.get(alice.sessionId).x===still,"Bob receives Alice position");
+  } finally {
+    if(sender)clearInterval(sender);
+    await Promise.allSettled(rooms.map(r=>r.leave()));
+  }
+});
+test("diagonal movement is not faster than cardinal movement, server clamps edges", { timeout: 20000 }, async () => {
+  const rooms=[];
+  try {
+    const room=await client.create(ROOM_TYPE,{nickname:"Runner"});
+    rooms.push(room);
+    await waitUntil(()=>room.state?.players?.size===1,"movement join");
+    const input=room.input();
+    assert.equal(input.tickRate,20);
+    const x0=room.state.players.get(room.sessionId).x;
+    const y0=room.state.players.get(room.sessionId).y;
+    input.data.moveX=1; input.data.moveY=1;
+    for(let i=0;i<12;i++){input.send();await new Promise(r=>setTimeout(r,52));}
+    input.data.moveX=0;input.data.moveY=0;
+    for(let i=0;i<5;i++){input.send();await new Promise(r=>setTimeout(r,50));}
+    const entity=room.state.players.get(room.sessionId);
+    const dx=entity.x-x0,dy=entity.y-y0;
+    assert.ok(dx>0 && dy>0,"diagonal intent reaches server");
+    assert.ok(Math.hypot(dx,dy)<=160,"diagonal movement speed bounded");
+    assert.ok(entity.x>=22 && entity.x<=938 && entity.y>=22 && entity.y<=518);
+  } finally {
+    await Promise.allSettled(rooms.map(r=>r.leave()));
+  }
+});

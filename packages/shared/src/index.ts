@@ -7,3 +7,5 @@ export { validateNickname, validateRoomId, MAX_NICKNAME_LENGTH } from "./lobby.j
 export { WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom } from "./viewport.js";
 
 export { projectWorldToViewport } from "./viewport.js";
+export { movementAxis, isMovementInput, PLAYER_MOVE_SPEED, PLAYER_COLLISION_RADIUS, MOVE_SEND_HZ, NEUTRAL_MOVEMENT } from "./movement.js";
+export type { MoveAxis, MovementInput } from "./movement.js";
