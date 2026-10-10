@@ -12,6 +12,10 @@ import {
   chooseFixedRangeBladeDirection, returningBladeOutboundPoint
 } from "../packages/simulation/dist/combat/boomerang.js";
 import {WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT} from "../packages/shared/dist/index.js";
+import { LobbyNetworkState } from "../apps/server/dist/rooms/LobbyState.js";
+import {
+  projectCombatState, projectMemberJoined
+} from "../apps/server/dist/projection/lobbyProjection.js";
 
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-7, a + " should be " + b);
 function startBlade({enemyDistance=null, x=400, y=270, facingX=1, facingY=0, level=1}={}) {
@@ -101,6 +105,31 @@ test("near arena edges changes launch direction instead of truncating range",()=
     close(f.outwardDistance,168);
     close(Math.hypot(blade.x-player.x,blade.y-player.y),168);
   }
+});
+
+
+test("10Hz network projection exposes 168/168 and the unique authoritative turnaround event",()=>{
+  const {world,player,blade,damage}=startBlade({x:400,y:270});
+  const state=new LobbyNetworkState();
+  projectMemberJoined(state,player);
+  projectCombatState(state,world);
+  assert.equal(state.projectiles.get(blade.id)?.phase,"outbound");
+  assert.equal(state.projectiles.get(blade.id)?.maxDistance,168);
+  for(let tick=1;tick<=14;tick++){
+    world.tick=tick;
+    damage.step(world,0.05);
+    if(tick%2===0)projectCombatState(state,world);
+  }
+  const view=state.projectiles.get(blade.id);
+  assert.ok(view,"server should retain blade at apex");
+  assert.equal(view.phase,"returning");
+  close(view.outwardDistance,168);
+  close(view.maxDistance,168);
+  const events=[...state.events.values()].filter(e=>e.type==="weapon.returning");
+  assert.equal(events.length,1);
+  close(events[0].amount,168);
+  close(events[0].x,view.x);
+  close(events[0].y,view.y);
 });
 
 test("outbound shape reaches exact 168-unit apex with both level arcs",()=>{
