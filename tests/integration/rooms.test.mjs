@@ -76,6 +76,9 @@ test("server moves only the sending session, with fixed-rate input and neutral s
     const bob=await client.joinById(alice.roomId,{nickname:"Bob"});
     rooms.push(bob);
     await waitUntil(()=>alice.state?.players?.size===2 && bob.state?.players?.size===2,"both players");
+    alice.send("match.ready", { ready: true });
+    bob.send("match.ready", { ready: true });
+    await waitUntil(() => alice.state?.phase === "RUNNING", "combat start for movement");
     const startAlice={x:alice.state.players.get(alice.sessionId).x,y:alice.state.players.get(alice.sessionId).y};
     const startBob={x:alice.state.players.get(bob.sessionId).x,y:alice.state.players.get(bob.sessionId).y};
     const input=alice.input();
@@ -110,6 +113,8 @@ test("diagonal movement is not faster than cardinal movement, server clamps edge
     const room=await client.create(ROOM_TYPE,{nickname:"Runner"});
     rooms.push(room);
     await waitUntil(()=>room.state?.players?.size===1,"movement join");
+    room.send("match.ready", { ready: true });
+    await waitUntil(() => room.state?.phase === "RUNNING", "combat start for movement");
     const input=room.input();
     assert.equal(input.tickRate,20);
     const x0=room.state.players.get(room.sessionId).x;

@@ -16,6 +16,11 @@ export {
   stepCombatWorld,
   addCombatPlayer,
   removeCombatPlayer,
+  setCombatPlayerReady,
+  startCombatMatch,
+  resetCombatMatch,
+  finishCombatMatch,
+  ensureStats,
   DamageSystem,
   EnemySystem,
   SpawnSystem,
@@ -23,7 +28,10 @@ export {
 } from "./combat/world.js";
 export type {
   CombatEnemy,
+  CombatPhase,
   CombatPlayer,
   CombatProjectile,
+  CombatStats,
+  CombatWinner,
   CombatWorld
 } from "./combat/world.js";

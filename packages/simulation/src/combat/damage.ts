@@ -21,13 +21,15 @@ export interface DamageRequest {
 /** Server-only collision, damage, health and death resolution. */
 export class DamageSystem {
   applyPlayerDamage(world: CombatWorld, request: DamageRequest): boolean {
+    if (world.phase !== "RUNNING") return false;
     const target = world.players.get(request.targetId);
     if (!target || !target.alive || request.amount <= 0 || !this.acceptAction(world, request.actionId)) return false;
-    if (world.tick <= target.dashInvulnerableUntilTick || world.tick <= target.hitProtectedUntilTick) return false;
+    if (target.dashInvulnerableRemainingTicks > 0 || target.hitProtectionRemainingTicks > 0) return false;
     return this.applyToPlayer(world, target, request);
   }
 
   applyEnemyDamage(world: CombatWorld, request: DamageRequest): boolean {
+    if (world.phase !== "RUNNING") return false;
     const target = world.enemies.get(request.targetId);
     if (!target || !target.alive || request.amount <= 0 || !this.acceptAction(world, request.actionId)) return false;
     return this.applyToEnemy(world, target, request);
@@ -80,7 +82,9 @@ export class DamageSystem {
 
   private applyToPlayer(world: CombatWorld, target: CombatPlayer, request: DamageRequest): boolean {
     target.health = Math.max(0, target.health - request.amount);
-    target.hitProtectedUntilTick = world.tick + COMBAT_HIT_PROTECTION_TICKS;
+    target.hitProtectionRemainingTicks = COMBAT_HIT_PROTECTION_TICKS;
+    const targetStats = world.stats.get(target.sessionId);
+    if (targetStats) targetStats.damageTaken += request.amount;
     emitCombatEvent(world, {
       type: "damage.applied",
       sourceId: request.sourceId,
@@ -108,6 +112,8 @@ export class DamageSystem {
 
   private applyToEnemy(world: CombatWorld, target: CombatEnemy, request: DamageRequest): boolean {
     target.health = Math.max(0, target.health - request.amount);
+    const sourceStats = world.stats.get(request.sourceId);
+    if (sourceStats) sourceStats.totalDamage += request.amount;
     emitCombatEvent(world, {
       type: "damage.applied",
       sourceId: request.sourceId,
@@ -122,6 +128,7 @@ export class DamageSystem {
       target.deathTick = world.tick;
       target.removeAfterTick = world.tick + world.config.deadEntityRetentionTicks;
       target.targetSessionId = null;
+      if (sourceStats) sourceStats.kills++;
       emitCombatEvent(world, {
         type: "enemy.died",
         sourceId: request.sourceId,

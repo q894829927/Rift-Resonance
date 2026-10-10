@@ -1,8 +1,7 @@
 import { Client, Callbacks, Predict, type Room } from "@colyseus/sdk";
 import {
-  ROOM_TYPE, MOVE_SEND_HZ, isMovementInput, validateNickname, validateRoomId
+  ROOM_TYPE, MOVE_SEND_HZ, advanceDeterministicMovement, isMovementInput, validateNickname, validateRoomId
 } from "@rift/shared";
-import { moveMember } from "@rift/simulation";
 
 export interface LobbyPlayerView {
   nickname: string;
@@ -13,6 +12,19 @@ export interface LobbyPlayerView {
   alive: boolean;
   dashActive: boolean;
   hitProtected: boolean;
+  ready: boolean;
+  kills: number;
+  totalDamage: number;
+  damageTaken: number;
+  survivalTicks: number;
+  facingX: number;
+  facingY: number;
+  dashDirectionX: number;
+  dashDirectionY: number;
+  dashRemainingTicks: number;
+  dashInvulnerableRemainingTicks: number;
+  dashCooldownRemainingTicks: number;
+  hitProtectionRemainingTicks: number;
 }
 export interface EnemyView {
   assetId: string;
@@ -48,7 +60,18 @@ export interface LobbyView {
   roomId: string;
   sessionId: string;
   phase: string;
+  matchElapsedTicks: number;
+  matchDurationTicks: number;
+  hostSessionId: string;
+  winner: string;
   players: Map<string, LobbyPlayerView>;
+}
+export interface MatchSnapshot {
+  phase: string;
+  matchElapsedTicks: number;
+  matchDurationTicks: number;
+  hostSessionId: string;
+  winner: string;
 }
 export interface RenderPosition { x: number; y: number }
 export type LobbyListener = (view: LobbyView) => void;
@@ -65,13 +88,14 @@ export class LobbyConnection {
   private readonly seenEventIds = new Set<string>();
   private axes = { moveX: 0, moveY: 0 } as const as {moveX: -1 | 0 | 1; moveY: -1 | 0 | 1};
   private dashQueued = false;
+  private phase = "LOBBY";
   private animationFrame: number | undefined;
 
   constructor(
     endpoint: string,
     private onView: LobbyListener,
     private onDropped: (message: string) => void,
-    private onTick: (tick: number) => void = () => {},
+    private onTick: (tick: number, match: MatchSnapshot) => void = () => {},
     private onRender: RenderListener = () => {}
   ) {
     this.client = new Client(endpoint);
@@ -104,7 +128,20 @@ export class LobbyConnection {
         maxHealth: value.maxHealth,
         alive: value.alive,
         dashActive: value.dashActive,
-        hitProtected: value.hitProtected
+        hitProtected: value.hitProtected,
+        ready: value.ready,
+        kills: value.kills,
+        totalDamage: value.totalDamage,
+        damageTaken: value.damageTaken,
+        survivalTicks: value.survivalTicks,
+        facingX: value.facingX,
+        facingY: value.facingY,
+        dashDirectionX: value.dashDirectionX,
+        dashDirectionY: value.dashDirectionY,
+        dashRemainingTicks: value.dashRemainingTicks,
+        dashInvulnerableRemainingTicks: value.dashInvulnerableRemainingTicks,
+        dashCooldownRemainingTicks: value.dashCooldownRemainingTicks,
+        hitProtectionRemainingTicks: value.hitProtectionRemainingTicks
       });
       // Ordinary patches update the decoded schema instance itself. Rendering is
       // driven by Predict.value() once per frame, not by patch-driven DOM rebuilds.
@@ -112,7 +149,10 @@ export class LobbyConnection {
         if (this.room !== room || !isLobbyPlayerView(value)) return;
         const old = this.players.get(key);
         if (old && (old.nickname !== value.nickname || old.health !== value.health ||
-          old.maxHealth !== value.maxHealth || old.alive !== value.alive)) {
+          old.maxHealth !== value.maxHealth || old.alive !== value.alive ||
+          old.dashActive !== value.dashActive || old.hitProtected !== value.hitProtected ||
+          old.ready !== value.ready || old.kills !== value.kills || old.totalDamage !== value.totalDamage ||
+          old.damageTaken !== value.damageTaken || old.survivalTicks !== value.survivalTicks)) {
           this.players.set(key, {
             nickname: value.nickname,
             x: value.x,
@@ -121,7 +161,20 @@ export class LobbyConnection {
             maxHealth: value.maxHealth,
             alive: value.alive,
             dashActive: value.dashActive,
-            hitProtected: value.hitProtected
+            hitProtected: value.hitProtected,
+            ready: value.ready,
+            kills: value.kills,
+            totalDamage: value.totalDamage,
+            damageTaken: value.damageTaken,
+            survivalTicks: value.survivalTicks,
+            facingX: value.facingX,
+            facingY: value.facingY,
+            dashDirectionX: value.dashDirectionX,
+            dashDirectionY: value.dashDirectionY,
+            dashRemainingTicks: value.dashRemainingTicks,
+            dashInvulnerableRemainingTicks: value.dashInvulnerableRemainingTicks,
+            dashCooldownRemainingTicks: value.dashCooldownRemainingTicks,
+            hitProtectionRemainingTicks: value.hitProtectionRemainingTicks
           });
           this.emit();
         }
@@ -134,10 +187,17 @@ export class LobbyConnection {
       this.emit();
     });
     callbacks.listen("phase", () => {
-      if (this.room === room) this.emit();
+      if (this.room === room) {
+        this.phase = String((room.state as {phase?: string}).phase ?? "LOBBY");
+        this.emit();
+      }
     });
     callbacks.listen("serverTick", (value: unknown) => {
-      if (this.room === room && typeof value === "number") this.onTick(value);
+      if (this.room === room && typeof value === "number") {
+        const match = readMatchSnapshot(room.state as MatchStateShape);
+        this.phase = match.phase;
+        this.onTick(value, match);
+      }
     });
     room.onLeave((code: number) => {
       if (this.room !== room) return;
@@ -172,6 +232,14 @@ export class LobbyConnection {
     if (this.room) this.dashQueued = true;
   }
 
+  setReady(ready: boolean): void {
+    this.room?.send("match.ready", { ready });
+  }
+
+  restartMatch(): void {
+    this.room?.send("match.restart");
+  }
+
   private startPrediction(room: Room): void {
     this.stopInputs();
     const input = room.input();
@@ -200,11 +268,17 @@ export class LobbyConnection {
         if (self) {
           predictor.reconciler(self, {
             input,
-            fields: ["x", "y"],
+            fields: [
+              "x", "y", "facingX", "facingY", "dashDirectionX", "dashDirectionY",
+              "dashRemainingTicks", "dashInvulnerableRemainingTicks",
+              "dashCooldownRemainingTicks", "hitProtectionRemainingTicks"
+            ],
             smoothMs: 65,
             snap: 150,
             step: (ctx, pose, cmd) => {
-              if (isMovementInput(cmd)) moveMember(pose, cmd, ctx.dt);
+              if (this.phase === "RUNNING" && isMovementInput(cmd)) {
+                advanceDeterministicMovement(pose, cmd, ctx.dt);
+              }
             }
           });
           localReconcilerAttached = true;
@@ -242,6 +316,7 @@ export class LobbyConnection {
     this.animationFrame = undefined;
     this.axes = { moveX: 0, moveY: 0 };
     this.dashQueued = false;
+    this.phase = "LOBBY";
   }
 
   get connected(): boolean { return this.room !== null; }
@@ -254,16 +329,23 @@ export class LobbyConnection {
     this.room = null;
     this.players.clear();
     this.seenEventIds.clear();
+    this.phase = "LOBBY";
     await room.leave();
   }
 
   private emit(): void {
     const room = this.room;
     if (!room) return;
+    const match = readMatchSnapshot(room.state as MatchStateShape);
+    this.phase = match.phase;
     this.onView({
       roomId: room.roomId,
       sessionId: room.sessionId,
-      phase: (room.state as {phase?: string}).phase ?? "LOBBY",
+      phase: match.phase,
+      matchElapsedTicks: match.matchElapsedTicks,
+      matchDurationTicks: match.matchDurationTicks,
+      hostSessionId: match.hostSessionId,
+      winner: match.winner,
       players: new Map(this.players)
     });
   }
@@ -309,6 +391,24 @@ export class LobbyConnection {
   }
 }
 
+interface MatchStateShape {
+  phase?: string;
+  matchElapsedTicks?: number;
+  matchDurationTicks?: number;
+  hostSessionId?: string;
+  winner?: string;
+}
+
+function readMatchSnapshot(state: MatchStateShape): MatchSnapshot {
+  return {
+    phase: state.phase ?? "LOBBY",
+    matchElapsedTicks: Number(state.matchElapsedTicks ?? 0),
+    matchDurationTicks: Number(state.matchDurationTicks ?? 4800),
+    hostSessionId: String(state.hostSessionId ?? ""),
+    winner: String(state.winner ?? "NONE")
+  };
+}
+
 export function getServerEndpoint(): string {
   const env = import.meta.env.VITE_SERVER_URL as string | undefined;
   if (env?.trim()) return env.trim();
@@ -320,5 +420,13 @@ function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
   const item = value as Record<string, unknown>;
   return typeof item.nickname === "string" && typeof item.x === "number" && typeof item.y === "number" &&
     typeof item.health === "number" && typeof item.maxHealth === "number" && typeof item.alive === "boolean" &&
-    typeof item.dashActive === "boolean" && typeof item.hitProtected === "boolean";
+    typeof item.dashActive === "boolean" && typeof item.hitProtected === "boolean" &&
+    typeof item.ready === "boolean" && typeof item.kills === "number" &&
+    typeof item.totalDamage === "number" && typeof item.damageTaken === "number" &&
+    typeof item.survivalTicks === "number" && typeof item.facingX === "number" &&
+    typeof item.facingY === "number" && typeof item.dashDirectionX === "number" &&
+    typeof item.dashDirectionY === "number" && typeof item.dashRemainingTicks === "number" &&
+    typeof item.dashInvulnerableRemainingTicks === "number" &&
+    typeof item.dashCooldownRemainingTicks === "number" &&
+    typeof item.hitProtectionRemainingTicks === "number";
 }

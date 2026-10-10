@@ -7,8 +7,23 @@ export { validateNickname, validateRoomId, MAX_NICKNAME_LENGTH } from "./lobby.j
 export { WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom } from "./viewport.js";
 
 export { projectWorldToViewport } from "./viewport.js";
-export { movementAxis, isMovementInput, PLAYER_MOVE_SPEED, PLAYER_COLLISION_RADIUS, MOVE_SEND_HZ, NEUTRAL_MOVEMENT, NEUTRAL_COMBAT_INPUT } from "./movement.js";
-export type { MoveAxis, MovementInput, CombatInput } from "./movement.js";
+export {
+  movementAxis,
+  isMovementInput,
+  isCombatInput,
+  advanceDeterministicMovement,
+  PLAYER_MOVE_SPEED,
+  PLAYER_COLLISION_RADIUS,
+  MOVE_SEND_HZ,
+  PLAYER_DASH_SPEED,
+  PLAYER_DASH_DURATION_TICKS,
+  PLAYER_DASH_INVULNERABLE_TICKS,
+  PLAYER_DASH_COOLDOWN_TICKS,
+  PLAYER_HIT_PROTECTION_TICKS,
+  NEUTRAL_MOVEMENT,
+  NEUTRAL_COMBAT_INPUT
+} from "./movement.js";
+export type { MoveAxis, MovementInput, CombatInput, DeterministicMovementState, MovementStepResult } from "./movement.js";
 export {
   ENEMY_SLIME_ASSET_ID,
   ENEMY_RIFT_SWARM_ASSET_ID,

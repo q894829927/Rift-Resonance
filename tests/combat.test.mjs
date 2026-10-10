@@ -4,17 +4,26 @@ import {
   addCombatPlayer,
   createCombatWorld,
   DamageSystem,
+  resetCombatMatch,
+  startCombatMatch,
   stepCombatWorld
 } from "../packages/simulation/dist/index.js";
+import { advanceDeterministicMovement } from "../packages/shared/dist/index.js";
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function begin(world, ...players) {
+  for (const player of players) player.ready = true;
+  assert.equal(startCombatMatch(world), true);
 }
 
 test("combat world spawns a deterministic chaser and keeps 20 Hz time", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
   player.weaponIds.length = 0;
+  begin(world, player);
   stepCombatWorld(world, 50);
   const enemy = world.enemies.get("enemy:rift_swarm:1");
   assert.ok(enemy);
@@ -32,7 +41,8 @@ test("server weapons resolve tracking fireball damage, death and finite event ID
   const world = createCombatWorld();
   world.config.eventRetentionTicks = 200;
   world.config.deadEntityRetentionTicks = 200;
-  addCombatPlayer(world, "player-a", "Alice");
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  begin(world, player);
   for (let i = 0; i < 100; i++) stepCombatWorld(world, 50);
   const death = world.events.find(event => event.type === "enemy.died");
   assert.ok(death);
@@ -42,12 +52,15 @@ test("server weapons resolve tracking fireball damage, death and finite event ID
   assert.equal(new Set(world.events.map(event => event.id)).size, world.events.length);
   assert.equal(world.projectiles.size, 0);
   assert.equal(world.enemies.get(death.targetId).alive, false);
+  assert.ok(world.stats.get("player-a").kills >= 1);
+  assert.ok(world.stats.get("player-a").totalDamage >= 35);
 });
 
 test("damage action IDs make repeated delivery idempotent", () => {
   const world = createCombatWorld();
   world.config.deadEntityRetentionTicks = 200;
-  addCombatPlayer(world, "player-a", "Alice");
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  begin(world, player);
   stepCombatWorld(world, 50);
   const enemy = world.enemies.get("enemy:rift_swarm:1");
   assert.ok(enemy);
@@ -71,6 +84,7 @@ test("dead players stop moving and are no longer enemy targets", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
   player.weaponIds.length = 0;
+  begin(world, player);
   stepCombatWorld(world, 50);
   const enemy = world.enemies.get("enemy:rift_swarm:1");
   assert.ok(enemy);
@@ -91,10 +105,14 @@ test("spawn cadence, cap and IDs are deterministic across enemy kinds", () => {
   const replay = addCombatPlayer(second, "player-a", "Alice");
   player.weaponIds.length = 0;
   replay.weaponIds.length = 0;
+  begin(first, player);
+  begin(second, replay);
   first.config.spawnIntervalTicks = 1;
   second.config.spawnIntervalTicks = 1;
   first.config.maxEnemies = 6;
   second.config.maxEnemies = 6;
+  first.config.berserkerEvery = 5;
+  second.config.berserkerEvery = 5;
   for (let i = 0; i < 10; i++) {
     stepCombatWorld(first, 50);
     stepCombatWorld(second, 50);
@@ -115,6 +133,7 @@ test("berserker emits a charge warning and enters the charge state", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
   player.weaponIds.length = 0;
+  begin(world, player);
   world.config.berserkerEvery = 1;
   world.config.spawnIntervalTicks = 1000;
   for (let i = 0; i < 58; i++) stepCombatWorld(world, 50);
@@ -128,6 +147,7 @@ test("spin blade uses its fan and configurable damage, while dash is authoritati
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
   world.config.spawnIntervalTicks = 1000;
+  begin(world, player);
   stepCombatWorld(world, 50);
   const enemy = world.enemies.get("enemy:rift_swarm:1");
   assert.ok(enemy);
@@ -181,10 +201,95 @@ test("processed actions and transient events remain bounded over time", () => {
   const world = createCombatWorld();
   const player = addCombatPlayer(world, "player-a", "Alice");
   player.weaponIds.length = 0;
+  begin(world, player);
   world.config.spawnIntervalTicks = 1;
   world.config.maxEnemies = 2;
   for (let i = 0; i < 1000; i++) stepCombatWorld(world, 50);
   assert.ok(world.processedActionIds.size < 32);
   assert.ok(world.events.length <= 64);
   assert.ok(world.enemies.size <= world.config.maxEnemies + 2);
+});
+
+test("match stays in lobby until ready, then runs on fixed ticks", () => {
+  const world = createCombatWorld();
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "LOBBY");
+  assert.equal(world.matchElapsedTicks, 0);
+  assert.equal(world.enemies.size, 0);
+  assert.equal(startCombatMatch(world), false);
+  begin(world, player);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RUNNING");
+  assert.equal(world.matchElapsedTicks, 1);
+  assert.ok(world.enemies.size >= 1);
+});
+
+test("match wins at the server duration, freezes combat, and enters result", () => {
+  const world = createCombatWorld();
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  player.weaponIds.length = 0;
+  world.config.matchDurationTicks = 3;
+  world.config.resultHoldTicks = 2;
+  begin(world, player);
+  for (let i = 0; i < 3; i++) stepCombatWorld(world, 50);
+  assert.equal(world.phase, "WON");
+  const eventCount = world.events.length;
+  for (let i = 0; i < 2; i++) stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RESULT");
+  assert.equal(world.events.filter(event => event.type === "weapon.fired").length, 0);
+  assert.ok(world.events.length >= eventCount);
+});
+
+test("all players dead produces a server-owned loss and restart resets the match", () => {
+  const world = createCombatWorld();
+  const player = addCombatPlayer(world, "player-a", "Alice");
+  player.weaponIds.length = 0;
+  world.config.eventRetentionTicks = 200;
+  begin(world, player);
+  const damage = new DamageSystem();
+  assert.equal(damage.applyPlayerDamage(world, {
+    actionId: "team-wipe",
+    sourceId: "enemy:test",
+    targetId: player.sessionId,
+    amount: player.maxHealth,
+    assetId: "enemy.rift_swarm",
+    x: player.x,
+    y: player.y
+  }), true);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "LOST");
+  for (let i = 0; i < world.config.resultHoldTicks; i++) stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RESULT");
+  assert.equal(world.enemies.size, 0);
+  assert.equal(world.events.some(event => event.type === "match.lost"), true);
+  assert.equal(resetCombatMatch(world), true);
+  assert.equal(world.phase, "LOBBY");
+  assert.equal(player.alive, true);
+  assert.equal(player.health, player.maxHealth);
+  assert.equal(player.ready, false);
+  assert.equal(world.events.length, 0);
+});
+
+test("shared movement produces identical dash and correction state for server and client replay", () => {
+  const server = {
+    x: 265, y: 245, facingX: 1, facingY: 0, dashDirectionX: 1, dashDirectionY: 0,
+    dashRemainingTicks: 0, dashInvulnerableRemainingTicks: 0,
+    dashCooldownRemainingTicks: 0, hitProtectionRemainingTicks: 0
+  };
+  const client = structuredClone(server);
+  const commands = [
+    { moveX: 1, moveY: 0, dash: true },
+    { moveX: 1, moveY: 0, dash: false },
+    { moveX: 0, moveY: 0, dash: false },
+    { moveX: -1, moveY: 0, dash: false },
+    { moveX: 0, moveY: 1, dash: true }
+  ];
+  for (const command of commands) {
+    advanceDeterministicMovement(server, command, 0.05);
+    advanceDeterministicMovement(client, command, 0.05);
+  }
+  assert.deepEqual(client, server);
+  assert.equal(server.x, 365);
+  assert.equal(server.dashCooldownRemainingTicks > 0, true);
 });

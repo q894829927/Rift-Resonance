@@ -25,7 +25,11 @@ export type CombatEventType =
   | "enemy.died"
   | "player.died"
   | "enemy.charge.started"
-  | "dash.started";
+  | "dash.started"
+  | "match.started"
+  | "match.won"
+  | "match.lost"
+  | "match.result";
 
 export interface CombatEvent {
   readonly id: string;

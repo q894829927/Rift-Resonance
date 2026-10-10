@@ -22,9 +22,11 @@ export class EnemySystem {
   step(world: CombatWorld, dtSeconds: number): void {
     for (const enemy of world.enemies.values()) {
       if (!enemy.alive) continue;
-      const target = this.nearestAlivePlayer(world, enemy);
-      enemy.targetSessionId = target?.sessionId ??
-        (enemy.behavior === "charging" || enemy.behavior === "charge_windup" ? enemy.targetSessionId : null);
+      const isLocked = enemy.behavior === "charging" || enemy.behavior === "charge_windup";
+      const target = isLocked
+        ? this.lockedAlivePlayer(world, enemy)
+        : this.nearestAlivePlayer(world, enemy);
+      if (!isLocked) enemy.targetSessionId = target?.sessionId ?? null;
 
       if (enemy.kind === "berserker_beast") {
         if (this.stepBerserker(world, enemy, target, dtSeconds)) continue;
@@ -148,5 +150,11 @@ export class EnemySystem {
       }
     }
     return nearest;
+  }
+
+  private lockedAlivePlayer(world: CombatWorld, enemy: CombatEnemy): CombatPlayer | null {
+    if (!enemy.targetSessionId) return null;
+    const target = world.players.get(enemy.targetSessionId);
+    return target?.alive ? target : null;
   }
 }

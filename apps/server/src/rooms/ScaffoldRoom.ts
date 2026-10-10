@@ -3,7 +3,11 @@ import { MAX_ROOM_PLAYERS, NETWORK_PATCH_HZ, SIMULATION_TICK_HZ, validateNicknam
 import {
   addCombatPlayer,
   createCombatWorld,
+  finishCombatMatch,
   removeCombatPlayer,
+  resetCombatMatch,
+  setCombatPlayerReady,
+  startCombatMatch,
   stepCombatWorld,
   type CombatWorld
 } from "@rift/simulation";
@@ -20,6 +24,7 @@ export class ScaffoldRoom extends Room {
   maxClients = MAX_ROOM_PLAYERS;
   state = new LobbyNetworkState();
   private readonly world: CombatWorld = createCombatWorld();
+  private hostSessionId = "";
   // Colyseus owns the per-session buffered stream and acknowledgement sequence.
   inputs = this.defineInput(MoveInput, {
     bufferMaxSize: 8,
@@ -31,6 +36,19 @@ export class ScaffoldRoom extends Room {
   onCreate(): void {
     registerRoom(this.roomId);
     this.patchRate = 1000 / NETWORK_PATCH_HZ;
+    this.onMessage("match.ready", (client, payload: unknown) => {
+      const requested = typeof payload === "object" && payload !== null && "ready" in payload
+        ? Boolean(payload.ready) : true;
+      if (setCombatPlayerReady(this.world, client.sessionId, requested) && requested) {
+        startCombatMatch(this.world);
+      }
+      this.projectState();
+    });
+    this.onMessage("match.restart", (client) => {
+      if (client.sessionId !== this.hostSessionId) return;
+      resetCombatMatch(this.world);
+      this.projectState();
+    });
     this.setFixedTimestep((context) => {
       const startedAt = performance.now();
       const commands = new Map<string, CombatInput>();
@@ -43,17 +61,19 @@ export class ScaffoldRoom extends Room {
         });
       }
       stepCombatWorld(this.world, context.dtMs, commands);
-      projectCombatState(this.state, this.world);
-      this.state.serverTick = this.world.tick;
+      this.projectState();
       recordRoomTick(this.roomId, startedAt, performance.now() - startedAt);
     }, SIMULATION_TICK_HZ);
   }
 
   onJoin(client: Client, options: unknown): void {
+    if (this.world.phase !== "LOBBY") throw new Error("对局已开始，当前房间不接受中途加入");
     const raw = typeof options === "object" && options !== null && "nickname" in options
       ? options.nickname : undefined;
     const member = addCombatPlayer(this.world, client.sessionId, validateNickname(raw));
+    if (!this.hostSessionId) this.hostSessionId = client.sessionId;
     projectMemberJoined(this.state, member);
+    this.projectState();
     recordRoomClients(this.roomId, this.world.players.size);
     console.info("[room " + this.roomId + "] joined, count=" + this.world.players.size);
   }
@@ -66,7 +86,24 @@ export class ScaffoldRoom extends Room {
     if (removeCombatPlayer(this.world, client.sessionId)) {
       projectMemberLeft(this.state, client.sessionId);
     }
+    if (client.sessionId === this.hostSessionId) {
+      this.hostSessionId = this.world.players.keys().next().value ?? "";
+    }
+    if (this.world.players.size === 0) {
+      this.world.phase = "RESULT";
+      this.world.winner = "NONE";
+      this.world.resultTick = this.world.tick;
+    } else if (this.world.phase === "RUNNING" && ![...this.world.players.values()].some(player => player.alive)) {
+      finishCombatMatch(this.world, "LOST");
+    }
+    this.projectState();
     recordRoomClients(this.roomId, this.world.players.size);
     console.info("[room " + this.roomId + "] left, count=" + this.world.players.size);
+  }
+
+  private projectState(): void {
+    projectCombatState(this.state, this.world);
+    this.state.hostSessionId = this.hostSessionId;
+    this.state.serverTick = this.world.tick;
   }
 }

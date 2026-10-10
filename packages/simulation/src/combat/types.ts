@@ -3,6 +3,11 @@ import {
   ENEMY_RIFT_SWARM_ASSET_ID,
   FIREBALL_PROJECTILE_ASSET_ID,
   FIREBALL_WEAPON_ID,
+  PLAYER_DASH_COOLDOWN_TICKS,
+  PLAYER_DASH_DURATION_TICKS,
+  PLAYER_DASH_INVULNERABLE_TICKS,
+  PLAYER_DASH_SPEED,
+  PLAYER_HIT_PROTECTION_TICKS,
   SPIN_BLADE_ASSET_ID,
   SPIN_BLADE_WEAPON_ID,
   type CombatEvent,
@@ -68,16 +73,27 @@ export const COMBAT_BERSERKER_CHARGE_DURATION_TICKS = 8;
 export const COMBAT_BERSERKER_CHARGE_SPEED = 260;
 export const COMBAT_BERSERKER_CHARGE_RANGE = 420;
 
-export const COMBAT_DASH_SPEED = 500;
-export const COMBAT_DASH_DURATION_TICKS = 4; // 0.20 seconds, fixed-tick quantization of the 0.18s GDD target
-export const COMBAT_DASH_INVULNERABLE_TICKS = 3; // 0.15 seconds
-export const COMBAT_DASH_COOLDOWN_TICKS = 100; // 5 seconds
-export const COMBAT_HIT_PROTECTION_TICKS = 9; // 0.45 seconds after accepted damage
+export const COMBAT_DASH_SPEED = PLAYER_DASH_SPEED;
+export const COMBAT_DASH_DURATION_TICKS = PLAYER_DASH_DURATION_TICKS; // 0.20 seconds at 20 Hz
+export const COMBAT_DASH_INVULNERABLE_TICKS = PLAYER_DASH_INVULNERABLE_TICKS; // 0.15 seconds
+export const COMBAT_DASH_COOLDOWN_TICKS = PLAYER_DASH_COOLDOWN_TICKS; // 5 seconds
+export const COMBAT_HIT_PROTECTION_TICKS = PLAYER_HIT_PROTECTION_TICKS; // 0.45 seconds after accepted damage
 
 export const COMBAT_DEAD_ENTITY_RETENTION_TICKS = 12;
 export const COMBAT_EVENT_RETENTION_TICKS = 20;
 export const COMBAT_ACTION_RETENTION_TICKS = 120;
 export const COMBAT_MAX_EVENTS = 64;
+export const COMBAT_MATCH_DURATION_TICKS = 20 * 240;
+export const COMBAT_RESULT_HOLD_TICKS = 20 * 5;
+
+export type CombatPhase = "LOBBY" | "RUNNING" | "WON" | "LOST" | "RESULT";
+export type CombatWinner = "NONE" | "TEAM";
+
+export interface SpawnDifficultyStage {
+  readonly startElapsedTicks: number;
+  readonly spawnIntervalTicks: number;
+  readonly berserkerEvery: number;
+}
 
 export interface CombatConfig {
   maxEnemies: number;
@@ -86,6 +102,16 @@ export interface CombatConfig {
   deadEntityRetentionTicks: number;
   eventRetentionTicks: number;
   actionRetentionTicks: number;
+  matchDurationTicks: number;
+  resultHoldTicks: number;
+  difficultyStages: readonly SpawnDifficultyStage[];
+}
+
+export interface CombatStats {
+  kills: number;
+  totalDamage: number;
+  damageTaken: number;
+  survivalTicks: number;
 }
 
 export interface CombatPlayer {
@@ -96,6 +122,7 @@ export interface CombatPlayer {
   readonly maxHealth: number;
   health: number;
   alive: boolean;
+  ready: boolean;
   deathTick: number | null;
   readonly weaponIds: readonly CombatWeaponId[];
   readonly nextWeaponTicks: Map<CombatWeaponId, number>;
@@ -103,10 +130,10 @@ export interface CombatPlayer {
   facingY: number;
   dashDirectionX: number;
   dashDirectionY: number;
-  dashActiveUntilTick: number;
-  dashInvulnerableUntilTick: number;
-  hitProtectedUntilTick: number;
-  nextDashTick: number;
+  dashRemainingTicks: number;
+  dashInvulnerableRemainingTicks: number;
+  dashCooldownRemainingTicks: number;
+  hitProtectionRemainingTicks: number;
 }
 
 export type EnemyBehavior = "chase" | "charge_windup" | "charging";
@@ -152,8 +179,14 @@ export interface CombatProjectile {
 export interface CombatWorld {
   tick: number;
   elapsedMs: number;
+  phase: CombatPhase;
+  winner: CombatWinner;
+  matchElapsedTicks: number;
+  matchStartTick: number | null;
+  resultTick: number | null;
   readonly config: CombatConfig;
   readonly players: Map<string, CombatPlayer>;
+  readonly stats: Map<string, CombatStats>;
   readonly enemies: Map<string, CombatEnemy>;
   readonly projectiles: Map<string, CombatProjectile>;
   readonly events: CombatEvent[];
@@ -255,6 +288,7 @@ export function createCombatPlayer(
     maxHealth: COMBAT_PLAYER_MAX_HEALTH,
     health: COMBAT_PLAYER_MAX_HEALTH,
     alive: true,
+    ready: false,
     deathTick: null,
     weaponIds: [FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID],
     nextWeaponTicks: new Map([
@@ -265,10 +299,10 @@ export function createCombatPlayer(
     facingY: 0,
     dashDirectionX: 1,
     dashDirectionY: 0,
-    dashActiveUntilTick: 0,
-    dashInvulnerableUntilTick: 0,
-    hitProtectedUntilTick: 0,
-    nextDashTick: 0
+    dashRemainingTicks: 0,
+    dashInvulnerableRemainingTicks: 0,
+    dashCooldownRemainingTicks: 0,
+    hitProtectionRemainingTicks: 0
   };
 }
 

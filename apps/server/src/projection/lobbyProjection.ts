@@ -17,7 +17,20 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     maxHealth: player.maxHealth,
     alive: player.alive,
     dashActive: false,
-    hitProtected: false
+    hitProtected: false,
+    ready: player.ready,
+    kills: 0,
+    totalDamage: 0,
+    damageTaken: 0,
+    survivalTicks: 0,
+    facingX: player.facingX,
+    facingY: player.facingY,
+    dashDirectionX: player.dashDirectionX,
+    dashDirectionY: player.dashDirectionY,
+    dashRemainingTicks: player.dashRemainingTicks,
+    dashInvulnerableRemainingTicks: player.dashInvulnerableRemainingTicks,
+    dashCooldownRemainingTicks: player.dashCooldownRemainingTicks,
+    hitProtectionRemainingTicks: player.hitProtectionRemainingTicks
   }));
 }
 export function projectMemberLeft(state: LobbyNetworkState, sessionId: string): void {
@@ -34,6 +47,18 @@ export function projectMemberPositions(state: LobbyNetworkState, members: Iterab
     if (target.health !== member.health) target.health = member.health;
     if (target.maxHealth !== member.maxHealth) target.maxHealth = member.maxHealth;
     if (target.alive !== member.alive) target.alive = member.alive;
+    if (target.ready !== member.ready) target.ready = member.ready;
+    target.dashActive = member.alive && member.dashRemainingTicks > 0;
+    target.hitProtected = member.alive &&
+      (member.dashInvulnerableRemainingTicks > 0 || member.hitProtectionRemainingTicks > 0);
+    target.facingX = member.facingX;
+    target.facingY = member.facingY;
+    target.dashDirectionX = member.dashDirectionX;
+    target.dashDirectionY = member.dashDirectionY;
+    target.dashRemainingTicks = member.dashRemainingTicks;
+    target.dashInvulnerableRemainingTicks = member.dashInvulnerableRemainingTicks;
+    target.dashCooldownRemainingTicks = member.dashCooldownRemainingTicks;
+    target.hitProtectionRemainingTicks = member.hitProtectionRemainingTicks;
   }
 }
 
@@ -64,6 +89,10 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
 
 /** Projects combat snapshots and stable event IDs at the existing 10 Hz patch rate. */
 export function projectCombatState(state: LobbyNetworkState, world: CombatWorld): void {
+  state.phase = world.phase;
+  state.matchElapsedTicks = world.matchElapsedTicks;
+  state.matchDurationTicks = world.config.matchDurationTicks;
+  state.winner = world.winner;
   for (const member of world.players.values()) {
     const target = state.players.get(member.sessionId);
     if (!target) continue;
@@ -72,8 +101,22 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.health = member.health;
     target.maxHealth = member.maxHealth;
     target.alive = member.alive;
-    target.dashActive = member.alive && world.tick <= member.dashActiveUntilTick;
-    target.hitProtected = member.alive && world.tick <= Math.max(member.dashInvulnerableUntilTick, member.hitProtectedUntilTick);
+    target.dashActive = member.alive && member.dashRemainingTicks > 0;
+    target.hitProtected = member.alive && (member.dashInvulnerableRemainingTicks > 0 || member.hitProtectionRemainingTicks > 0);
+    target.ready = member.ready;
+    const stats = world.stats.get(member.sessionId);
+    target.kills = stats?.kills ?? 0;
+    target.totalDamage = stats?.totalDamage ?? 0;
+    target.damageTaken = stats?.damageTaken ?? 0;
+    target.survivalTicks = stats?.survivalTicks ?? 0;
+    target.facingX = member.facingX;
+    target.facingY = member.facingY;
+    target.dashDirectionX = member.dashDirectionX;
+    target.dashDirectionY = member.dashDirectionY;
+    target.dashRemainingTicks = member.dashRemainingTicks;
+    target.dashInvulnerableRemainingTicks = member.dashInvulnerableRemainingTicks;
+    target.dashCooldownRemainingTicks = member.dashCooldownRemainingTicks;
+    target.hitProtectionRemainingTicks = member.hitProtectionRemainingTicks;
   }
 
   const enemyIds = new Set<string>();

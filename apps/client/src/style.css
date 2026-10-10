@@ -56,6 +56,14 @@ h3 { font-size: 16px; margin: 4px 0 14px; }
   color: #f1f8ff; line-height: 1.2;
 }
 .arena-subtitle { color: #9eb1cd; font-size: clamp(11px, 1.25vw, 18px); }
+.match-hud {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  max-width: min(95%, 760px); padding: 8px 11px; border: 1px solid rgba(181,139,255,.35);
+  border-radius: 10px; background: rgba(8, 12, 20, .78); color: #d8e8fa;
+  font-size: clamp(10px, 1.05vw, 14px); font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 18px rgba(3, 5, 12, .35);
+}
+.match-hud strong { color: #8ee4f5; }
 .arena-footer {
   display: flex; gap: 10px; flex-wrap: wrap;
   align-items: center; justify-content: center;
@@ -77,6 +85,8 @@ button.primary { background: #5e4285; border-color: #b58bff; width: 100%; margin
 .details .label { font-size: 12px; overflow-wrap: anywhere; }
 .details code { font-size: 11px; color: #8ee4f5; }
 #copy-room-id { width: 100%; }
+.details #ready-room, .details #restart-room { width: 100%; margin-top: 7px; }
+.details #restart-room:not([hidden]) { display: block; }
 .player-list { margin: 8px 0 18px; padding-left: 20px; color: #d8eeff; }
 .player-list li { padding: 4px 0; }
 .status { min-height: 48px; color: #94d8e7; background: #19283a; padding: 12px; border-radius: 8px; line-height: 1.5; font-size: 13px; }

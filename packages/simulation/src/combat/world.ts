@@ -1,29 +1,28 @@
 import {
   PLAYER_DASH_ASSET_ID,
   SIMULATION_TICK_HZ,
+  advanceDeterministicMovement,
   isMovementInput,
   type CombatInput,
   type MovementInput
 } from "@rift/shared";
-import { moveMember } from "../movement.js";
 import { DamageSystem } from "./damage.js";
 import { EnemySystem } from "./enemy.js";
 import { SpawnSystem, addCombatPlayer, removeCombatPlayer } from "./spawn.js";
 import { WeaponSystem } from "./weapon.js";
 import {
   COMBAT_ACTION_RETENTION_TICKS,
+  COMBAT_BERSERKER_EVERY,
   COMBAT_DEAD_ENTITY_RETENTION_TICKS,
-  COMBAT_DASH_COOLDOWN_TICKS,
-  COMBAT_DASH_DURATION_TICKS,
-  COMBAT_DASH_INVULNERABLE_TICKS,
-  COMBAT_DASH_SPEED,
   COMBAT_ENEMY_SPAWN_INTERVAL_TICKS,
   COMBAT_EVENT_RETENTION_TICKS,
+  COMBAT_MATCH_DURATION_TICKS,
   COMBAT_MAX_ACTIVE_ENEMIES,
-  COMBAT_BERSERKER_EVERY,
-  clampCombatPosition,
+  COMBAT_RESULT_HOLD_TICKS,
   emitCombatEvent,
+  type CombatPhase,
   type CombatPlayer,
+  type CombatStats,
   type CombatWorld
 } from "./types.js";
 
@@ -37,15 +36,27 @@ export function createCombatWorld(): CombatWorld {
   return {
     tick: 0,
     elapsedMs: 0,
+    phase: "LOBBY",
+    winner: "NONE",
+    matchElapsedTicks: 0,
+    matchStartTick: null,
+    resultTick: null,
     config: {
       maxEnemies: COMBAT_MAX_ACTIVE_ENEMIES,
-      spawnIntervalTicks: COMBAT_ENEMY_SPAWN_INTERVAL_TICKS,
-      berserkerEvery: COMBAT_BERSERKER_EVERY,
+      spawnIntervalTicks: COMBAT_ENEMY_SPAWN_INTERVAL_TICKS + 10,
+      berserkerEvery: COMBAT_BERSERKER_EVERY + 3,
       deadEntityRetentionTicks: COMBAT_DEAD_ENTITY_RETENTION_TICKS,
       eventRetentionTicks: COMBAT_EVENT_RETENTION_TICKS,
-      actionRetentionTicks: COMBAT_ACTION_RETENTION_TICKS
+      actionRetentionTicks: COMBAT_ACTION_RETENTION_TICKS,
+      matchDurationTicks: COMBAT_MATCH_DURATION_TICKS,
+      resultHoldTicks: COMBAT_RESULT_HOLD_TICKS,
+      difficultyStages: [
+        { startElapsedTicks: 1200, spawnIntervalTicks: 20, berserkerEvery: 6 },
+        { startElapsedTicks: 3000, spawnIntervalTicks: 12, berserkerEvery: 4 }
+      ]
     },
     players: new Map(),
+    stats: new Map(),
     enemies: new Map(),
     projectiles: new Map(),
     events: [],
@@ -60,9 +71,73 @@ export function createCombatWorld(): CombatWorld {
 
 export { addCombatPlayer, removeCombatPlayer };
 
+export function setCombatPlayerReady(world: CombatWorld, sessionId: string, ready: boolean): boolean {
+  if (world.phase !== "LOBBY") return false;
+  const player = world.players.get(sessionId);
+  if (!player) return false;
+  player.ready = ready;
+  return true;
+}
+
+export function startCombatMatch(world: CombatWorld): boolean {
+  if (world.phase !== "LOBBY" || world.players.size === 0 ||
+      [...world.players.values()].some(player => !player.ready)) return false;
+  world.phase = "RUNNING";
+  world.winner = "NONE";
+  world.matchElapsedTicks = 0;
+  world.matchStartTick = world.tick;
+  world.resultTick = null;
+  emitCombatEvent(world, {
+    type: "match.started",
+    sourceId: "match",
+    targetId: "",
+    assetId: "match",
+    x: 0,
+    y: 0,
+    amount: world.config.matchDurationTicks
+  });
+  return true;
+}
+
+export function resetCombatMatch(world: CombatWorld): boolean {
+  if (world.phase !== "RESULT" && world.phase !== "WON" && world.phase !== "LOST") return false;
+  world.enemies.clear();
+  world.projectiles.clear();
+  world.events.length = 0;
+  world.processedActionIds.clear();
+  world.initialEnemySpawned = false;
+  world.nextEnemySequence = 1;
+  world.nextEnemySpawnTick = world.tick + 1;
+  world.nextProjectileSequence = 1;
+  world.phase = "LOBBY";
+  world.winner = "NONE";
+  world.matchElapsedTicks = 0;
+  world.matchStartTick = null;
+  world.resultTick = null;
+  for (const player of world.players.values()) {
+    player.health = player.maxHealth;
+    player.alive = true;
+    player.ready = false;
+    player.deathTick = null;
+    player.dashRemainingTicks = 0;
+    player.dashInvulnerableRemainingTicks = 0;
+    player.dashCooldownRemainingTicks = 0;
+    player.hitProtectionRemainingTicks = 0;
+    const stats = world.stats.get(player.sessionId);
+    if (stats) {
+      stats.kills = 0;
+      stats.totalDamage = 0;
+      stats.damageTaken = 0;
+      stats.survivalTicks = 0;
+    }
+  }
+  return true;
+}
+
 /**
- * Single authoritative combat step. The framework adapter only supplies commands
- * and projects the resulting state; all rules and collisions stay here.
+ * Single authoritative fixed step. The server Tick continues through menus and
+ * result screens, but entity movement, spawning, weapons and damage only run in
+ * RUNNING so a finished match cannot keep producing combat events.
  */
 export function stepCombatWorld(
   world: CombatWorld,
@@ -82,62 +157,71 @@ export function stepCombatWorld(
 
   world.tick++;
   world.elapsedMs = world.tick * FIXED_STEP_MS;
-  for (const player of world.players.values()) {
-    if (!player.alive) continue;
-    const command = commands.get(player.sessionId);
-    advancePlayer(world, player, command, dtMs / 1000);
+  if (world.phase === "RUNNING") {
+    for (const player of world.players.values()) {
+      if (!player.alive) continue;
+      const result = advanceDeterministicMovement(player, commands.get(player.sessionId), dtMs / 1000);
+      if (result.dashStarted) {
+        emitCombatEvent(world, {
+          type: "dash.started",
+          sourceId: player.sessionId,
+          targetId: player.sessionId,
+          assetId: PLAYER_DASH_ASSET_ID,
+          x: player.x,
+          y: player.y,
+          amount: player.dashRemainingTicks
+        });
+      }
+    }
+    SPAWN_SYSTEM.step(world);
+    ENEMY_SYSTEM.step(world, dtMs / 1000);
+    WEAPON_SYSTEM.step(world);
+    DAMAGE_SYSTEM.step(world, dtMs / 1000);
+    world.matchElapsedTicks++;
+    for (const player of world.players.values()) {
+      if (player.alive) ensureStats(world, player.sessionId).survivalTicks++;
+    }
+    if (![...world.players.values()].some(player => player.alive)) finishCombatMatch(world, "LOST");
+    else if (world.matchElapsedTicks >= world.config.matchDurationTicks) finishCombatMatch(world, "WON");
+  } else if ((world.phase === "WON" || world.phase === "LOST") && world.resultTick !== null &&
+      world.tick - world.resultTick >= world.config.resultHoldTicks) {
+    world.phase = "RESULT";
+    emitCombatEvent(world, {
+      type: "match.result",
+      sourceId: "match",
+      targetId: "",
+      assetId: "match",
+      x: 0,
+      y: 0,
+      amount: world.matchElapsedTicks
+    });
   }
-
-  SPAWN_SYSTEM.step(world);
-  ENEMY_SYSTEM.step(world, dtMs / 1000);
-  WEAPON_SYSTEM.step(world);
-  DAMAGE_SYSTEM.step(world, dtMs / 1000);
   pruneCombatLifecycles(world);
 }
 
-function advancePlayer(
-  world: CombatWorld,
-  player: CombatPlayer,
-  command: MovementInput | CombatInput | undefined,
-  dtSeconds: number
-): void {
-  const moveX = command?.moveX ?? 0;
-  const moveY = command?.moveY ?? 0;
-  const inputLength = Math.hypot(moveX, moveY);
-  if (inputLength > 0) {
-    player.facingX = moveX / inputLength;
-    player.facingY = moveY / inputLength;
-  }
+export function finishCombatMatch(world: CombatWorld, phase: Extract<CombatPhase, "WON" | "LOST">): void {
+  if (world.phase !== "RUNNING") return;
+  world.phase = phase;
+  world.winner = phase === "WON" ? "TEAM" : "NONE";
+  world.resultTick = world.tick;
+  emitCombatEvent(world, {
+    type: phase === "WON" ? "match.won" : "match.lost",
+    sourceId: "match",
+    targetId: "",
+    assetId: "match",
+    x: 0,
+    y: 0,
+    amount: world.matchElapsedTicks
+  });
+}
 
-  const dashRequested = "dash" in (command ?? {}) && Boolean((command as CombatInput).dash);
-  if (dashRequested && world.tick >= player.nextDashTick && world.tick > player.dashActiveUntilTick) {
-    player.dashDirectionX = inputLength > 0 ? moveX / inputLength : player.facingX;
-    player.dashDirectionY = inputLength > 0 ? moveY / inputLength : player.facingY;
-    player.dashActiveUntilTick = world.tick + COMBAT_DASH_DURATION_TICKS - 1;
-    player.dashInvulnerableUntilTick = world.tick + COMBAT_DASH_INVULNERABLE_TICKS - 1;
-    player.nextDashTick = world.tick + COMBAT_DASH_COOLDOWN_TICKS;
-    emitCombatEvent(world, {
-      type: "dash.started",
-      sourceId: player.sessionId,
-      targetId: player.sessionId,
-      assetId: PLAYER_DASH_ASSET_ID,
-      x: player.x,
-      y: player.y,
-      amount: COMBAT_DASH_DURATION_TICKS
-    });
+export function ensureStats(world: CombatWorld, sessionId: string): CombatStats {
+  let stats = world.stats.get(sessionId);
+  if (!stats) {
+    stats = { kills: 0, totalDamage: 0, damageTaken: 0, survivalTicks: 0 };
+    world.stats.set(sessionId, stats);
   }
-
-  if (world.tick <= player.dashActiveUntilTick) {
-    const next = clampCombatPosition(
-      player.x + player.dashDirectionX * COMBAT_DASH_SPEED * dtSeconds,
-      player.y + player.dashDirectionY * COMBAT_DASH_SPEED * dtSeconds,
-      22
-    );
-    player.x = next.x;
-    player.y = next.y;
-    return;
-  }
-  if (command) moveMember(player, { moveX, moveY }, dtSeconds);
+  return stats;
 }
 
 /** Keep transient IDs and presentation entities finite without changing gameplay state. */
@@ -163,10 +247,14 @@ export type {
   CombatConfig,
   CombatEnemy,
   CombatEnemyAssetId,
+  CombatPhase,
   CombatPlayer,
   CombatProjectile,
+  CombatStats,
   CombatWeaponId,
   CombatWorld,
+  CombatWinner,
   EnemyBehavior,
-  EnemyKind
+  EnemyKind,
+  SpawnDifficultyStage
 } from "./types.js";

@@ -5,6 +5,7 @@ import {
   createEnemy,
   createCombatPlayer,
   type CombatPlayer,
+  type CombatStats,
   type CombatWorld,
   type EnemyKind
 } from "./types.js";
@@ -18,12 +19,13 @@ export class SpawnSystem {
     // One spawn decision per fixed tick interval keeps replays and load behavior
     // deterministic. Dead entities remain briefly for death projection but do not
     // count against the active gameplay cap.
-    world.nextEnemySpawnTick = world.tick + world.config.spawnIntervalTicks;
+    const difficulty = currentDifficulty(world);
+    world.nextEnemySpawnTick = world.tick + difficulty.spawnIntervalTicks;
     const activeCount = [...world.enemies.values()].filter(enemy => enemy.alive).length;
     if (activeCount >= world.config.maxEnemies) return;
 
     const sequence = world.nextEnemySequence++;
-    const kind: EnemyKind = sequence % world.config.berserkerEvery === 0
+    const kind: EnemyKind = sequence % difficulty.berserkerEvery === 0
       ? "berserker_beast"
       : "rift_swarm";
     const position = spawnPosition(sequence);
@@ -31,6 +33,17 @@ export class SpawnSystem {
     world.enemies.set(id, createEnemy(id, kind, position.x, position.y));
     world.initialEnemySpawned = true;
   }
+}
+
+function currentDifficulty(world: CombatWorld): { spawnIntervalTicks: number; berserkerEvery: number } {
+  let result = {
+    spawnIntervalTicks: world.config.spawnIntervalTicks,
+    berserkerEvery: world.config.berserkerEvery
+  };
+  for (const stage of world.config.difficultyStages) {
+    if (world.matchElapsedTicks >= stage.startElapsedTicks) result = stage;
+  }
+  return result;
 }
 
 function spawnPosition(sequence: number): { x: number; y: number } {
@@ -56,9 +69,13 @@ export function addCombatPlayer(world: CombatWorld, sessionId: string, nickname:
   const spawn = COMBAT_PLAYER_SPAWNS[slot]!;
   const player = createCombatPlayer(sessionId, nickname, spawn.x, spawn.y);
   world.players.set(sessionId, player);
+  const stats: CombatStats = { kills: 0, totalDamage: 0, damageTaken: 0, survivalTicks: 0 };
+  world.stats.set(sessionId, stats);
   return player;
 }
 
 export function removeCombatPlayer(world: CombatWorld, sessionId: string): boolean {
-  return world.players.delete(sessionId);
+  const removed = world.players.delete(sessionId);
+  if (removed) world.stats.delete(sessionId);
+  return removed;
 }

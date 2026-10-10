@@ -9,7 +9,20 @@ export const PlayerNetworkState = schema({
   maxHealth: t.number().default(100),
   alive: t.boolean().default(true),
   dashActive: t.boolean().default(false),
-  hitProtected: t.boolean().default(false)
+  hitProtected: t.boolean().default(false),
+  ready: t.boolean().default(false),
+  kills: t.number().default(0),
+  totalDamage: t.number().default(0),
+  damageTaken: t.number().default(0),
+  survivalTicks: t.number().default(0),
+  facingX: t.number().default(1),
+  facingY: t.number().default(0),
+  dashDirectionX: t.number().default(1),
+  dashDirectionY: t.number().default(0),
+  dashRemainingTicks: t.number().default(0),
+  dashInvulnerableRemainingTicks: t.number().default(0),
+  dashCooldownRemainingTicks: t.number().default(0),
+  hitProtectionRemainingTicks: t.number().default(0)
 }, "RiftPlayerNetworkState");
 export type PlayerNetworkState = SchemaType<typeof PlayerNetworkState>;
 
@@ -17,7 +30,7 @@ export const EnemyNetworkState = schema({
   assetId: t.string().default("enemy.rift_swarm"),
   x: t.number().default(0),
   y: t.number().default(0),
-  health: t.number().default(40),
+  health: t.number().default(35),
   maxHealth: t.number().default(35),
   alive: t.boolean().default(true)
 }, "RiftEnemyNetworkState");
@@ -45,6 +58,10 @@ export type CombatEventNetworkState = SchemaType<typeof CombatEventNetworkState>
 export const CombatNetworkState = schema({
   phase: t.string().default("LOBBY"),
   serverTick: t.number().default(0),
+  matchElapsedTicks: t.number().default(0),
+  matchDurationTicks: t.number().default(4800),
+  hostSessionId: t.string().default(""),
+  winner: t.string().default("NONE"),
   players: t.map(PlayerNetworkState),
   enemies: t.map(EnemyNetworkState),
   projectiles: t.map(ProjectileNetworkState),

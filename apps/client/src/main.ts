@@ -14,6 +14,7 @@ import {
   getServerEndpoint,
   type CombatRenderState,
   type LobbyView,
+  type MatchSnapshot,
   type RenderPosition
 } from "./network/client.js";
 import "./style.css";
@@ -223,9 +224,18 @@ const badge = element<HTMLElement>("connection-badge");
 const details = element<HTMLElement>("room-details");
 const status = element<HTMLElement>("status");
 const tickMonitor = element<HTMLElement>("tick-monitor");
+const matchPhase = element<HTMLElement>("match-phase");
+const matchTimer = element<HTMLElement>("match-timer");
+const aliveCount = element<HTMLElement>("alive-count");
+const hudHealth = element<HTMLElement>("hud-health");
+const hudDash = element<HTMLElement>("hud-dash");
+const hudKills = element<HTMLElement>("hud-kills");
+const hudDamage = element<HTMLElement>("hud-damage");
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
 const list = element<HTMLUListElement>("players");
+const readyRoom = element<HTMLButtonElement>("ready-room");
+const restartRoom = element<HTMLButtonElement>("restart-room");
 let busy = false;
 let connected = false;
 let displayedView: LobbyView | null = null;
@@ -241,6 +251,13 @@ function refreshControls(): void {
   roomInput.disabled = busy || connected;
   leave.disabled = busy || !connected;
   copy.disabled = busy || !connected;
+  const view = displayedView;
+  const localPlayer = view?.players.get(view.sessionId);
+  readyRoom.disabled = busy || !connected || view?.phase !== "LOBBY";
+  readyRoom.textContent = localPlayer?.ready ? "取消准备" : "准备并开始";
+  const finished = view?.phase === "RESULT" || view?.phase === "WON" || view?.phase === "LOST";
+  restartRoom.hidden = !finished;
+  restartRoom.disabled = busy || !connected || !finished || view?.hostSessionId !== view?.sessionId;
   details.hidden = !connected;
   badge.textContent = connected ? "已连接" : busy ? "连接中" : "未连接";
   badge.classList.toggle("online", connected);
@@ -259,11 +276,44 @@ function render(view: LobbyView | null): void {
       const li = document.createElement("li");
       const health = Math.max(0, Math.ceil(player.health));
       const state = player.alive ? "HP " + health + "/" + Math.ceil(player.maxHealth) : "已倒下";
-      li.textContent = player.nickname + (sid === view.sessionId ? "（你）" : "") + " · " + state;
+      const ready = view.phase === "LOBBY" ? (player.ready ? " · 已准备" : " · 未准备") : "";
+      li.textContent = player.nickname + (sid === view.sessionId ? "（你）" : "") + " · " + state +
+        ready + " · 击杀 " + player.kills + " · 伤害 " + Math.round(player.totalDamage);
       list.append(li);
     }
   }
+  updateHud(view);
   refreshControls();
+}
+
+function updateHud(view: LobbyView | null): void {
+  if (!view) {
+    matchPhase.textContent = "大厅";
+    matchTimer.textContent = "--:--";
+    aliveCount.textContent = "0/0";
+    hudHealth.textContent = "--";
+    hudDash.textContent = "就绪";
+    hudKills.textContent = "0";
+    hudDamage.textContent = "0";
+    return;
+  }
+  const phaseText: Record<string, string> = {
+    LOBBY: "等待准备", RUNNING: "战斗中", WON: "胜利", LOST: "失败", RESULT: "结算"
+  };
+  matchPhase.textContent = phaseText[view.phase] ?? view.phase;
+  const remaining = Math.max(0, view.matchDurationTicks - view.matchElapsedTicks);
+  const seconds = Math.ceil(remaining / 20);
+  matchTimer.textContent = String(Math.floor(seconds / 60)).padStart(2, "0") + ":" +
+    String(seconds % 60).padStart(2, "0");
+  const alive = [...view.players.values()].filter(player => player.alive).length;
+  aliveCount.textContent = alive + "/" + view.players.size;
+  const local = view.players.get(view.sessionId);
+  if (!local) return;
+  hudHealth.textContent = Math.max(0, Math.ceil(local.health)) + "/" + Math.ceil(local.maxHealth);
+  hudDash.textContent = local.dashActive ? "冲刺中" : local.dashCooldownRemainingTicks > 0
+    ? (local.dashCooldownRemainingTicks / 20).toFixed(1) + "s" : "就绪";
+  hudKills.textContent = String(local.kills);
+  hudDamage.textContent = String(Math.round(local.totalDamage));
 }
 /** Keyboard state is sampled at the independent 20 Hz input sender. */
 const heldKeys = new Set<string>();
@@ -307,13 +357,16 @@ document.addEventListener("visibilitychange", () => {
 
 const connection = new LobbyConnection(getServerEndpoint(), (view) => {
   render(view);
-  showStatus("已加入房间 " + view.roomId + " · " + view.players.size + " 人在线");
+  showStatus(view.phase === "LOBBY"
+    ? "已加入房间 " + view.roomId + " · 等待所有玩家准备"
+    : "对局阶段：" + view.phase);
 }, (message) => {
   releaseKeys();
   render(null);
   showStatus(message, true);
-}, (tick) => {
+}, (tick, match: MatchSnapshot) => {
   tickMonitor.textContent = "20 Hz 逻辑 · Tick " + tick;
+  if (displayedView) render({...displayedView, ...match});
 }, (positions, combat) => {
   if (scene.scene && scene.scene.isActive()) scene.showPositions(positions, combat);
 });
@@ -329,6 +382,12 @@ async function start(action: () => Promise<void>): Promise<void> {
 }
 create.addEventListener("click", () => { void start(() => connection.create(nickname.value)); });
 join.addEventListener("click", () => { void start(() => connection.join(roomInput.value, nickname.value)); });
+readyRoom.addEventListener("click", () => {
+  const view = displayedView;
+  const player = view?.players.get(view.sessionId);
+  if (player) connection.setReady(!player.ready);
+});
+restartRoom.addEventListener("click", () => connection.restartMatch());
 leave.addEventListener("click", async () => {
   if (busy || !connected) return;
   busy = true;
