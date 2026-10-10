@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { playSpinBladeSwing } from "./art/m2SpinBladeVfx.js";
+
 import {
   preloadM1VisualAssets,
   renderM1Backdrop,
@@ -177,7 +177,7 @@ class LobbyScene extends Phaser.Scene {
     }
     for (const [id, projectile] of combat.projectiles) {
       let entity = this.projectiles.get(id);
-      if (!entity && (projectile.weaponId === "weapon.arcane_bolt" || projectile.weaponId === "weapon.fireball")) {
+      if (!entity && (projectile.weaponId === "weapon.arcane_bolt" || projectile.weaponId === "weapon.fireball" || projectile.weaponId === "weapon.spin_blade")) {
         entity = createM1Projectile(this, projectile.weaponId, projectile.x, projectile.y);
         this.projectiles.set(id, entity);
       }
@@ -188,10 +188,12 @@ class LobbyScene extends Phaser.Scene {
       if (this.handledCombatEventIds.has(event.id)) continue;
       this.handledCombatEventIds.add(event.id);
       if (event.type === "weapon.fired" && event.assetId === "weapon.spin_blade") {
-        // Render the attack fan from the server's hit-time facing and weapon
-        // level, not a delayed local facing sample or an undirected slash PNG.
-        playSpinBladeSwing(this, event.x, event.y,
-          event.facingX, event.facingY, event.weaponLevel);
+        // The blade itself is a persistent, rotating server projectile.
+        // Only a short launch flash is spawned here, never an instant slash.
+        const launch = this.add.circle(event.x, event.y, 18, 0xd4b7ff, 0.32)
+          .setStrokeStyle(2, 0xffffff, 0.68).setDepth(1250);
+        this.tweens.add({targets: launch, scale: 1.6, alpha: 0, duration: 140,
+          onComplete: () => launch.destroy()});
       } else if (event.type === "weapon.fired" && event.assetId === "weapon.fireball") {
         const flash = createM1ImpactEffect(this, "vfx.flash", event.x, event.y, 0xffc857);
         this.tweens.add({targets: flash, alpha: 0, scale: 1.35, duration: 120,
