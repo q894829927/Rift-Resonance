@@ -194,6 +194,15 @@ class LobbyScene extends Phaser.Scene {
         const flash = createM1ImpactEffect(this, "vfx.flash", event.x, event.y, 0xffc857);
         this.tweens.add({targets: flash, alpha: 0, scale: 1.35, duration: 120,
           onComplete: () => flash.destroy()});
+      } else if (event.type === "weapon.explosion") {
+        const radius = Math.max(24, event.amount);
+        const boom = this.add.circle(event.x, event.y, radius, 0xff9e5e, 0.16)
+          .setStrokeStyle(3, 0xffca77, 0.75).setDepth(1200);
+        const particles = createM1ImpactEffect(this, "vfx.explosion", event.x, event.y, 0xff9944);
+        this.tweens.add({targets: boom, alpha: 0, scale: 1.3, duration: 260,
+          onComplete: () => boom.destroy()});
+        this.tweens.add({targets: particles, alpha: 0, scale: 2, duration: 310,
+          onComplete: () => particles.destroy()});
       } else if (event.type === "dash.started") {
         const dash = createM1WeaponEffect(this, "player.dash", event.x, event.y);
         this.tweens.add({targets: dash, alpha: 0, scale: 1.7, duration: 220,
