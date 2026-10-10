@@ -15,10 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      # 首次缺少 lock 时，通过 npm 真正解析依赖，之后全部使用 npm ci。
+      # 发生受控的直接依赖变更时刷新 lock；之后 npm ci 进行严格复现。
       - name: Resolve dependency lock
-        run: |
-          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts; fi
+        run: npm install --package-lock-only --ignore-scripts
       - name: Install dependencies
         run: npm ci
       - name: Verify types, build and core tests
@@ -40,13 +39,12 @@ jobs:
           done
           node -e 'const fs=require("node:fs");const d=JSON.parse(fs.readFileSync("/tmp/rift-health.json","utf8"));if(d.status!=="ok"||d.protocolVersion!==1) process.exit(1)'
           grep -q '异界共振' /tmp/rift-index.html
-      - name: Production dependency audit (non-blocking review)
-        continue-on-error: true
+      - name: Production dependency audit (high severity gate)
         run: npm audit --omit=dev --audit-level=high
       - name: Persist initial lock on feature branch only
         if: github.event_name == 'push' && github.ref == 'refs/heads/codex/m0-a-scaffold'
         run: |
-          if ! git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+          if ! git ls-files --error-unmatch package-lock.json >/dev/null 2>&1 || ! git diff --quiet -- package-lock.json; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add package-lock.json
