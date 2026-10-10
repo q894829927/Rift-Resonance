@@ -58,8 +58,11 @@ function startProxy() {
 
         // Preserve each TCP byte-stream's order, even when jitter varies.
         const jitter = jitterMs * (Math.random() * 2 - 1);
-        const due = Math.max(Date.now(), direction === "up" ? clientDue : serverDue)
-          + Math.max(0, rttMs / 2 + jitter);
+        // Delay each chunk independently, but preserve original TCP order.
+        // Do not add a whole RTT/2 to the previous chunk's due time:
+        // doing so would create artificial infinite backlog at 20 Hz.
+        const previous = direction === "up" ? clientDue : serverDue;
+        const due = Math.max(Date.now() + Math.max(0, rttMs / 2 + jitter), previous + 0.01);
         if (direction === "up") clientDue = due;
         else serverDue = due;
         const timer = setTimeout(() => {
@@ -157,7 +160,6 @@ try {
   for(let i=0;i<rooms.length;i++) {
     if(rooms[i].input().tickRate!==20) throw new Error("Input tick rate mismatch");
   }
-  // Measure real HTTP round-trip through the same simulated transport path.
   // Each proxy receives its own matchmaking and WS traffic; connection stats are
   // snapshotted after join so sustained rates exclude asset/room matchmaking.
   const baseline=proxies.map(p=>({...p.stats}));
@@ -209,6 +211,7 @@ try {
       throw new Error("Replacement unexpectedly reused disconnected session ID");
     }
     rejoined=true;
+    baseline.push({...replacement.stats});
     const newInput=newRoom.input();
     senders.push(setInterval(()=>{
       newInput.data.moveX=0;newInput.data.moveY=1;
@@ -256,6 +259,12 @@ try {
     startMetrics:metricsStart,
     endMetrics:endedMetrics
   };
+  if(metricsStart && endedMetrics){
+    const usecStart = metricsStart.cpuUsageMicros.user + metricsStart.cpuUsageMicros.system;
+    const usecEnd = endedMetrics.cpuUsageMicros.user + endedMetrics.cpuUsageMicros.system;
+    report.measured.cpuSingleCorePercent = (usecEnd-usecStart) / 10000 / elapsedSeconds;
+    report.measured.maxObservedTickP99Ms = maxTickP99;
+  }
   if(endedMetrics?.rooms?.length) {
     const rm=endedMetrics.rooms[0];
     if(rm.tickDurationMs.p95>25 || rm.tickDurationMs.p99>45) {
