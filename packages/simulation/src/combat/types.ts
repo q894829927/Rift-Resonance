@@ -90,6 +90,12 @@ export const COMBAT_RESULT_HOLD_TICKS = 20 * 5;
 export const COMBAT_PLAYER_WEAPON_SLOTS = 2;
 export const COMBAT_FIREBALL_EXPLOSION_RADIUS = 56;
 export const COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO = 0.5; // M2-B prototype balance
+/** Returning boomerang balance, server authoritative at 20Hz. */
+export const COMBAT_SPIN_BLADE_THROW_DISTANCE = 168;
+export const COMBAT_SPIN_BLADE_SPEED = 360;
+export const COMBAT_SPIN_BLADE_PROJECTILE_RADIUS = 12;
+export const COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO = 0.65;
+export const COMBAT_SPIN_BLADE_ARC_HALF_ANGLE = Math.PI / 4;
 export const COMBAT_SPIN_BLADE_III_FAN_MULTIPLIER = 1.25;
 export const PASSIVE_RAGE_ID = "passive.rage" as const;
 export const PASSIVE_SWIFT_CAST_ID = "passive.swift_cast" as const;
@@ -183,6 +189,22 @@ export interface CombatEnemy {
   experienceAwarded: boolean;
 }
 
+/** Server-only throw flight state. Not sent to clients; network projects x/y/phase. */
+export interface CombatReturningBladeFlight {
+  phase: "outbound" | "returning";
+  readonly startX: number;
+  readonly startY: number;
+  readonly directionX: number;
+  readonly directionY: number;
+  readonly arcSign: number;
+  readonly arcHalfAngle: number;
+  readonly maxDistance: number;
+  outwardDistance: number;
+  ageTicks: number;
+  /** Per-leg hit dedup; reset once at the apex. */
+  readonly hitEnemiesThisLeg: Set<string>;
+}
+
 export interface CombatProjectile {
   readonly id: string;
   readonly weaponId: CombatWeaponId;
@@ -193,6 +215,7 @@ export interface CombatProjectile {
   readonly radius: number;
   x: number;
   y: number;
+  readonly returningBlade?: CombatReturningBladeFlight;
 }
 
 export interface CombatWorld {
