@@ -50,7 +50,7 @@ const scene = new LobbyScene();
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "app",
-  scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT },
+  scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT, expandParent: false },
   pixelArt: true,
   scene: [scene]
 });
