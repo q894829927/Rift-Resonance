@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { playSpinBladeSwing } from "./art/m2SpinBladeVfx.js";
 import {
   preloadM1VisualAssets,
   renderM1Backdrop,
@@ -187,9 +188,10 @@ class LobbyScene extends Phaser.Scene {
       if (this.handledCombatEventIds.has(event.id)) continue;
       this.handledCombatEventIds.add(event.id);
       if (event.type === "weapon.fired" && event.assetId === "weapon.spin_blade") {
-        const slash = createM1WeaponEffect(this, "weapon.spin_blade", event.x, event.y);
-        this.tweens.add({targets: slash, angle: 120, alpha: 0, scale: 1.35, duration: 180,
-          onComplete: () => slash.destroy()});
+        // Render the attack fan from the server's hit-time facing and weapon
+        // level, not a delayed local facing sample or an undirected slash PNG.
+        playSpinBladeSwing(this, event.x, event.y,
+          event.facingX, event.facingY, event.weaponLevel);
       } else if (event.type === "weapon.fired" && event.assetId === "weapon.fireball") {
         const flash = createM1ImpactEffect(this, "vfx.flash", event.x, event.y, 0xffc857);
         this.tweens.add({targets: flash, alpha: 0, scale: 1.35, duration: 120,
