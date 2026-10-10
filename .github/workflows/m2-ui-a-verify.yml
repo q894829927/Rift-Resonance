@@ -6,6 +6,9 @@ on:
     paths:
       - apps/client/src/**
       - packages/shared/src/**
+      - packages/simulation/src/**
+      - apps/server/src/**
+      - tests/*.test.mjs
       - apps/client/index.html
       - tests/ui-layout.test.mjs
       - tests/ui-pixel.test.mjs
