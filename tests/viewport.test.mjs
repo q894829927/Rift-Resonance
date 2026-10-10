@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateCameraZoom, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT } from "../packages/shared/dist/index.js";
+import { calculateCameraZoom, projectWorldToViewport, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT } from "../packages/shared/dist/index.js";
 
 test("responsive view fits unchanged 960x540 world to common viewports", () => {
   assert.equal(WORLD_VIEW_WIDTH, 960);
@@ -21,4 +21,12 @@ test("viewport fit rejects invalid dimensions", () => {
   for (const dims of [[0, 540], [-200, 100], [NaN, 100], [600, Infinity]]) {
     assert.throws(() => calculateCameraZoom(...dims), RangeError);
   }
+});
+
+test("HTML world-space names project to the same positions as the camera", () => {
+  assert.deepEqual(projectWorldToViewport(265, 245, 960, 540), { x: 265, y: 245, zoom: 1 });
+  assert.deepEqual(projectWorldToViewport(265, 245, 1536, 864), { x: 424, y: 392, zoom: 1.6 });
+  assert.deepEqual(projectWorldToViewport(480, 270, 1440, 900), { x: 720, y: 450, zoom: 1.5 });
+  assert.deepEqual(projectWorldToViewport(480, 270, 600, 900), { x: 300, y: 450, zoom: 0.625 });
+  assert.throws(() => projectWorldToViewport(NaN, 0, 960, 540), RangeError);
 });

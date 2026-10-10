@@ -1,17 +1,24 @@
 import Phaser from "phaser";
-import { MAX_ROOM_PLAYERS, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom } from "@rift/shared";
+import { MAX_ROOM_PLAYERS, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
 import { LobbyConnection, getServerEndpoint, type LobbyView } from "./network/client.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
   private readonly avatars: Phaser.GameObjects.GameObject[] = [];
+  private readonly nameLabels = new Map<string, HTMLSpanElement>();
+  private nameLayer: HTMLElement | null = null;
+  private latestView: LobbyView | null = null;
   constructor() { super("LobbyScene"); }
   create(): void {
+    this.nameLayer = document.getElementById("player-name-layer");
+    if (!this.nameLayer) throw new Error("Missing player name overlay");
     this.cameras.main.setBackgroundColor("#111b2a");
     this.fitCamera();
     this.scale.on("resize", this.fitCamera, this);
     this.events.once("shutdown", () => {
       this.scale.off("resize", this.fitCamera, this);
+      this.nameLayer?.replaceChildren();
+      this.nameLabels.clear();
     });
   }
 
@@ -22,9 +29,25 @@ class LobbyScene extends Phaser.Scene {
     const zoom = calculateCameraZoom(width, height);
     this.cameras.main.setZoom(zoom);
     this.cameras.main.centerOn(WORLD_VIEW_WIDTH / 2, WORLD_VIEW_HEIGHT / 2);
+    this.positionNames();
+  }
+
+  private positionNames(): void {
+    if (!this.latestView) return;
+    for (const [sessionId, player] of this.latestView.players) {
+      const label = this.nameLabels.get(sessionId);
+      if (!label) continue;
+      const position = projectWorldToViewport(player.x, player.y + 56, this.scale.width, this.scale.height);
+      label.style.left = position.x + "px";
+      label.style.top = position.y + "px";
+      label.style.fontSize = Math.max(13, Math.min(24, Math.round(17 * position.zoom))) + "px";
+    }
   }
 
   showLobby(view: LobbyView | null): void {
+    this.latestView = view;
+    this.nameLabels.clear();
+    this.nameLayer?.replaceChildren();
     for (const item of this.avatars) item.destroy();
     this.avatars.length = 0;
     if (!view) return;
@@ -38,11 +61,15 @@ class LobbyScene extends Phaser.Scene {
         .setStrokeStyle(self ? 3 : 1, color, .7);
       const avatar = this.add.rectangle(player.x, player.y, 44, 44, color)
         .setStrokeStyle(3, self ? 0xffffff : 0x203349);
-      const name = this.add.text(player.x, player.y + 56, player.nickname + (self ? "（你）" : ""), {
-        fontFamily: "Arial, sans-serif", fontSize: "17px", color: "#e9f4ff"
-      }).setOrigin(.5);
-      this.avatars.push(shadow, ring, avatar, name);
+      // Browser-rendered names stay crisp at fractional zoom and high DPI.
+      const name = document.createElement("span");
+      name.className = self ? "player-name player-name--self" : "player-name";
+      name.textContent = player.nickname + (self ? "（你）" : "");
+      this.nameLayer?.append(name);
+      this.nameLabels.set(id, name);
+      this.avatars.push(shadow, ring, avatar);
     }
+    this.positionNames();
   }
 }
 
@@ -51,7 +78,9 @@ new Phaser.Game({
   type: Phaser.AUTO,
   parent: "app",
   scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT, expandParent: false },
-  pixelArt: true,
+  // Smooth vector placeholder shapes. Future pixel sprites can be individually
+  // configured for nearest-neighbor filtering without degrading circular UI.
+  pixelArt: false,
   scene: [scene]
 });
 

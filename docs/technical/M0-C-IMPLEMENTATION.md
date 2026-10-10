@@ -66,3 +66,11 @@ npm run dev:client
 - https://docs.colyseus.io/netcode/server-input
 - https://docs.colyseus.io/room
 - https://docs.phaser.io/phaser/concepts/scale-manager
+
+## M0-C 后续修复：角色昵称与占位图形清晰度
+
+原先仅将固定标题和底部提示搬到了 HTML，但玩家昵称仍由 Phaser Text 先栅格化再随摄像机缩放，导致 1.6 倍等非整数倍率下出现中文笔画锯齿；同时全局 pixelArt:true 不利于当前圆环几何图形的抗锯齿。
+
+现将玩家昵称改为 #app 内的绝对定位 HTML 层：使用与 Phaser 居中摄像机相同的 projectWorldToViewport 坐标变换，客户端收到玩家名单或 Phaser resize 时重新定位。昵称使用 textContent 写入以避免 HTML 注入。当前矢量占位图形使用平滑采样（pixelArt:false），未来真实像素角色再按贴图单独设置最近邻采样。新单元测试验证 960×540、1536×864、1440×900 和 600×900 下世界到 HTML 的映射。
+
+**仍须手动验收：** 不同显示器 DPI、浏览器缩放、缩放后昵称跟随角色的位置以及圆环边缘平滑度；CI 无浏览器像素级截图测试，不对实际视觉效果作已验证声明。
