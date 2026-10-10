@@ -63,7 +63,10 @@ export const CombatEventNetworkState = schema({
   x: t.number().default(0),
   y: t.number().default(0),
   amount: t.number().default(0),
-  rawAmount: t.number().default(0)
+  rawAmount: t.number().default(0),
+  facingX: t.number().default(0),
+  facingY: t.number().default(0),
+  weaponLevel: t.number().default(0)
 }, "RiftCombatEventNetworkState");
 export type CombatEventNetworkState = SchemaType<typeof CombatEventNetworkState>;
 
