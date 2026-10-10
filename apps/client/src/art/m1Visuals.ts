@@ -187,15 +187,76 @@ export function createM1Projectile(
     container.once(Phaser.GameObjects.Events.DESTROY, () => rotation.remove());
     return container;
   }
-  const key = assetId as M1AssetId;
-  let body: Phaser.GameObjects.GameObject;
-  if (scene.textures.exists(key)) {
-    body = scene.add.image(0, 0, key).setScale(0.07)
-      .setTint(assetId === "weapon.fireball" ? 0xffc857 : 0xb58bff);
-  } else {
-    body = scene.add.circle(0, 0, 7, 0xffc857, 1);
+  if (assetId === "weapon.fireball") {
+    // Native, directional fireball: a hot core and asymmetric flame tail.
+    // The tail is drawn to the LEFT; updateM1FireballFacing() rotates the
+    // contents toward the actual smoothed travel direction each render frame.
+    // No texture loading or simulation state is involved.
+    const glow = scene.add.ellipse(-3, 0, 37, 29, 0xff6224, 0.22);
+    const halo = scene.add.ellipse(0, 0, 25, 23, 0xffab34, 0.24);
+
+    const tail = scene.add.graphics();
+    tail.fillStyle(0xce3615, 0.88);
+    tail.fillTriangle(-28, -2, -7, -11, -8, 8);
+    tail.fillStyle(0xff771a, 0.94);
+    tail.fillTriangle(-24, 3, -5, -7, -5, 8);
+    tail.fillStyle(0xffb345, 0.9);
+    tail.fillTriangle(-17, 0, -3, -4, -4, 5);
+    // Two asymmetric tongues make the projectile read as fire rather than
+    // a glowing circular bullet when viewed at small in-game scale.
+    tail.fillStyle(0xe84810, 0.9);
+    tail.fillTriangle(-15, -9, 0, -12, 7, -2);
+    tail.fillTriangle(-13, 8, -1, 12, 6, 2);
+
+    const orb = scene.add.graphics();
+    orb.fillStyle(0xe74b12, 1);
+    orb.fillCircle(1, 0, 10);
+    orb.fillStyle(0xff8d1d, 1);
+    orb.fillCircle(2, -1, 8);
+    orb.fillStyle(0xffc451, 1);
+    orb.fillCircle(4, -1, 6);
+    orb.fillStyle(0xfff2b1, 0.98);
+    orb.fillCircle(5, -2, 3.5);
+
+    const flame = scene.add.container(0, 0, [glow, halo, tail, orb]);
+    const entity = scene.add.container(x, y, [flame]).setDepth(1260);
+    entity.setData("m1FireballVisual", flame);
+
+    // Small flicker enhances flame readability without resetting the
+    // existing authoritative-position interpolation or creating trail entities.
+    const glowPulse = scene.tweens.add({
+      targets: glow, scaleX: 1.12, scaleY: 1.16,
+      alpha: 0.6, duration: 145, yoyo: true, repeat: -1,
+      ease: "Sine.InOut"
+    });
+    const tailPulse = scene.tweens.add({
+      targets: tail, scaleX: 1.12, alpha: 0.8,
+      duration: 105, yoyo: true, repeat: -1, ease: "Sine.InOut"
+    });
+    entity.once(Phaser.GameObjects.Events.DESTROY, () => {
+      glowPulse.remove();
+      tailPulse.remove();
+    });
+    return entity;
   }
+
+  // Only the older arcane bolt uses a texture / fallback dot now.
+  const key = assetId as M1AssetId;
+  const body = scene.textures.exists(key)
+    ? scene.add.image(0, 0, key).setScale(0.07).setTint(0xb58bff)
+    : scene.add.circle(0, 0, 7, 0xb58bff, 1);
   return scene.add.container(x, y, [body]).setDepth(1200);
+}
+
+/** Point the visual tail behind the fireball's actual rendered travel. */
+export function updateM1FireballFacing(
+  entity: Phaser.GameObjects.Container,
+  deltaX: number, deltaY: number
+): void {
+  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY) ||
+      deltaX * deltaX + deltaY * deltaY < 0.01) return;
+  const flame = entity.getData("m1FireballVisual") as Phaser.GameObjects.Container | undefined;
+  flame?.setRotation(Math.atan2(deltaY, deltaX));
 }
 
 export function createM1WeaponEffect(
