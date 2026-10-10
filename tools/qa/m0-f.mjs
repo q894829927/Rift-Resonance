@@ -50,58 +50,74 @@ function startProxy() {
     stats.tcpConnections++;
     const timers = new Set();
     let clientDue = 0, serverDue = 0;
+    let aborted = false;
 
-    function pipe(source, dest, direction) {
-      source.on("data", (chunk) => {
-        if (direction === "up") stats.upstreamBytes += chunk.byteLength;
-        else stats.downstreamBytes += chunk.byteLength;
-
-        // Preserve each TCP byte-stream's order, even when jitter varies.
-        const jitter = jitterMs * (Math.random() * 2 - 1);
-        // Delay each chunk independently, but preserve original TCP order.
-        // Do not add a whole RTT/2 to the previous chunk's due time:
-        // doing so would create artificial infinite backlog at 20 Hz.
-        const previous = direction === "up" ? clientDue : serverDue;
-        const due = Math.max(Date.now() + Math.max(0, rttMs / 2 + jitter), previous + 0.01);
-        if (direction === "up") clientDue = due;
-        else serverDue = due;
-        const timer = setTimeout(() => {
-          timers.delete(timer);
-          if (!dest.destroyed) dest.write(chunk);
-        }, Math.max(0, due - Date.now()));
-        timers.add(timer);
-      });
-    }
-    pipe(downstream,upstream,"up");
-    pipe(upstream,downstream,"down");
-    const cleanup = () => {
-      for (const timer of timers) clearTimeout(timer);
+    function abortConnection() {
+      if(aborted)return;
+      aborted = true;
+      for(const timer of timers)clearTimeout(timer);
       timers.clear();
       downstream.destroy();
       upstream.destroy();
-      sockets.delete(downstream);
-      sockets.delete(upstream);
-    };
-    downstream.on("error", cleanup);
-    upstream.on("error", cleanup);
-    downstream.on("close", cleanup);
-    upstream.on("close", cleanup);
+    }
+
+    function relay(source, dest, direction) {
+      let endReceived = false;
+      let pending = 0;
+      const flushEnd = () => {
+        // Do not end the receiving stream until all delayed chunks have gone out.
+        if(endReceived && pending===0 && !dest.destroyed) dest.end();
+      };
+
+      source.on("data", (chunk) => {
+        if(aborted)return;
+        if(direction==="up")stats.upstreamBytes+=chunk.byteLength;
+        else stats.downstreamBytes+=chunk.byteLength;
+
+        const jitter=jitterMs*(Math.random()*2-1);
+        const previous=direction==="up"?clientDue:serverDue;
+        const due=Math.max(Date.now()+Math.max(0,rttMs/2+jitter),previous+0.01);
+        if(direction==="up")clientDue=due;
+        else serverDue=due;
+
+        pending++;
+        const timer=setTimeout(()=>{
+          timers.delete(timer);
+          pending--;
+          if(!aborted && !dest.destroyed)dest.write(chunk);
+          flushEnd();
+        },Math.max(0,due-Date.now()));
+        timers.add(timer);
+      });
+      source.on("end",()=>{
+        endReceived = true;
+        flushEnd();
+      });
+      source.on("error",abortConnection);
+      source.on("close",()=>{
+        sockets.delete(source);
+        // Normal TCP FIN is not an error: delayed responses may still be queued.
+        if(!endReceived)abortConnection();
+      });
+    }
+    relay(downstream,upstream,"up");
+    relay(upstream,downstream,"down");
   });
   server.on("error", error => console.error("[proxy]", error.message));
 
   return {
     stats,
     async listen() {
-      await new Promise((resolve,reject) => {
+      await new Promise((resolve,reject)=>{
         server.once("error",reject);
         server.listen(0,"127.0.0.1",resolve);
       });
-      const addr = server.address();
-      return "http://127.0.0.1:" + addr.port;
+      const addr=server.address();
+      return "http://127.0.0.1:"+addr.port;
     },
     async close() {
-      for(const socket of sockets) socket.destroy();
-      await new Promise(resolve => server.close(resolve));
+      for(const socket of [...sockets])socket.destroy();
+      await new Promise(resolve=>server.close(resolve));
     }
   };
 }
