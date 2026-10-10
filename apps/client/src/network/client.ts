@@ -70,6 +70,10 @@ export interface CombatEventView {
   y: number;
   amount: number;
   rawAmount: number;
+  /** Immutable orientation and tier captured on server when this attack fired. */
+  facingX: number;
+  facingY: number;
+  weaponLevel: number;
 }
 export interface CombatRenderState {
   enemies: ReadonlyMap<string, EnemyView>;
