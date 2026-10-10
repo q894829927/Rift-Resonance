@@ -1,0 +1,5 @@
+:root { font-family: Arial, sans-serif; background: #080b11; color: #e1ecff; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
+#app { width: min(100vw, 960px); }
+canvas { display: block; max-width: 100%; height: auto; }

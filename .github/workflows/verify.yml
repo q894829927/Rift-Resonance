@@ -1,0 +1,32 @@
+name: M0-A Verify
+on:
+  push:
+    branches: [main, codex/m0-a-scaffold]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      # 首次依赖锁文件尚未提交：临时生成真实 npm lock 以完成 M0-A 云端验证。
+      - name: Resolve initial dependency lock
+        run: |
+          if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts; fi
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify types, build and core tests
+        run: npm run verify
+      - name: Archive generated lock for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-a-package-lock
+          path: package-lock.json
+          if-no-files-found: ignore

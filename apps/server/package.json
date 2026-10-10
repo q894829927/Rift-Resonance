@@ -1,0 +1,19 @@
+{
+  "name": "@rift/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@rift/shared": "0.0.0",
+    "colyseus": "0.18.1"
+  },
+  "devDependencies": {
+    "tsx": "4.20.3"
+  }
+}

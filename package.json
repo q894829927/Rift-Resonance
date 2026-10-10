@@ -1,0 +1,22 @@
+{
+  "name": "rift-resonance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "engines": { "node": ">=24 <27" },
+  "scripts": {
+    "build:packages": "npm run build -w @rift/shared && npm run build -w @rift/simulation",
+    "build": "npm run build:packages && npm run build -w @rift/server && npm run build -w @rift/client",
+    "dev:client": "npm run dev -w @rift/client",
+    "predev:server": "npm run build:packages",
+    "dev:server": "npm run dev -w @rift/server",
+    "typecheck": "npm run build:packages && npm run typecheck -w @rift/server && npm run typecheck -w @rift/client",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "typescript": "5.8.3"
+  }
+}
