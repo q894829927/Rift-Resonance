@@ -6,7 +6,7 @@
  * If simulation tuning changes, update and inspect this presentation length.
  */
 export const CHARGE_PREVIEW_LENGTH = 104;
-export const CHARGE_PREVIEW_HALF_WIDTH = 24;
+export const CHARGE_PREVIEW_HALF_WIDTH = 46;
 export const PLAYER_NAME_OFFSET_Y = -83;
 export const PLAYER_NAME_FONT_PX = 12;
 export const COMMON_ENEMY_BAR_Y = -41;
