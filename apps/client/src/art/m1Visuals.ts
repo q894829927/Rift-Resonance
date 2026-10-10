@@ -1,5 +1,9 @@
 import Phaser from "phaser";
 import { renderDarkArenaBackdrop } from "./m2ArenaBackdrop.js";
+import {
+  PIXEL_CHARACTER_SCALE, PIXEL_COMMON_ENEMY_SCALE,
+  PIXEL_LARGE_ENEMY_SCALE, getDarkWorldWalkFrame
+} from "./m2PixelPresentation.js";
 import { assetUrl, M1_ASSETS, type M1AssetId } from "./m1AssetCatalog.js";
 
 /** Presentational assets only: the server never sees texture keys or effects. */
@@ -37,19 +41,21 @@ export function createM1PlayerAvatar(
   scene: Phaser.Scene, x: number, y: number, color: number,
   self: boolean, stableHash: number
 ): Phaser.GameObjects.Container {
-  const shadow = scene.add.ellipse(0, 19, 33, 10, 0x050b13, 0.75);
-  const identification = scene.add.circle(0, 0, 23, color, 0.045)
+  const shadow = scene.add.ellipse(0, 20, 49, 12, 0x050b13, 0.68);
+  const identification = scene.add.circle(0, 9, 25, color, 0.045)
     .setStrokeStyle(self ? 2 : 1, color, self ? 0.9 : 0.7);
   const key = (stableHash & 1) === 0 ? M1_ART.guardian : M1_ART.mage;
+  // Frame 12 is a populated front-facing idle frame. Old hash%4 could select
+  // transparent frames 2/3 and render an apparently missing player.
   const body = scene.textures.exists(key)
-    ? scene.add.sprite(0, 0, key, stableHash % 4).setScale(2.15)
-    : scene.add.rectangle(0, 0, 44, 44, color)
+    ? scene.add.sprite(0, -10, key, 12).setScale(PIXEL_CHARACTER_SCALE)
+    : scene.add.rectangle(0, -10, 48, 60, color)
       .setStrokeStyle(3, self ? 0xffffff : 0x203349);
   const entity = scene.add.container(x, y, [shadow, identification, body])
     .setDepth(1000 + y);
   entity.setData("m1PlayerBody", body);
   entity.setData("m1PlayerRing", identification);
-  addM1HealthBar(entity, 46, -34, 0x63d4e9);
+  addM1HealthBar(entity, 56, -58, 0x63d4e9);
   return entity;
 }
 
@@ -59,6 +65,7 @@ export interface M1PlayerVisualState {
   readonly dashActive: boolean;
   readonly hitProtected: boolean;
   readonly facingX: number;
+  readonly facingY: number;
 }
 
 export function updateM1PlayerAvatar(
@@ -68,8 +75,12 @@ export function updateM1PlayerAvatar(
 ): void {
   const body = entity.getData("m1PlayerBody") as Phaser.GameObjects.Sprite | undefined;
   if (body instanceof Phaser.GameObjects.Sprite) {
-    body.setFrame(state.dashActive ? 3 : state.hitProtected ? 2 : moving ? 1 : 0);
-    body.setFlipX(state.facingX < 0);
+    // Sheet rows 3/4/5 contain four real frames per direction. State color is
+    // separate from animation; dash/hit must not select empty atlas cells.
+    const step = Math.floor(entity.scene.time.now / 135);
+    const pose = getDarkWorldWalkFrame(state.facingX, state.facingY, moving, step);
+    body.setFrame(pose.frame);
+    body.setFlipX(pose.flipX);
     body.setTint(state.dashActive ? 0x8ee4f5 : state.hitProtected ? 0xffe6a8 : 0xffffff);
   }
   const ring = entity.getData("m1PlayerRing") as Phaser.GameObjects.Arc | undefined;
@@ -83,19 +94,21 @@ export function createM1EnemyPlaceholder(
   id: "enemy.slime" | "enemy.rift_swarm" | "enemy.berserker_beast" | "enemy.skeleton" | "enemy.bat" | "enemy.elite",
   x: number, y: number
 ): Phaser.GameObjects.Container {
-  const size = id === "enemy.elite" || id === "enemy.berserker_beast" ? 64 : 38;
-  const shadow = scene.add.ellipse(0, 18, size, 11, 0x050b13, 0.65);
+  const large = id === "enemy.elite" || id === "enemy.berserker_beast";
+  const visualWidth = large ? 96 : 48;
+  const shadow = scene.add.ellipse(0, large ? 27 : 20, visualWidth * 0.68, 13, 0x050b13, 0.68);
   const spec = M1_ASSETS[id];
   const body = scene.textures.exists(spec.id)
-    ? scene.add.image(0, 0, spec.id).setScale(size === 64 ? 4 : 2.5)
-    : scene.add.rectangle(0, 0, size, size, 0x6c5772, 0.85)
-      .setStrokeStyle(2, 0xff596d, 0.9);
-  const guide = scene.add.triangle(0, -size - 13, 0, -18, 10, 0, -10, 0, 0xff596d, 0.85)
+    ? scene.add.image(0, large ? -12 : -6, spec.id)
+        .setScale(large ? PIXEL_LARGE_ENEMY_SCALE : PIXEL_COMMON_ENEMY_SCALE)
+    : scene.add.rectangle(0, -6, visualWidth, visualWidth, 0x6c5772, 0.85)
+        .setStrokeStyle(2, 0xff596d, 0.9);
+  const guide = scene.add.triangle(0, -visualWidth / 2 - 23, 0, -18, 10, 0, -10, 0, 0xff596d, 0.85)
     .setVisible(false).setDepth(1);
   const entity = scene.add.container(x, y, [shadow, guide, body]).setDepth(1000 + y);
   entity.setData("m1EnemyBody", body);
   entity.setData("m1ChargeGuide", guide);
-  addM1HealthBar(entity, size, -size / 2 - 9, 0xff596d);
+  addM1HealthBar(entity, large ? 72 : 44, -visualWidth / 2 - 18, 0xff596d);
   return entity;
 }
 
