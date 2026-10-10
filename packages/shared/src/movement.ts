@@ -27,7 +27,8 @@ export interface MovementStepResult {
   dashActive: boolean;
 }
 export const PLAYER_MOVE_SPEED = 160;
-export const PLAYER_COLLISION_RADIUS = 22;
+/** Server and client share this player hit radius in world units (M2 size adjustment). */
+export const PLAYER_COLLISION_RADIUS = 16;
 export const MOVE_SEND_HZ = 20;
 export const PLAYER_DASH_SPEED = 500;
 export const PLAYER_DASH_DURATION_TICKS = 4;
