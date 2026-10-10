@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH } from "@rift/shared";
+import { renderDarkArenaBackdrop } from "./m2ArenaBackdrop.js";
 import { assetUrl, M1_ASSETS, type M1AssetId } from "./m1AssetCatalog.js";
 
 /** Presentational assets only: the server never sees texture keys or effects. */
@@ -14,6 +14,9 @@ export function preloadM1VisualAssets(scene: Phaser.Scene): void {
   for (const id of Object.keys(M1_ASSETS) as M1AssetId[]) {
     if (id === "player.darkworld") {
       scene.load.spritesheet(id, assetUrl(id), {frameWidth: 32, frameHeight: 32});
+    } else if (id === "env.dark.tiles") {
+      // Dark World is a 5x3 atlas of 16px fragments, not a repeating texture.
+      scene.load.spritesheet(id, assetUrl(id), {frameWidth: 16, frameHeight: 16});
     } else {
       scene.load.image(id, assetUrl(id));
     }
@@ -21,55 +24,9 @@ export function preloadM1VisualAssets(scene: Phaser.Scene): void {
 }
 
 /** Fixed logical play area; background objects are decorative, never colliders. */
+/** Rendering-only facade; keep existing callers and simulation contract unchanged. */
 export function renderM1Backdrop(scene: Phaser.Scene): void {
-  const cx = WORLD_VIEW_WIDTH / 2;
-  const cy = WORLD_VIEW_HEIGHT / 2;
-  scene.add.rectangle(cx, cy, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, 0x0b1019)
-    .setDepth(-1000);
-
-  if (scene.textures.exists(M1_ART.floor)) {
-    scene.add.tileSprite(cx, cy, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, M1_ART.floor)
-      .setTileScale(3.1, 3.1).setTint(0x7b7893).setAlpha(0.72).setDepth(-950);
-  } else if (scene.textures.exists("env.floor")) {
-    scene.add.tileSprite(cx, cy, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, "env.floor")
-      .setTileScale(2, 2).setTint(0x56667f).setAlpha(0.8).setDepth(-950);
-  }
-
-  if (scene.textures.exists(M1_ART.tree)) {
-    for (const [x, y, scale] of [[96, 112, 1.1], [864, 122, 1.0], [118, 454, 0.92], [842, 454, 1.05]] as const) {
-      scene.add.image(x, y, M1_ART.tree).setScale(scale).setAlpha(0.88).setDepth(-720);
-    }
-  }
-  if (scene.textures.exists(M1_ART.stone)) {
-    for (const [x, y, scale] of [[178, 102, 1.5], [786, 100, 1.25], [168, 474, 1.2], [792, 470, 1.45]] as const) {
-      scene.add.image(x, y, M1_ART.stone).setScale(scale).setAlpha(0.9).setDepth(-710);
-    }
-  }
-  if (scene.textures.exists(M1_ART.mushrooms)) {
-    for (const [x, y, scale] of [[218, 132, 1.5], [744, 134, 1.35], [230, 438, 1.2], [735, 438, 1.4]] as const) {
-      scene.add.image(x, y, M1_ART.mushrooms).setScale(scale).setAlpha(0.82).setDepth(-705);
-    }
-  }
-
-  // Art-only altar, deliberately no geometry, collision or gameplay markers.
-  scene.add.ellipse(cx, cy, 288, 188, 0x0b1019, 0.38)
-    .setStrokeStyle(3, 0x8661bc, 0.55).setDepth(-800);
-  scene.add.ellipse(cx, cy, 194, 124, 0x0b1019, 0.15)
-    .setStrokeStyle(2, 0x9980c2, 0.48).setDepth(-790);
-  scene.add.ellipse(cx, cy, 64, 46, 0x3c2456, 0.28)
-    .setStrokeStyle(1, 0xc3a6e8, 0.52).setDepth(-780);
-
-  if (scene.textures.exists(M1_ART.altarMark)) {
-    const marks: ReadonlyArray<readonly [number, number]> = [
-      [64, 64], [WORLD_VIEW_WIDTH - 64, 64],
-      [64, WORLD_VIEW_HEIGHT - 64],
-      [WORLD_VIEW_WIDTH - 64, WORLD_VIEW_HEIGHT - 64]
-    ];
-    for (const [x, y] of marks) {
-      scene.add.image(x, y, M1_ART.altarMark).setScale(2)
-        .setTint(0x7f86aa).setAlpha(0.58).setDepth(-775);
-    }
-  }
+  renderDarkArenaBackdrop(scene);
 }
 
 /**
