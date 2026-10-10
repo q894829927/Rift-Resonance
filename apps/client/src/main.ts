@@ -7,6 +7,7 @@ import {
   createM1PlayerAvatar,
   updateM1PlayerAvatar,
   createM1Projectile,
+  updateM1FireballFacing,
   createM1WeaponEffect,
   updateM1EnemyVisual,
   createM1ImpactEffect,
@@ -228,6 +229,9 @@ class LobbyScene extends Phaser.Scene {
         const track = retargetProjectileVisual(previous, projectile.x, projectile.y, nowMs);
         if (track !== previous) entity.setData("projectileVisualTrack", track);
         const smooth = projectileVisualPosition(track, nowMs);
+        if (projectile.weaponId === "weapon.fireball") {
+          updateM1FireballFacing(entity, smooth.x - entity.x, smooth.y - entity.y);
+        }
         entity.setPosition(smooth.x, smooth.y);
       }
     }
