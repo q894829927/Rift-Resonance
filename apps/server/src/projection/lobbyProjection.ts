@@ -115,6 +115,7 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
     state.projectiles.set(projectile.id, target);
   }
   target.weaponId = projectile.weaponId;
+  target.phase = projectile.returningBlade?.phase ?? "";
   target.x = projectile.x;
   target.y = projectile.y;
 }
