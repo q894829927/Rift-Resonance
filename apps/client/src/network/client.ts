@@ -32,11 +32,14 @@ export interface LobbyPlayerView {
   upgradeChoices: readonly UpgradeChoiceView[];
   upgradeSelectionId: string;
   upgradeSelected: boolean;
+  upgradeRerollUsed: boolean;
 }
 export interface UpgradeChoiceView {
   id: string;
   kind: string;
   label: string;
+  description: string;
+  nextLevel: number;
   weaponId?: string;
   passiveId?: string;
 }
@@ -223,6 +226,10 @@ export class LobbyConnection {
 
   selectUpgrade(choiceId: string): void {
     if (choiceId.trim()) this.room?.send("upgrade.select", { choiceId });
+  }
+
+  rerollUpgrade(): void {
+    this.room?.send("upgrade.reroll");
   }
 
   private startPrediction(room: Room): void {
@@ -435,7 +442,8 @@ function isLobbyPlayerView(value: unknown): value is LobbyPlayerView {
     typeof item.hitProtectionRemainingTicks === "number" &&
     typeof item.weaponIds === "string" && typeof item.weaponLevels === "string" &&
     typeof item.passiveLevels === "string" && typeof item.upgradeChoices === "string" &&
-    typeof item.upgradeSelectionId === "string" && typeof item.upgradeSelected === "boolean";
+    typeof item.upgradeSelectionId === "string" && typeof item.upgradeSelected === "boolean" &&
+    typeof item.upgradeRerollUsed === "boolean";
 }
 
 function parseJson<T>(value: string, fallback: T): T {
@@ -457,6 +465,7 @@ function toLobbyPlayerView(value: LobbyPlayerView): LobbyPlayerView {
     passiveLevels: parseJson<Readonly<Record<string, number>>>(String(raw.passiveLevels ?? "{}"), {}),
     upgradeChoices: parseJson<readonly UpgradeChoiceView[]>(String(raw.upgradeChoices ?? "[]"), []),
     upgradeSelectionId: String(raw.upgradeSelectionId ?? ""),
-    upgradeSelected: Boolean(raw.upgradeSelected)
+    upgradeSelected: Boolean(raw.upgradeSelected),
+    upgradeRerollUsed: Boolean(raw.upgradeRerollUsed)
   };
 }
