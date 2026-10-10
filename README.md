@@ -4,7 +4,7 @@
 
 ## 项目状态
 
-- 当前阶段：**M0-C 固定 Tick 与响应式显示已实现，M0-D 玩家移动尚未开始**
+- 当前阶段：**M0-F 验收工具已实现；30 分钟与 ECS 实机验收待执行**
 - GDD 版本：**V1.0（待原型验证）**
 - 战斗定位：**70% 割草 + 30% 弹幕躲避**
 - 平台：**桌面浏览器优先**
@@ -23,8 +23,9 @@
 - [M0-C 固定逻辑 Tick 与响应式显示](docs/technical/M0-C-IMPLEMENTATION.md) — 20 Hz 模拟、10 Hz 网络补丁和跨窗口分辨率验收。
 - [M0-D 服务端权威移动](docs/technical/M0-D-IMPLEMENTATION.md) — 输入流、20 Hz 固定移动、边界与位置同步、测试方式。
 - [M0-E 客户端预测与插值](docs/technical/M0-E-IMPLEMENTATION.md) — Colyseus SDK 预测与校正、远端插值、验收及边界。
+- [M0-F 联机综合验收](docs/technical/M0-F-ACCEPTANCE.md) — 延迟、断线、CPU/内存、带宽及持续运行。
 
-## 初步技术选型（尚未开始实现）
+## 技术选型（客户端/服务端已实现，部署方案仍为规划）
 
 | 模块 | 规划 |
 | --- | --- |
@@ -59,7 +60,7 @@ npm run dev:client     # 终端 2：Phaser 占位页面
 
 检查服务端健康接口：`http://127.0.0.1:2567/health`。
 
-M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机集成测试、HTTP 烟测和生产依赖高危漏洞门禁。**已加入 20 Hz 固定 Tick、响应式画布和 HTML 原生文字，尚未实现角色移动与战斗。请在本地进行多分辨率视觉验收。**
+M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机集成测试、HTTP 烟测和生产依赖高危漏洞门禁。**M0-E 已有权威移动、预测和插值。M0-F 增加联机压力及性能量化测试，不代表 ECS 实机压测已经完成。**
 
 房间操作：标签 A 点击「创建新房间」，复制房间 ID；标签 B 输入相同 ID 并点击「加入」，双方应显示两名玩家；退出后成员数量自动更新。
 
@@ -89,3 +90,20 @@ M0-B 已通过 GitHub Actions 的构建、领域单元测试、真实 SDK 联机
 ## M0-E 体验验收
 
 本地运行步骤不变。按 WASD 控制自己的角色，客户端立即进行 20 Hz 预测并按服务器快照自动校正；其他玩家按约 100ms 的缓冲插值显示。角色与昵称使用同一份每帧渲染坐标，不再受 10 Hz 网络补丁限制。联机房间仍以服务端状态为权威。人工测试详见 [M0-E 实施说明](docs/technical/M0-E-IMPLEMENTATION.md)。
+
+
+## M0-F 综合验收工具
+
+PowerShell 中先开启服务端诊断：
+
+    $env:M0_DIAGNOSTICS = "1"
+    npm run dev:server
+
+第二终端运行：
+
+    npm run verify
+    npm run test:m0-f
+    node tools/qa/m0-f.mjs --players=4 --duration-sec=30 --rtt-ms=150 --jitter-ms=20 --disconnect --require-metrics --report=reports/m0-f-impaired.json
+    npm run test:m0-f:endurance
+
+报告写入 reports/，不会自动上传到生产环境。详细操作和验收门槛参见 docs/technical/M0-F-ACCEPTANCE.md。

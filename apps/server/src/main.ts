@@ -1,3 +1,4 @@
+import { diagnosticsSnapshot } from "./telemetry/metrics.js";
 import { defineRoom, defineServer } from "colyseus";
 import { PROTOCOL_VERSION, ROOM_TYPE } from "@rift/shared";
 import { ScaffoldRoom } from "./rooms/ScaffoldRoom.js";
@@ -14,6 +15,20 @@ const server = defineServer({
     app.get("/health", (_req: unknown, res: { json: (payload: object) => void }) => {
       res.json({ status: "ok", service: "rift-server", protocolVersion: PROTOCOL_VERSION });
     });
+    // Disabled by default. Defense in depth: loopback-only even when enabled.
+    if (process.env.M0_DIAGNOSTICS === "1") {
+      app.get("/internal/m0-metrics", (
+        req: {socket: {remoteAddress?: string}},
+        res: {status: (code: number) => {json: (data: object) => void}; json: (data: object) => void}
+      ) => {
+        const source = req.socket.remoteAddress;
+        if (!source || !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(source)) {
+          res.status(403).json({error:"local diagnostics only"});
+          return;
+        }
+        res.json(diagnosticsSnapshot());
+      });
+    }
   }
 });
 

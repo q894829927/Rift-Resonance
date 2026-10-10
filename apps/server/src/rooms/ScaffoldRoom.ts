@@ -6,6 +6,7 @@ import {
 import { LobbyNetworkState } from "./LobbyState.js";
 import { projectMemberJoined, projectMemberLeft, projectMemberPositions } from "../projection/lobbyProjection.js";
 import { MoveInput } from "./MoveInput.js";
+import { registerRoom, unregisterRoom, recordRoomTick, recordRoomClients } from "../telemetry/metrics.js";
 
 /**
  * M0-C: each Colyseus Room owns a framework-independent authoritative World.
@@ -24,8 +25,10 @@ export class ScaffoldRoom extends Room {
   });
 
   onCreate(): void {
+    registerRoom(this.roomId);
     this.patchRate = 1000 / NETWORK_PATCH_HZ;
     this.setFixedTimestep((context) => {
+      const startedAt = performance.now();
       const commands = new Map<string, MovementInput>();
       for (const sessionId of this.world.players.keys()) {
         const input = this.inputs.get(sessionId).next();
@@ -37,6 +40,7 @@ export class ScaffoldRoom extends Room {
       stepLobbyWorld(this.world, context.dtMs, commands);
       projectMemberPositions(this.state, this.world.players.values());
       this.state.serverTick = this.world.tick;
+      recordRoomTick(this.roomId, startedAt, performance.now() - startedAt);
     }, SIMULATION_TICK_HZ);
   }
 
@@ -45,13 +49,19 @@ export class ScaffoldRoom extends Room {
       ? options.nickname : undefined;
     const member = addLobbyMember(this.world, client.sessionId, validateNickname(raw));
     projectMemberJoined(this.state, member);
+    recordRoomClients(this.roomId, this.world.players.size);
     console.info("[room " + this.roomId + "] joined, count=" + this.world.players.size);
+  }
+
+  onDispose(): void {
+    unregisterRoom(this.roomId);
   }
 
   onLeave(client: Client): void {
     if (removeLobbyMember(this.world, client.sessionId)) {
       projectMemberLeft(this.state, client.sessionId);
     }
+    recordRoomClients(this.roomId, this.world.players.size);
     console.info("[room " + this.roomId + "] left, count=" + this.world.players.size);
   }
 }

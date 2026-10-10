@@ -1,7 +1,7 @@
 name: Rift Resonance Verify
 on:
   push:
-    branches: [main, codex/m0-e-prediction-interpolation]
+    branches: [main, codex/m0-f-stability-telemetry]
   pull_request:
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
       - name: HTTP and two-client integration
         run: |
           set -euo pipefail
-          npm run start -w @rift/server > /tmp/rift-server.log 2>&1 &
+          M0_DIAGNOSTICS=1 npm run start -w @rift/server > /tmp/rift-server.log 2>&1 &
           SERVER_PID=$!
           npm run preview -w @rift/client -- --port 4173 > /tmp/rift-client.log 2>&1 &
           CLIENT_PID=$!
@@ -36,5 +36,15 @@ jobs:
           node -e 'const d=require("/tmp/rift-health.json");if(d.status!=="ok"||d.protocolVersion!==1)process.exit(1)'
           grep -q '异界共振' /tmp/rift-index.html
           npm run test:integration
+          node tools/qa/m0-f.mjs --players=4 --duration-sec=12 --require-metrics --report=reports/m0-f-baseline.json
+          node tools/qa/m0-f.mjs --players=4 --duration-sec=12 --rtt-ms=80 --jitter-ms=10 --require-metrics --report=reports/m0-f-rtt80.json
+          node tools/qa/m0-f.mjs --players=4 --duration-sec=12 --rtt-ms=150 --jitter-ms=20 --disconnect --require-metrics --report=reports/m0-f-rtt150-disconnect.json
       - name: Production dependency audit (high severity gate)
         run: npm audit --omit=dev --audit-level=high
+      - name: Archive M0-F raw benchmark reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m0-f-benchmarks
+          path: reports/m0-f-*.json
+          if-no-files-found: warn

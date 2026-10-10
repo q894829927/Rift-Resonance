@@ -3,8 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
-  "engines": { "node": ">=24 <27" },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24 <27"
+  },
   "scripts": {
     "build:packages": "npm run build -w @rift/shared && npm run build -w @rift/simulation",
     "build": "npm run build:packages && npm run build -w @rift/server && npm run build -w @rift/client",
@@ -14,7 +19,9 @@
     "typecheck": "npm run build:packages && npm run typecheck -w @rift/server && npm run typecheck -w @rift/client",
     "test": "node --test tests/*.test.mjs",
     "test:integration": "node --test tests/integration/rooms.test.mjs",
-    "verify": "npm run build && npm test"
+    "verify": "npm run build && npm test",
+    "test:m0-f": "node tools/qa/m0-f.mjs --players=4 --duration-sec=30 --require-metrics",
+    "test:m0-f:endurance": "node tools/qa/m0-f.mjs --players=4 --duration-sec=1800 --require-metrics --report=reports/m0-f-30min.json"
   },
   "devDependencies": {
     "@types/node": "24.0.0",

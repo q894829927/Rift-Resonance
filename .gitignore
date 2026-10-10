@@ -40,3 +40,6 @@ Thumbs.db
 *.db-journal
 *.sqlite
 *.sqlite3
+
+# Generated diagnostic reports
+reports/
