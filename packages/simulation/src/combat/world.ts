@@ -51,6 +51,8 @@ export function createCombatWorld(): CombatWorld {
     upgradeReady: false,
     pendingUpgrade: null,
     nextUpgradeSequence: 1,
+    upgradeSeed: 0x52494654, // "RIFT"; gameplay tests can supply a fixed alternate seed
+    upgradeRandomState: 0x52494654,
     config: {
       maxEnemies: COMBAT_MAX_ACTIVE_ENEMIES,
       spawnIntervalTicks: COMBAT_ENEMY_SPAWN_INTERVAL_TICKS + 10,
@@ -139,6 +141,7 @@ export function resetCombatMatch(world: CombatWorld): boolean {
   world.upgradeReady = false;
   world.pendingUpgrade = null;
   world.nextUpgradeSequence = 1;
+  world.upgradeRandomState = world.upgradeSeed >>> 0;
   world.stats.clear();
   for (const player of world.players.values()) {
     const spawn = COMBAT_PLAYER_SPAWNS[player.spawnSlot] ?? COMBAT_PLAYER_SPAWNS[0]!;
@@ -164,6 +167,7 @@ export function resetCombatMatch(world: CombatWorld): boolean {
     player.weaponLevels.clear();
     player.weaponLevels.set(FIREBALL_WEAPON_ID, 1);
     player.passiveLevels.clear();
+    player.upgradeRerollUsed = false;
     ensureStats(world, player.sessionId);
   }
   return true;
