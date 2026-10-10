@@ -37,7 +37,8 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     passiveLevels: JSON.stringify(Object.fromEntries(player.passiveLevels)),
     upgradeChoices: "[]",
     upgradeSelectionId: "",
-    upgradeSelected: false
+    upgradeSelected: false,
+    upgradeRerollUsed: player.upgradeRerollUsed
   }));
 }
 export function projectMemberLeft(
@@ -161,6 +162,7 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.upgradeChoices = JSON.stringify(choices);
     target.upgradeSelectionId = world.pendingUpgrade?.selections.get(member.sessionId) ?? "";
     target.upgradeSelected = target.upgradeSelectionId !== "";
+    target.upgradeRerollUsed = member.upgradeRerollUsed;
   }
 
   const enemyIds = new Set<string>();
