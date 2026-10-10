@@ -1,6 +1,6 @@
 # M0-B：多人房间与网络状态投影
 
-状态：开发分支实现中，最终结果以 GitHub Actions 和本地浏览器验收为准。
+状态：M0-B 实现与自动化验证已完成；本地浏览器的双窗口视觉验收仍需用户执行。
 
 ## 目标与范围
 
@@ -43,3 +43,14 @@
 - https://docs.colyseus.io/state/schema
 - https://docs.colyseus.io/sdk
 - https://docs.colyseus.io/state/callbacks
+
+## 验证结果（2026-10-10）
+
+- [只读依赖锁定 CI](https://github.com/q894829927/Rift-Resonance/actions/runs/38038303117)：通过。
+- Node.js 24 下 npm ci、TypeScript 构建、Vite 打包、四个纯逻辑单元测试通过。
+- 三个真实 SDK 集成场景通过：双客户端同房间同步并离开、四人上限、非法昵称拒绝；同时检查 onAdd/onRemove 与初始状态回放。
+- Node 健康接口和网页 HTTP 烟测通过，npm 生产依赖高危门禁通过。
+- 项目仍存在低/中危传递依赖安全告警，不意味着可以直接公网运营。
+- **未做**真实浏览器双标签 UI、不同设备延迟和 ECS 运行时性能测试。
+
+结论：达到自动化 M0-B 验收门槛。客户端人工验收后再进入 M0-C。
