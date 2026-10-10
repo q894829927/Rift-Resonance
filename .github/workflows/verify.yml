@@ -9,21 +9,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      # 首次依赖锁文件尚未提交：临时生成真实 npm lock 以完成 M0-A 云端验证。
-      - name: Resolve initial dependency lock
+      # 首次缺少 lock 时，通过 npm 真正解析依赖，之后全部使用 npm ci。
+      - name: Resolve dependency lock
         run: |
           if [ ! -f package-lock.json ]; then npm install --package-lock-only --ignore-scripts; fi
       - name: Install dependencies
         run: npm ci
       - name: Verify types, build and core tests
         run: npm run verify
-      - name: Archive generated lock for review
+      - name: Persist initial lock on feature branch only
+        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/m0-a-scaffold'
+        run: |
+          if ! git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore(m0-a): lock npm dependency tree"
+            git push origin HEAD:codex/m0-a-scaffold
+          fi
+      - name: Archive dependency lock
         if: always()
         uses: actions/upload-artifact@v4
         with:
