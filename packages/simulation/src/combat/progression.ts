@@ -1,134 +1,171 @@
 import {
-  FIREBALL_WEAPON_ID,
-  SPIN_BLADE_WEAPON_ID
+  FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID
 } from "@rift/shared";
 import {
-  COMBAT_MAX_PASSIVE_LEVEL,
-  COMBAT_MAX_WEAPON_LEVEL,
-  COMBAT_PLAYER_MAX_HEALTH,
-  COMBAT_PLAYER_WEAPON_SLOTS,
-  COMBAT_UPGRADE_TIMEOUT_TICKS,
-  ENEMY_DEFINITIONS,
+  COMBAT_MAX_PASSIVE_LEVEL, COMBAT_MAX_WEAPON_LEVEL,
+  COMBAT_PLAYER_MAX_HEALTH, COMBAT_PLAYER_WEAPON_SLOTS,
+  COMBAT_UPGRADE_TIMEOUT_TICKS, ENEMY_DEFINITIONS,
+  PASSIVE_FORTITUDE_ID, PASSIVE_RAGE_ID, PASSIVE_SWIFT_CAST_ID,
   emitCombatEvent,
-  type CombatEnemy,
-  type CombatPlayer,
-  type CombatUpgradeChoice,
-  type CombatUpgradeState,
-  type CombatWeaponId,
-  type CombatWorld
+  type CombatEnemy, type CombatPlayer, type CombatUpgradeChoice,
+  type CombatUpgradeState, type CombatWeaponId, type CombatWorld
 } from "./types.js";
 
-export const TEAM_VITALITY_PASSIVE_ID = "passive.vitality" as const;
+/** Backward-compatible symbol for old M2-A imports; old passive.vitality ID is retired. */
+export const TEAM_VITALITY_PASSIVE_ID = PASSIVE_FORTITUDE_ID;
 export const TEAM_XP_THRESHOLDS = [50, 70, 90, 110, 130, 150, 170, 190, 210] as const;
 
-/**
- * M2-A keeps the GDD's single-player curve and applies a modest team-size
- * multiplier. The pool remains shared, so four players do not get four times
- * as many upgrades simply by landing the same kill.
- */
 export function teamSizeMultiplier(world: CombatWorld): number {
   const players = Math.max(1, world.players.size);
   return 1 + Math.max(0, players - 1) * world.config.experiencePlayerScale;
 }
-
 export function experienceThresholdForLevel(world: CombatWorld, level: number): number {
   const index = Math.max(0, Math.min(TEAM_XP_THRESHOLDS.length - 1, level - 1));
   return Math.round(TEAM_XP_THRESHOLDS[index]! * teamSizeMultiplier(world));
 }
-
 export function experienceRewardForEnemy(world: CombatWorld, enemy: CombatEnemy): number {
   return Math.round(ENEMY_DEFINITIONS[enemy.kind].experience * teamSizeMultiplier(world));
 }
-
 export function awardEnemyExperience(world: CombatWorld, enemy: CombatEnemy): number {
   if (enemy.experienceAwarded) return 0;
   enemy.experienceAwarded = true;
   const reward = experienceRewardForEnemy(world, enemy);
   world.teamExperience += reward;
   emitCombatEvent(world, {
-    type: "experience.awarded",
-    sourceId: enemy.id,
-    targetId: "team",
-    assetId: enemy.assetId,
-    x: enemy.x,
-    y: enemy.y,
-    amount: reward
+    type: "experience.awarded", sourceId: enemy.id, targetId: "team",
+    assetId: enemy.assetId, x: enemy.x, y: enemy.y, amount: reward
   });
   if (world.teamExperience >= world.teamNextLevelExperience) world.upgradeReady = true;
   return reward;
 }
 
+const passiveEntries = [
+  [PASSIVE_RAGE_ID, "狂怒之心", ["普通伤害 +12%", "普通伤害提升至 +22%"]],
+  [PASSIVE_SWIFT_CAST_ID, "迅捷施法", ["武器冷却缩减 8%", "武器冷却缩减提升至 15%"]],
+  [PASSIVE_FORTITUDE_ID, "坚韧体魄", ["最大生命 +20", "最大生命提升至 +35"]]
+] as const;
+
+/** Full legal upgrade pool. The draft draws at most three options from it. */
 export function getCombatUpgradeChoices(player: CombatPlayer): readonly CombatUpgradeChoice[] {
   const choices: CombatUpgradeChoice[] = [];
-  if (!player.weaponIds.includes(SPIN_BLADE_WEAPON_ID) && player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS) {
+  if (!player.weaponIds.includes(SPIN_BLADE_WEAPON_ID) &&
+      player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS) {
     choices.push({
-      id: "upgrade.weapon.spin_blade",
-      kind: "weapon_unlock",
-      label: "获得回旋刃",
-      weaponId: SPIN_BLADE_WEAPON_ID
+      id: "upgrade.weapon.spin_blade", kind: "weapon_unlock", label: "获得回旋刃",
+      description: "解锁第二武器：前方扇形近战并击退敌人",
+      nextLevel: 1, weaponId: SPIN_BLADE_WEAPON_ID
     });
   }
-
   for (const weaponId of [...player.weaponIds].sort()) {
     const level = player.weaponLevels.get(weaponId) ?? 1;
     if (level >= COMBAT_MAX_WEAPON_LEVEL) continue;
+    const isFire = weaponId === FIREBALL_WEAPON_ID;
     choices.push({
       id: "upgrade.weapon." + weaponId.replace("weapon.", "") + ".power",
       kind: "weapon_power",
-      label: weaponId === FIREBALL_WEAPON_ID ? "强化火焰弹" : "强化回旋刃",
-      weaponId
+      label: isFire ? "强化火焰弹" : "强化回旋刃",
+      description: level === 1 ? "武器伤害 +20%" :
+        isFire ? "命中引发小范围爆炸，额外敌人承受 50% 溅射伤害" :
+        "回旋刃扇形角度扩大 25%",
+      nextLevel: level + 1, weaponId
     });
   }
-
-  const passiveLevel = player.passiveLevels.get(TEAM_VITALITY_PASSIVE_ID) ?? 0;
-  if (passiveLevel < COMBAT_MAX_PASSIVE_LEVEL) {
+  for (const [passiveId, name, descriptions] of passiveEntries) {
+    const level = player.passiveLevels.get(passiveId) ?? 0;
+    if (level >= COMBAT_MAX_PASSIVE_LEVEL) continue;
     choices.push({
-      id: TEAM_VITALITY_PASSIVE_ID,
-      kind: "passive",
-      label: passiveLevel === 0 ? "获得坚韧之心" : "强化坚韧之心",
-      passiveId: TEAM_VITALITY_PASSIVE_ID
+      id: passiveId, kind: "passive",
+      label: level === 0 ? "获得" + name : "强化" + name,
+      description: descriptions[level]!, nextLevel: level + 1, passiveId
     });
   }
-  return choices.slice(0, 3);
+  return choices;
+}
+
+/** An independent deterministic PRNG (xorshift32); no Math.random()/wall clock. */
+export function nextUpgradeRandom(world: CombatWorld): number {
+  let state = world.upgradeRandomState >>> 0 || 0x6d2b79f5;
+  state ^= state << 13;
+  state ^= state >>> 17;
+  state ^= state << 5;
+  world.upgradeRandomState = state >>> 0;
+  return world.upgradeRandomState;
+}
+
+/** Used by both initial selection and server-authoritative reroll. */
+export function draftCombatUpgradeChoices(
+  world: CombatWorld, player: CombatPlayer,
+  previous: readonly CombatUpgradeChoice[] = []
+): readonly CombatUpgradeChoice[] {
+  const pool = [...getCombatUpgradeChoices(player)];
+  const selected: CombatUpgradeChoice[] = [];
+  // First & third upgrade guarantee at least one free weapon slot option.
+  const needsWeapon = world.teamLevel <= 4 && player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS;
+  if (needsWeapon) {
+    const unlock = pool.find(option => option.kind === "weapon_unlock");
+    if (unlock) {
+      selected.push(unlock);
+      pool.splice(pool.indexOf(unlock), 1);
+    }
+  }
+  const oldIds = new Set(previous.map(choice => choice.id));
+  // Prioritize previously unseen options on reroll; do not waste the only reroll
+  // merely shuffling cards the player just rejected when alternatives exist.
+  const unseen = pool.filter(choice => !oldIds.has(choice.id));
+  const repeats = pool.filter(choice => oldIds.has(choice.id));
+  for (const list of [unseen, repeats]) {
+    while (list.length && selected.length < 3) {
+      const index = nextUpgradeRandom(world) % list.length;
+      selected.push(list.splice(index, 1)[0]!);
+    }
+  }
+  return selected;
 }
 
 export function maybeStartCombatUpgrade(world: CombatWorld): boolean {
   if (world.phase !== "RUNNING" || !world.upgradeReady || world.pendingUpgrade || world.players.size === 0) return false;
-  const choicesByPlayer = new Map<string, readonly CombatUpgradeChoice[]>();
-  let hasChoice = false;
-  for (const player of world.players.values()) {
-    const choices = getCombatUpgradeChoices(player);
-    choicesByPlayer.set(player.sessionId, choices);
-    if (choices.length > 0) hasChoice = true;
-  }
-  if (!hasChoice) {
+  const ordered = [...world.players.values()].sort((a, b) => a.sessionId.localeCompare(b.sessionId));
+  if (!ordered.some(player => getCombatUpgradeChoices(player).length > 0)) {
     world.upgradeReady = false;
     return false;
   }
-
   world.teamExperience -= world.teamNextLevelExperience;
   world.teamLevel++;
   world.teamNextLevelExperience = experienceThresholdForLevel(world, world.teamLevel);
   world.upgradeReady = false;
   const id = "upgrade:" + world.nextUpgradeSequence++;
+  const choicesByPlayer = new Map<string, readonly CombatUpgradeChoice[]>();
+  for (const player of ordered) {
+    choicesByPlayer.set(player.sessionId, draftCombatUpgradeChoices(world, player));
+  }
   const pending: CombatUpgradeState = {
-    id,
-    level: world.teamLevel,
-    startedTick: world.tick,
+    id, level: world.teamLevel, startedTick: world.tick,
     deadlineTick: world.tick + (world.config.upgradeTimeoutTicks || COMBAT_UPGRADE_TIMEOUT_TICKS),
-    choicesByPlayer,
-    selections: new Map()
+    choicesByPlayer, selections: new Map()
   };
   world.pendingUpgrade = pending;
   world.phase = "UPGRADING";
   emitCombatEvent(world, {
-    type: "upgrade.started",
-    sourceId: "team",
-    targetId: id,
-    assetId: "upgrade",
-    x: 0,
-    y: 0,
-    amount: world.teamLevel
+    type: "upgrade.started", sourceId: "team", targetId: id,
+    assetId: "upgrade", x: 0, y: 0, amount: world.teamLevel
+  });
+  return true;
+}
+
+export function rerollCombatUpgrade(world: CombatWorld, sessionId: string): boolean {
+  const pending = world.pendingUpgrade;
+  const player = world.players.get(sessionId);
+  if (world.phase !== "UPGRADING" || !pending || !player ||
+      player.upgradeRerollUsed || pending.selections.has(sessionId)) return false;
+  const previous = pending.choicesByPlayer.get(sessionId);
+  if (!previous?.length) return false;
+  const fresh = getCombatUpgradeChoices(player).some(c => !previous.some(p => p.id === c.id));
+  if (!fresh) return false; // Do not consume once-per-run reroll with no alternatives
+  pending.choicesByPlayer.set(sessionId, draftCombatUpgradeChoices(world, player, previous));
+  player.upgradeRerollUsed = true;
+  emitCombatEvent(world, {
+    type: "upgrade.rerolled", sourceId: sessionId, targetId: pending.id,
+    assetId: "upgrade", x: 0, y: 0, amount: 0
   });
   return true;
 }
@@ -153,7 +190,6 @@ export function advanceCombatUpgrade(world: CombatWorld): void {
   });
   const timedOut = world.tick >= pending.deadlineTick;
   if (!complete && !timedOut) return;
-
   for (const player of activePlayers) {
     const choices = pending.choicesByPlayer.get(player.sessionId) ?? [];
     if (choices.length === 0) continue;
@@ -163,13 +199,8 @@ export function advanceCombatUpgrade(world: CombatWorld): void {
     pending.selections.set(player.sessionId, selected.id);
   }
   emitCombatEvent(world, {
-    type: "upgrade.resolved",
-    sourceId: "team",
-    targetId: pending.id,
-    assetId: "upgrade",
-    x: 0,
-    y: 0,
-    amount: activePlayers.length
+    type: "upgrade.resolved", sourceId: "team", targetId: pending.id,
+    assetId: "upgrade", x: 0, y: 0, amount: activePlayers.length
   });
   world.pendingUpgrade = null;
   world.phase = "RUNNING";
@@ -194,13 +225,17 @@ export function applyCombatUpgrade(player: CombatPlayer, choice: CombatUpgradeCh
     player.weaponLevels.set(choice.weaponId, level + 1);
     return true;
   }
-  if (choice.kind === "passive" && choice.passiveId === TEAM_VITALITY_PASSIVE_ID) {
+  if (choice.kind === "passive" && choice.passiveId &&
+      [PASSIVE_RAGE_ID, PASSIVE_SWIFT_CAST_ID, PASSIVE_FORTITUDE_ID].includes(choice.passiveId as typeof PASSIVE_RAGE_ID)) {
     const level = player.passiveLevels.get(choice.passiveId) ?? 0;
     if (level >= COMBAT_MAX_PASSIVE_LEVEL) return false;
     const nextLevel = level + 1;
     player.passiveLevels.set(choice.passiveId, nextLevel);
-    player.maxHealth = COMBAT_PLAYER_MAX_HEALTH + nextLevel * 25;
-    player.health = Math.min(player.maxHealth, player.health + 25);
+    if (choice.passiveId === PASSIVE_FORTITUDE_ID) {
+      const increase = nextLevel === 1 ? 20 : 15;
+      player.maxHealth = COMBAT_PLAYER_MAX_HEALTH + (nextLevel === 1 ? 20 : 35);
+      player.health = Math.min(player.maxHealth, player.health + increase);
+    }
     return true;
   }
   return false;
