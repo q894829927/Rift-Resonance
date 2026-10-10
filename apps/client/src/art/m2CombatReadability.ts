@@ -1,3 +1,5 @@
+import { PLAYER_COLLISION_RADIUS } from "@rift/shared";
+
 /**
  * M2-UI-C rendering geometry only.
  *
@@ -6,8 +8,10 @@
  * If simulation tuning changes, update and inspect this presentation length.
  */
 export const CHARGE_PREVIEW_LENGTH = 104;
-export const CHARGE_PREVIEW_HALF_WIDTH = 46;
-export const PLAYER_NAME_OFFSET_Y = -83;
+// Berserker's authoritative radius is 24 (ENEMY_DEFINITIONS.berserker_beast).
+// Keep the lane in sync with the shared player hit radius rather than hard-code 46.
+export const CHARGE_PREVIEW_HALF_WIDTH = 24 + PLAYER_COLLISION_RADIUS;
+export const PLAYER_NAME_OFFSET_Y = -64;
 export const PLAYER_NAME_FONT_PX = 12;
 export const COMMON_ENEMY_BAR_Y = -41;
 export const LARGE_ENEMY_BAR_Y = -59;
