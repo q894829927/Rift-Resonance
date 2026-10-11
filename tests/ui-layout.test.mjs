@@ -34,8 +34,8 @@ test("gameplay HUD is edge-aligned and hidden while in lobby", () => {
   assert.match(css, /\.game-shell\[data-ui-phase="LOBBY"\]\s+\.match-hud/);
   // Entry dialogs are independent fixed overlays controlled with [hidden], not
   // arena-bound side panels. They must be unavailable while playing.
-  assert.match(css, /#solo-panel\\[hidden\\],#lobby-panel\\[hidden\\]/);
-  assert.match(main, /element<HTMLElement>\\("lobby-panel"\\)\\.hidden = entryMode !== "multi" \\|\\| inMatch/);
+  assert.ok(css.includes("#solo-panel[hidden],#lobby-panel[hidden]"));
+  assert.ok(main.includes('element<HTMLElement>("lobby-panel").hidden = entryMode !== "multi" || inMatch'));
   assert.match(main, /uiShell\.dataset\.uiPhase = view\?\.phase \?\? "LOBBY"/);
   assert.match(main, /skillSlot1\.textContent = local\.weaponIds\[0\]/);
   assert.match(main, /skillSlot2\.textContent = local\.weaponIds\[1\]/);
