@@ -1,3 +1,4 @@
+import { stepFireballFlight, fireballSweptHitFraction, redirectFireballFlight } from "./fireballTrajectory.js";
 import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID, VOID_ORB_WEAPON_ID } from "@rift/shared";
 import {
   COMBAT_HIT_PROTECTION_TICKS,
@@ -5,7 +6,6 @@ import {
   COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO,
   COMBAT_EMBER_LIFETIME_TICKS,
   COMBAT_MAX_EMBERS_PER_PLAYER,
-  COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,
   COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO,
   WEAPON_DEFINITIONS,
   getWeaponDamage,
@@ -55,6 +55,37 @@ export class DamageSystem {
         this.advanceReturningBlade(world, projectile, dtSeconds);
         continue;
       }
+      if (projectile.voidAnchorOrbit && projectile.voidAnchorOrbit.remainingTicks > 0) {
+        const orbit = projectile.voidAnchorOrbit;
+        orbit.angle += Math.PI / 6;
+        orbit.remainingTicks--;
+        const progress = (4 - orbit.remainingTicks) / 4;
+        const entryRadius = orbit.entryRadius ?? 28;
+        const radius = entryRadius + (28 - entryRadius) * progress;
+        const beforeX = projectile.x, beforeY = projectile.y;
+        projectile.x = orbit.centerX + Math.cos(orbit.angle) * radius;
+        projectile.y = orbit.centerY + Math.sin(orbit.angle) * radius;
+        if (projectile.fireballFlight) {
+          // Face the actual orbit path; the authoritative redirect heading is
+          // restored on release to avoid a backward-looking flame tail.
+          if (orbit.remainingTicks > 0) {
+            const dx = projectile.x - beforeX, dy = projectile.y - beforeY;
+            const d = Math.hypot(dx,dy);
+            if (d > 1e-6) {
+              projectile.fireballFlight.headingX = dx / d;
+              projectile.fireballFlight.headingY = dy / d;
+            }
+          } else {
+            const target = world.enemies.get(projectile.targetEnemyId);
+            if (target?.alive) redirectFireballFlight(projectile.fireballFlight,
+              target.x - projectile.x, target.y - projectile.y);
+            projectile.voidAnchorOrbit = undefined;
+          }
+        } else if (orbit.remainingTicks === 0) {
+          projectile.voidAnchorOrbit = undefined;
+        }
+        continue; // Anchor movement never applies damage during the orbit.
+      }
       if (projectile.weaponId === VOID_ORB_WEAPON_ID && projectile.voidOrbFlight) {
         this.advanceVoidOrbFlight(world, projectile, dtSeconds);
         continue;
@@ -62,15 +93,6 @@ export class DamageSystem {
       if (projectile.weaponId === FIREBALL_WEAPON_ID && projectile.fireballFlight) {
         this.advanceV2Fireball(world, projectile, dtSeconds);
         continue;
-      }
-      if (projectile.voidAnchorOrbit && projectile.voidAnchorOrbit.remainingTicks > 0) {
-        const orbit=projectile.voidAnchorOrbit;
-        orbit.angle += Math.PI/6;
-        orbit.remainingTicks--;
-        projectile.x = orbit.centerX + Math.cos(orbit.angle)*28;
-        projectile.y = orbit.centerY + Math.sin(orbit.angle)*28;
-        if (orbit.remainingTicks === 0) projectile.voidAnchorOrbit = undefined;
-        continue; // Orbit is motion only; no hidden teleport damage.
       }
       const target = world.enemies.get(projectile.targetEnemyId);
       if (!target || !target.alive) {
@@ -115,57 +137,43 @@ export class DamageSystem {
   }
 
 
-  /** Bounded-angle homing at 20Hz: targets cannot turn a fireball around in one frame. */
+  /**
+   * V2 authoritative trajectory: advance a forward-only bounded steering arc,
+   * find the earliest swept circular contact, then resolve damage exactly once.
+   */
   private advanceV2Fireball(world:CombatWorld, projectile:CombatProjectile, dt:number):void {
     const flight=projectile.fireballFlight!;
+    const start={x:projectile.x,y:projectile.y};
     const target=world.enemies.get(projectile.targetEnemyId);
-    if (target?.alive) {
-      const dx=target.x-projectile.x, dy=target.y-projectile.y;
-      const distance=Math.hypot(dx,dy);
-      if(distance>0.001) {
-        const desired=Math.atan2(dy,dx);
-        const current=Math.atan2(flight.headingY,flight.headingX);
-        const difference=Math.atan2(Math.sin(desired-current),Math.cos(desired-current));
-        const turn=Math.max(-COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,
-          Math.min(COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,difference));
-        // The same shot never U-turns behind its original launch direction.
-        // A space anchor is allowed to reset that direction on an intentional redirect.
-        const origin=Math.atan2(flight.originY,flight.originX);
-        const angle=current+turn;
-        const deviation=Math.atan2(Math.sin(angle-origin),Math.cos(angle-origin));
-        const bounded=origin+Math.max(-Math.PI/2.4,Math.min(Math.PI/2.4,deviation));
-        flight.headingX=Math.cos(bounded);
-        flight.headingY=Math.sin(bounded);
-      }
-    }
-    const x=projectile.x,y=projectile.y;
-    projectile.x+=flight.headingX*projectile.speed*dt;
-    projectile.y+=flight.headingY*projectile.speed*dt;
-    flight.remainingTicks--;
-    // First swept enemy collision on the flight path, sorted by impact distance.
-    const impactCandidates=[...world.enemies.values()].filter(e=>e.alive &&
-      segmentHitsCircle(x,y,projectile.x,projectile.y,e.x,e.y,e.collisionRadius+projectile.radius))
-      .sort((a,b)=>{
-        const d=(e:CombatEnemy)=>{
-          const vx=projectile.x-x,vy=projectile.y-y;
-          const len=vx*vx+vy*vy;
-          return len>0?Math.max(0,Math.min(1,((e.x-x)*vx+(e.y-y)*vy)/len)):0;
-        };
-        return d(a)-d(b)||a.id.localeCompare(b.id);
+    const step=stepFireballFlight(flight,start,target?.alive?target:null,projectile.speed,dt);
+    const hits=[...world.enemies.values()].filter(enemy=>enemy.alive)
+      .map(enemy=>({
+        enemy,
+        t:fireballSweptHitFraction(start,step,enemy,enemy.collisionRadius+projectile.radius)
+      }))
+      .filter((hit):hit is {enemy:CombatEnemy;t:number}=>hit.t!==null)
+      .sort((a,b)=>a.t-b.t||a.enemy.id.localeCompare(b.enemy.id));
+    const contact=hits[0];
+    if(contact){
+      // The true contact point is on this tick's path, not teleported to the
+      // enemy center. Fire seeds/splash share the same contact position.
+      const impactX=start.x+(step.x-start.x)*contact.t;
+      const impactY=start.y+(step.y-start.y)*contact.t;
+      projectile.x=impactX;projectile.y=impactY;
+      const accepted=this.applyEnemyDamage(world,{
+        actionId:"projectile-hit:"+projectile.id,
+        sourceId:projectile.sourcePlayerId,targetId:contact.enemy.id,
+        amount:projectile.damage,assetId:projectile.weaponId,x:impactX,y:impactY
       });
-    const enemy=impactCandidates[0];
-    if(enemy) {
-      const applied=this.applyEnemyDamage(world,{
-        actionId:"projectile-hit:"+projectile.id,sourceId:projectile.sourcePlayerId,
-        targetId:enemy.id,amount:projectile.damage,assetId:projectile.weaponId,
-        x:enemy.x,y:enemy.y
-      });
-      if(applied)this.resolveFireballImpact(world,projectile,enemy,enemy.x,enemy.y);
+      if(accepted)this.resolveFireballImpact(world,projectile,contact.enemy,impactX,impactY);
       world.projectiles.delete(projectile.id);
       return;
     }
-    if(flight.remainingTicks<=0||projectile.x<0||projectile.x>WORLD_VIEW_WIDTH||
-      projectile.y<0||projectile.y>WORLD_VIEW_HEIGHT)world.projectiles.delete(projectile.id);
+    projectile.x=step.x;projectile.y=step.y;
+    if(flight.remainingTicks<=0 || !Number.isFinite(step.x)||!Number.isFinite(step.y) ||
+        step.x<0||step.x>WORLD_VIEW_WIDTH||step.y<0||step.y>WORLD_VIEW_HEIGHT){
+      world.projectiles.delete(projectile.id);
+    }
   }
 
   private resolveFireballImpact(world:CombatWorld,projectile:CombatProjectile,
@@ -380,19 +388,12 @@ export class DamageSystem {
       if(!next)continue;
       projectile.targetEnemyId=next.id;
       projectile.voidRedirected=true;
-      if(projectile.fireballFlight) {
-        const dx=next.x-projectile.x,dy=next.y-projectile.y;
-        const length=Math.hypot(dx,dy);
-        if(length>0) {
-          projectile.fireballFlight.originX=dx/length;
-          projectile.fireballFlight.originY=dy/length;
-          projectile.fireballFlight.headingX=dx/length;
-          projectile.fireballFlight.headingY=dy/length;
-        }
-      }
+      if(projectile.fireballFlight) redirectFireballFlight(projectile.fireballFlight,
+        next.x-projectile.x,next.y-projectile.y);
       if ((owner.weaponLevels.get(VOID_ORB_WEAPON_ID)??1)>=3) {
         const angle=Math.atan2(projectile.y-field.y,projectile.x-field.x);
-        projectile.voidAnchorOrbit={centerX:field.x,centerY:field.y,angle,remainingTicks:4};
+        projectile.voidAnchorOrbit={centerX:field.x,centerY:field.y,angle,remainingTicks:4,
+          entryRadius:Math.hypot(projectile.x-field.x,projectile.y-field.y)};
       }
       field.redirectsUsed++;
       emitCombatEvent(world,{

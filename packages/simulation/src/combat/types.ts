@@ -16,6 +16,7 @@ import {
   WORLD_VIEW_HEIGHT,
   WORLD_VIEW_WIDTH
 } from "@rift/shared";
+import type { FireballHeading } from "./fireballTrajectory.js";
 
 export const COMBAT_PLAYER_MAX_HEALTH = 100;
 /** Server-owned ember lifetime: five seconds of active combat, paused during upgrades. */
@@ -241,10 +242,10 @@ export interface CombatProjectile {
   y: number;
   readonly returningBlade?: CombatReturningBladeFlight;
   readonly voidOrbFlight?: {readonly targetX: number; readonly targetY: number; readonly hitEnemies: Set<string>};
-  fireballFlight?: {headingX: number; headingY: number; originX:number; originY:number; remainingTicks: number};
+  fireballFlight?: FireballHeading;
   voidRedirected?: boolean;
   /** III-level anchor briefly curves the projectile around its fixed center. */
-  voidAnchorOrbit?: { readonly centerX:number; readonly centerY:number; angle:number; remainingTicks:number };
+  voidAnchorOrbit?: { readonly centerX:number; readonly centerY:number; angle:number; remainingTicks:number; entryRadius?:number };
 }
 
 export interface CombatEmber {

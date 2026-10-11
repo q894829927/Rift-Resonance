@@ -1,3 +1,4 @@
+import { createFireballHeading } from "./fireballTrajectory.js";
 import {
   FIREBALL_PROJECTILE_ASSET_ID,
   FIREBALL_WEAPON_ID,
@@ -91,7 +92,6 @@ export class WeaponSystem {
     const projectileId = "projectile:fireball:" + world.nextProjectileSequence++;
     const damage = getWeaponDamage(player, FIREBALL_WEAPON_ID);
     const dx = target.x - player.x, dy = target.y - player.y;
-    const distance = Math.hypot(dx, dy);
     world.projectiles.set(projectileId, {
       id: projectileId,
       weaponId: FIREBALL_WEAPON_ID,
@@ -102,12 +102,8 @@ export class WeaponSystem {
       radius: definition.projectileRadius,
       x: player.x,
       y: player.y,
-      ...(world.ruleset === "dual_v2" ? {
-        fireballFlight: {headingX:distance>0?dx/distance:1,
-          headingY:distance>0?dy/distance:0,
-          originX:distance>0?dx/distance:1,originY:distance>0?dy/distance:0,
-          remainingTicks:32}
-      } : {})
+      ...(world.ruleset === "dual_v2"
+        ? {fireballFlight:createFireballHeading(dx,dy)} : {})
     });
     player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, FIREBALL_WEAPON_ID));
     emitCombatEvent(world, {
