@@ -40,7 +40,7 @@
               <button id="start-multi" class="mode-button mode-multi" type="button"><span aria-hidden="true">♟</span> 多人游戏 <span aria-hidden="true">›</span></button>
             </div>
           </section>
-          <section id="solo-pending" class="solo-pending" role="status" aria-live="polite" hidden>正在准备单人战斗…</section>
+          <section id="solo-pending" class="solo-pending" role="status" aria-live="polite" hidden>正在创建单人战斗…</section>
 
           <!-- UI bound exclusively to authoritative match snapshots. -->
           <div id="match-hud" class="match-hud" aria-label="战斗状态">
@@ -108,48 +108,77 @@
             <p class="result-hint">由服务器结算 · 返回大厅后可再次准备</p>
           </section>
 
-          <section class="panel" id="lobby-panel" role="region" aria-labelledby="lobby-heading">
-        <div class="panel-heading">
-          <p class="eyebrow">ADVENTURER'S HALL</p>
-          <h2 id="lobby-heading">多人游戏</h2>
-          <button id="back-to-menu" class="menu-back" type="button">← 返回主菜单</button>
-        </div>
-
-        <div class="panel-body">
-          <label for="nickname">冒险者名称</label>
-          <input id="nickname" maxlength="16" placeholder="输入你的昵称" value="旅行者" autocomplete="nickname"/>
-          <button id="create-room" class="gold-button">创建冒险房间 <span aria-hidden="true">↗</span></button>
-
-          <div class="separator"><span>或使用房间邀请码</span></div>
-          <label for="room-id-input">房间 ID</label>
-          <div class="join-row">
-            <input id="room-id-input" placeholder="输入好友分享的房间 ID" spellcheck="false" autocomplete="off"/>
-            <button id="join-room" class="outline-button">加入</button>
-          </div>
-
-          <section id="room-details" class="room-details" hidden aria-label="当前房间">
-            <div class="room-details-title"><h3>当前队伍</h3><strong id="player-count">0/4</strong></div>
-            <div class="room-code">
-              <span>邀请代码</span><code id="current-room-id"></code>
-              <button id="copy-room-id" class="copy-button" title="复制房间 ID">复制</button>
+          <section id="solo-panel" class="panel entry-dialog" role="dialog" aria-modal="true" aria-labelledby="solo-heading" hidden>
+            <div class="panel-heading">
+              <p class="eyebrow">SOLO CHALLENGE</p>
+              <h2 id="solo-heading">单人挑战</h2>
+              <button id="solo-back" class="menu-back" type="button">← 返回</button>
             </div>
-            <ul id="players" class="player-list" aria-live="polite"></ul>
-            <section id="loadout-panel" class="dual-loadout" aria-label="开局双武器" hidden>
-              <h4>选择两把开局武器 <small>V2 原型</small></h4>
-              <label for="v2-weapon-one">第一武器</label>
-              <select id="v2-weapon-one"><option value="weapon.fireball">火焰弹</option><option value="weapon.void_orb">虚空法球</option><option disabled>冰晶碎片 · 开发中</option><option disabled>静电链 · 开发中</option><option disabled>穿透箭 · 开发中</option><option disabled>守护法环 · 开发中</option></select>
-              <label for="v2-weapon-two">第二武器</label>
-              <select id="v2-weapon-two"><option value="weapon.void_orb">虚空法球</option><option value="weapon.fireball">火焰弹</option></select>
-              <p id="v2-weapon-info">潜在双重祝福：余烬火种 + 坍缩奇点 → 坍缩爆炎</p>
-              <button id="v2-confirm-loadout" class="outline-button">确认双武器</button>
-              <p id="v2-loadout-status" aria-live="polite">需要确认武器才能准备</p>
-            </section>
-            <button id="ready-room" class="gold-button">准备出发</button>
+            <div class="panel-body">
+              <label for="solo-nickname">冒险者名称</label>
+              <input id="solo-nickname" maxlength="16" value="旅行者" autocomplete="nickname"/>
+              <h3 class="entry-subtitle">选择开局双武器</h3>
+              <div class="weapon-pair">
+                <label for="solo-weapon-one">第一武器
+                  <select id="solo-weapon-one"><option value="weapon.fireball">火焰弹</option><option value="weapon.void_orb">虚空法球</option></select>
+                </label>
+                <label for="solo-weapon-two">第二武器
+                  <select id="solo-weapon-two"><option value="weapon.void_orb">虚空法球</option><option value="weapon.fireball">火焰弹</option></select>
+                </label>
+              </div>
+              <p class="entry-note">目前仅开放火焰弹与虚空法球，其他武器开发中。</p>
+              <button id="solo-start" class="gold-button entry-primary" type="button">开始挑战 →</button>
+              <p id="solo-status" class="status" role="status" aria-live="polite"></p>
+            </div>
           </section>
-          <p id="status" class="status" role="status" aria-live="polite">尚未连接 · 创建房间或输入邀请码</p>
-        </div>
-        <p class="panel-footnote">免费 CC0 美术原型 <span>·</span> 服务器权威战斗</p>
-      </section>
+
+          <section class="panel entry-dialog" id="lobby-panel" role="dialog" aria-modal="true" aria-labelledby="lobby-heading" hidden>
+            <div class="panel-heading">
+              <p class="eyebrow">MULTIPLAYER</p>
+              <h2 id="lobby-heading">多人游戏</h2>
+              <button id="back-to-menu" class="menu-back" type="button">← 返回</button>
+            </div>
+            <div class="panel-body">
+              <section id="room-entry" aria-label="创建或加入房间">
+                <div class="room-tabs" role="tablist" aria-label="房间操作">
+                  <button id="room-tab-create" class="room-tab" role="tab" type="button" aria-selected="true" aria-controls="room-create-form">创建房间</button>
+                  <button id="room-tab-join" class="room-tab" role="tab" type="button" aria-selected="false" aria-controls="room-join-form">加入房间</button>
+                </div>
+                <label for="nickname">冒险者名称</label>
+                <input id="nickname" maxlength="16" placeholder="输入你的昵称" value="旅行者" autocomplete="nickname"/>
+                <section id="room-create-form" role="tabpanel" aria-labelledby="room-tab-create">
+                  <p class="entry-note">创建房间后，可分享邀请码邀请朋友。</p>
+                  <button id="create-room" class="gold-button entry-primary" type="button">创建房间 →</button>
+                </section>
+                <section id="room-join-form" role="tabpanel" aria-labelledby="room-tab-join" hidden>
+                  <label for="room-id-input">房间邀请码</label>
+                  <input id="room-id-input" placeholder="输入好友分享的邀请码" spellcheck="false" autocomplete="off"/>
+                  <button id="join-room" class="gold-button entry-primary" type="button">加入房间 →</button>
+                </section>
+              </section>
+              <section id="room-details" class="room-details" hidden aria-label="当前房间">
+                <div class="room-details-title"><h3>房间队伍</h3><strong id="player-count">0/4</strong></div>
+                <div class="room-code">
+                  <span>房间邀请码</span>
+                  <input id="current-room-id" aria-label="房间邀请码" readonly spellcheck="false"/>
+                  <button id="copy-room-id" class="copy-button" title="复制邀请码" type="button">复制</button>
+                </div>
+                <ul id="players" class="player-list" aria-live="polite"></ul>
+                <section id="loadout-panel" class="dual-loadout" aria-label="开局双武器" hidden>
+                  <h4>开局双武器</h4>
+                  <label for="v2-weapon-one">第一武器</label>
+                  <select id="v2-weapon-one"><option value="weapon.fireball">火焰弹</option><option value="weapon.void_orb">虚空法球</option><option disabled>冰晶碎片 · 开发中</option><option disabled>静电链 · 开发中</option><option disabled>穿透箭 · 开发中</option><option disabled>守护法环 · 开发中</option></select>
+                  <label for="v2-weapon-two">第二武器</label>
+                  <select id="v2-weapon-two"><option value="weapon.void_orb">虚空法球</option><option value="weapon.fireball">火焰弹</option></select>
+                  <p id="v2-weapon-info">余烬火种 + 坍缩奇点 → 坍缩爆炎</p>
+                  <button id="v2-confirm-loadout" class="outline-button" type="button">确认双武器</button>
+                  <p id="v2-loadout-status" aria-live="polite">确认双武器后才能准备</p>
+                </section>
+                <button id="ready-room" class="gold-button" type="button">准备出发</button>
+              </section>
+              <p id="status" class="status" role="status" aria-live="polite"></p>
+            </div>
+          </section>
 
           <div class="arena-footer">
             <span class="game-controls">WASD / 方向键移动 <span class="control-divider">·</span> Shift 冲刺</span>
