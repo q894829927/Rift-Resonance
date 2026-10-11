@@ -31,3 +31,31 @@ export const M2_CREATURE_PLACEHOLDERS = {
   berserker: {assetId: "enemy.berserker_beast", sourceTile: 110, tint: 0xffd1bf},
   elite: {assetId: "enemy.elite", sourceTile: 122, tint: 0xe8d0ff}
 } as const;
+
+// Name labels are HTML DOM nodes, while Phaser uses an independent internal
+// canvas resolution. CSS max-width/height and device rotation can shrink the
+// *visible* canvas without changing camera coordinates. Convert that point
+// into local CSS pixels of the name layer, including any CSS ancestor scaling.
+export interface LabelRect {left:number;top:number;width:number;height:number}
+export function canvasPointToNameLayer(
+  cameraX:number, cameraY:number, cameraWidth:number, cameraHeight:number,
+  canvasRect:LabelRect, layerRect:LabelRect,
+  layerCssWidth:number, layerCssHeight:number
+):{x:number;y:number} {
+  if (![cameraX,cameraY,cameraWidth,cameraHeight,
+    canvasRect.left,canvasRect.top,canvasRect.width,canvasRect.height,
+    layerRect.left,layerRect.top,layerRect.width,layerRect.height,
+    layerCssWidth,layerCssHeight].every(Number.isFinite) ||
+    cameraWidth<=0 || cameraHeight<=0 ||
+    canvasRect.width<=0 || canvasRect.height<=0 ||
+    layerRect.width<=0 || layerRect.height<=0 ||
+    layerCssWidth<=0 || layerCssHeight<=0) {
+    throw new RangeError("Invalid nameplate projection geometry");
+  }
+  const scaleX = layerRect.width / layerCssWidth;
+  const scaleY = layerRect.height / layerCssHeight;
+  return {
+    x: ((canvasRect.left-layerRect.left)+cameraX*canvasRect.width/cameraWidth)/scaleX,
+    y: ((canvasRect.top-layerRect.top)+cameraY*canvasRect.height/cameraHeight)/scaleY
+  };
+}

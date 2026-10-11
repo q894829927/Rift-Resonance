@@ -24,7 +24,7 @@ import {
   type RenderPosition
 } from "./network/client.js";
 import {
-  playerNameWorldPoint, PLAYER_NAME_FONT_PX
+  playerNameWorldPoint, canvasPointToNameLayer, PLAYER_NAME_FONT_PX
 } from "./art/m2CombatReadability.js";
 import {
   retargetProjectileVisual, projectileVisualPosition,
@@ -109,18 +109,37 @@ class LobbyScene extends Phaser.Scene {
   }
 
   private positionNames(): void {
-    if (!this.latestView) return;
+    if (!this.latestView || !this.nameLayer) return;
+    const nameLayer = this.nameLayer;
+    const canvas = this.game.canvas;
+    const canvasRect = canvas.getBoundingClientRect();
+    const layerRect = nameLayer.getBoundingClientRect();
+    // A responsive CSS canvas can be smaller than Phaser.Scale.RESIZE's
+    // internal resolution. HTML nameplates share the CSS layer, not that
+    // internal canvas pixel grid; mixing the two moved names to the right.
+    if (!canvasRect.width || !canvasRect.height ||
+        !layerRect.width || !layerRect.height) return;
+    const layerWidth = nameLayer.clientWidth;
+    const layerHeight = nameLayer.clientHeight;
+    if (!layerWidth || !layerHeight) return;
     for (const [id, player] of this.latestView.players) {
       const label = this.nameLabels.get(id);
       if (!label) continue;
       const pos = this.renderPositions.get(id) ?? player;
-      // Place the name ABOVE the HP bar, not below the player's feet.
-      // Keep text at CSS-pixel size; scaling names with camera zoom made them
-      // excessively large and visually dominant over the actual sprites.
+      // Preserve the original M2 nameplate anchor above the health bar.
       const point = playerNameWorldPoint(pos.x, pos.y);
-      const p = projectWorldToViewport(point.x, point.y, this.scale.width, this.scale.height);
-      label.style.left = Math.round(Math.max(25, Math.min(this.scale.width - 25, p.x))) + "px";
-      label.style.top = Math.round(Math.max(15, Math.min(this.scale.height - 15, p.y))) + "px";
+      const projected = projectWorldToViewport(point.x, point.y, this.scale.width, this.scale.height);
+      const p = canvasPointToNameLayer(
+        projected.x, projected.y, this.scale.width, this.scale.height,
+        canvasRect, layerRect, layerWidth, layerHeight);
+      // Only constrain a label at the viewport edge. Never apply a fixed
+      // horizontal offset to the player (the reported regression).
+      const halfWidth = Math.max(20, label.offsetWidth / 2);
+      const halfHeight = Math.max(12, label.offsetHeight / 2);
+      const left = Math.max(halfWidth, Math.min(layerWidth - halfWidth, p.x));
+      const top = Math.max(halfHeight, Math.min(layerHeight - halfHeight, p.y));
+      label.style.left = Math.round(left) + "px";
+      label.style.top = Math.round(top) + "px";
       label.style.fontSize = PLAYER_NAME_FONT_PX + "px";
     }
   }
