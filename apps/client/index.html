@@ -7,16 +7,16 @@
   <title>异界共振 · Rift Resonance</title>
 </head>
 <body>
-  <main class="game-shell" id="game-shell" data-ui-phase="LOBBY">
+  <main class="game-shell" id="game-shell" data-ui-phase="LOBBY" data-ui-screen="menu">
     <header class="topbar">
       <div class="brand-lockup" aria-label="异界共振">
         <span class="brand-sigil" aria-hidden="true">◇</span>
         <div class="brand-copy">
           <span class="brand-en">RIFT <span>RESONANCE</span></span>
-          <span class="brand-sub">异界共振 <span class="brand-divider">/</span> THE BROKEN ALTAR</span>
         </div>
       </div>
       <div class="topbar-actions">
+        <span id="app-version" class="app-version" title="游戏版本">v0.1</span>
         <span id="tick-monitor" class="dev-tick" title="服务器逻辑 Tick">Tick --</span>
         <span id="connection-badge" class="connection-badge" role="status">未连接</span>
         <button id="leave-room" class="text-button danger" disabled>退出房间</button>
@@ -32,14 +32,15 @@
         <div class="arena-overlay">
           <!-- Only shown outside gameplay; no duplicate giant title on the screen. -->
           <section id="lobby-hero" class="lobby-hero" aria-labelledby="hero-title">
-            <p class="eyebrow">THE RIFT IS AWAKENING</p>
-            <div class="hero-ornament" aria-hidden="true">✦ ─── ◇ ─── ✦</div>
+            <div class="hero-ornament" aria-hidden="true">◆ ─── ◇ ─── ◆</div>
             <h1 id="hero-title">异界共振</h1>
             <p class="hero-english">RIFT RESONANCE</p>
-            <p class="hero-description">踏入破碎祭坛，与同伴抵御裂隙怪潮。</p>
-            <p class="hero-caption">最多四人协作 · 四分钟生存挑战</p>
-            <div class="hero-instruction"><span class="hero-dot"></span> 在右侧创建或加入房间，所有队员准备后开始</div>
+            <div class="menu-actions">
+              <button id="start-solo" class="mode-button mode-solo" type="button"><span aria-hidden="true">⚔</span> 单人游戏 <span aria-hidden="true">›</span></button>
+              <button id="start-multi" class="mode-button mode-multi" type="button"><span aria-hidden="true">♟</span> 多人游戏 <span aria-hidden="true">›</span></button>
+            </div>
           </section>
+          <section id="solo-pending" class="solo-pending" role="status" aria-live="polite" hidden>正在准备单人战斗…</section>
 
           <!-- UI bound exclusively to authoritative match snapshots. -->
           <div id="match-hud" class="match-hud" aria-label="战斗状态">
@@ -107,18 +108,11 @@
             <p class="result-hint">由服务器结算 · 返回大厅后可再次准备</p>
           </section>
 
-          <div class="arena-footer">
-            <span class="game-controls">WASD / 方向键移动 <span class="control-divider">·</span> Shift 冲刺</span>
-            <span class="arena-location">THE BROKEN ALTAR</span>
-          </div>
-        </div>
-      </section>
-
-      <aside class="panel" id="lobby-panel" aria-labelledby="lobby-heading">
+          <section class="panel" id="lobby-panel" role="region" aria-labelledby="lobby-heading">
         <div class="panel-heading">
           <p class="eyebrow">ADVENTURER'S HALL</p>
-          <h2 id="lobby-heading">集结队伍</h2>
-          <p>建立房间，邀请伙伴踏入裂隙。</p>
+          <h2 id="lobby-heading">多人游戏</h2>
+          <button id="back-to-menu" class="menu-back" type="button">← 返回主菜单</button>
         </div>
 
         <div class="panel-body">
@@ -155,11 +149,20 @@
           <p id="status" class="status" role="status" aria-live="polite">尚未连接 · 创建房间或输入邀请码</p>
         </div>
         <p class="panel-footnote">免费 CC0 美术原型 <span>·</span> 服务器权威战斗</p>
-      </aside>
+      </section>
+
+          <div class="arena-footer">
+            <span class="game-controls">WASD / 方向键移动 <span class="control-divider">·</span> Shift 冲刺</span>
+            <span class="arena-location">THE BROKEN ALTAR</span>
+          </div>
+        </div>
+      </section>
+
+
     </div>
     <footer class="site-footer">
-      <span>RIFT RESONANCE <span id="app-version" class="app-version" title="游戏版本">v0.1</span> <span class="footer-dim">· M2 UI PROTOTYPE</span></span>
-      <span>游戏开发版本 · 美术资产持续完善中</span>
+      <span>RIFT RESONANCE</span>
+      <span>WASD 移动 · Shift 冲刺</span>
     </footer>
   </main>
   <script type="module" src="/src/main.ts"></script>
