@@ -1,6 +1,6 @@
-/** Fixed logical world coordinates; only the rendering viewport changes. */
-export const WORLD_VIEW_WIDTH = 960;
-export const WORLD_VIEW_HEIGHT = 540;
+/** Enlarged logical arena; server movement, spawn, camera and nameplates share its bounds. */
+export const WORLD_VIEW_WIDTH = 1440;
+export const WORLD_VIEW_HEIGHT = 810;
 
 export function calculateCameraZoom(
   viewportWidth: number, viewportHeight: number,
