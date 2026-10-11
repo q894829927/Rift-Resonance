@@ -14,7 +14,7 @@ import {
   createM1DamageNumber,
   updateM1HealthBar
 } from "./art/m1Visuals.js";
-import { MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
+import { APP_VERSION, formatAppVersion, MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
 import {
   LobbyConnection,
   getServerEndpoint,
@@ -34,6 +34,13 @@ import { createV2VoidFlight, createV2VoidCore, updateV2VoidCore } from "./art/v2
 import {retargetV2FireballVisual,v2FireballVisualPosition,type V2FireballVisualTrack} from "./art/v2FireballPresentation.js";
 import {createV2Ember,updateV2Ember} from "./art/v2EmberVisuals.js";
 import "./style.css";
+
+// Show the same game version that the authoritative server reports from /health.
+const gameVersionLabel = document.getElementById("app-version");
+if (gameVersionLabel) {
+  gameVersionLabel.textContent = `v${formatAppVersion(APP_VERSION)}`;
+  gameVersionLabel.title = `完整版本：${APP_VERSION}`;
+}
 
 class LobbyScene extends Phaser.Scene {
   private readonly avatars = new Map<string, Phaser.GameObjects.Container>();
