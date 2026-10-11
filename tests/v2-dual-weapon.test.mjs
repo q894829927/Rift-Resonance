@@ -302,7 +302,7 @@ test("V2 fireball embers feed a server-authoritative enhanced collapse once", ()
   for(let i=0;i<4;i++)stepCombatWorld(world,50);
   assert.equal(world.voidFields.has(fieldId),false);
   assert.ok(world.events.some(e=>e.type==="boon.collapse_inferno"));
-  assert.equal(enemy.health,150-40); // 22 base + 18 converted from one remaining ember pulse
+  assert.equal(enemy.health,150-44); // level-II void 26 base + 18 converted from one remaining ember pulse
   assert.equal(world.events.filter(e=>e.type==="boon.collapse_inferno").length,1);
 });
 
