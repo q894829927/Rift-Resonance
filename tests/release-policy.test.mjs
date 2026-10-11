@@ -9,7 +9,7 @@ test("automated version notes are complete, sorted newest first and do not dupli
   const updated = insertChangelogEntry(base, "0.1.0.1", ["改善火球轨迹反馈", "修复大厅按钮文本"], "2026-10-11");
   checkChangelog(updated, "0.1.0.1");
   assert.match(updated, /## \[0\.1\.0\.1\] - 2026-10-11\n\n- 改善火球轨迹反馈\n- 修复大厅按钮文本/);
-  assert.ok(updated.indexOf("[0.1.0.1]") < updated.indexOf("[0.1.0.0]"));
+  assert.ok(updated.indexOf("[0.1.0.1]") < updated.indexOf("[0.1]"));
   assert.throws(() => insertChangelogEntry(updated, "0.1.0.1", ["重复记录"], "2026-10-11"));
 });
 
