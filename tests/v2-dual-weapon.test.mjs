@@ -407,3 +407,29 @@ test("V2 real server hit uses first swept contact and spawns an ember at the imp
   assert.equal(ember.y,hit.y);
   assert.equal(w.events.filter(e=>e.type==="damage.applied"&&e.assetId==="weapon.fireball").length,1);
 });
+
+test("V2 fireball outruns dash; legacy fireball and void orb keep their original speeds",()=>{
+  const speeds={};
+  for(const ruleset of ["dual_v2","legacy"]){
+    const w=createCombatWorld(ruleset),p=addCombatPlayer(w,"p","Player");
+    if(ruleset==="dual_v2"){
+      assert.equal(setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]),true);
+    }
+    setCombatPlayerReady(w,"p",true);
+    assert.equal(startCombatMatch(w),true);
+    w.initialEnemySpawned=true;w.nextEnemySpawnTick=9999;
+    w.enemies.set("target",createEnemy("target","rift_swarm",p.x+220,p.y));
+    stepCombatWorld(w,50);
+    const fire=[...w.projectiles.values()].find(v=>v.weaponId==="weapon.fireball");
+    assert.ok(fire);
+    speeds[ruleset]=fire.speed;
+    if(ruleset==="dual_v2"){
+      const orb=[...w.projectiles.values()].find(v=>v.weaponId==="weapon.void_orb");
+      assert.ok(orb);
+      assert.equal(orb.speed,520,"void orb flight speed must not change");
+    }
+  }
+  assert.equal(speeds.legacy,360);
+  assert.equal(speeds.dual_v2,600);
+  assert.ok(speeds.dual_v2>500,"V2 projectile must stay ahead of a dashing player");
+});
