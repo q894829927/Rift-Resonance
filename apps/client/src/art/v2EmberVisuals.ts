@@ -9,6 +9,8 @@ import type { EmberView } from "../network/client.js";
 export const V2_EMBER_VISUAL_LIFETIME_TICKS = 100;
 
 export function createV2Ember(scene:Phaser.Scene,x:number,y:number):Phaser.GameObjects.Container {
+  // Gameplay zone is a low-alpha ground indicator, not a hitbox measured by Phaser.
+  const burnZone=scene.add.circle(0,0,36,0xff6728,0.045).setStrokeStyle(1,0xff9f57,0.16);
   const shadow=scene.add.ellipse(0,9,29,10,0x110904,0.6);
   const ground=scene.add.ellipse(0,9,26,12,0x4a1b0b,0.46)
     .setStrokeStyle(1.7,0xf38932,0.85);
@@ -43,7 +45,8 @@ export function createV2Ember(scene:Phaser.Scene,x:number,y:number):Phaser.GameO
     const a=(-Math.PI/2)+i*Math.PI/4;
     return scene.add.circle(Math.cos(a)*20,Math.sin(a)*11+3,2.1,0xffb65a,0.9);
   });
-  const item=scene.add.container(x,y,[shadow,ground,rune,aura,flame,...particles,...pips]).setDepth(975);
+  const item=scene.add.container(x,y,[burnZone,shadow,ground,rune,aura,flame,...particles,...pips]).setDepth(975);
+  item.setData("emberBurnZone",burnZone);
   item.setData("emberFlame",flame);
   item.setData("emberAura",aura);
   item.setData("emberPips",pips);
@@ -56,6 +59,8 @@ export function updateV2Ember(
   timeMs:number, animate:boolean
 ):void {
   const fraction=Math.max(0,Math.min(1,ember.remainingTicks/V2_EMBER_VISUAL_LIFETIME_TICKS));
+  const burnZone=item.getData("emberBurnZone") as Phaser.GameObjects.Arc;
+  burnZone.setRadius(ember.radius || 36);
   const flame=item.getData("emberFlame") as Phaser.GameObjects.Graphics;
   const aura=item.getData("emberAura") as Phaser.GameObjects.Arc;
   const pips=item.getData("emberPips") as Phaser.GameObjects.Arc[];

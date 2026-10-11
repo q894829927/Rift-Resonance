@@ -229,6 +229,9 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.x = ember.x;
     target.y = ember.y;
     target.remainingTicks = Math.max(0, ember.expireTick - world.matchElapsedTicks);
+    const owner = world.players.get(ember.ownerId);
+    target.radius = owner?.weaponBranches.get("weapon.fireball") === "ember" &&
+      (owner.weaponLevels.get("weapon.fireball") ?? 1) >= 3 ? 48 : 36;
   }
   for (const id of [...state.embers.keys()]) if (!emberIds.has(id)) state.embers.delete(id);
 

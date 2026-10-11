@@ -77,7 +77,8 @@ export type VoidFieldNetworkState = SchemaType<typeof VoidFieldNetworkState>;
 export const EmberNetworkState = schema({
   x: t.number().default(0),
   y: t.number().default(0),
-  remainingTicks: t.number().default(0)
+  remainingTicks: t.number().default(0),
+  radius: t.number().default(36)
 }, "RiftEmberNetworkState");
 export type EmberNetworkState = SchemaType<typeof EmberNetworkState>;
 

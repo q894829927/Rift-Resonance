@@ -59,7 +59,7 @@ export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorl
       const branch = player.weaponBranches.get(id);
       if (level === 1 && !branch) {
         const branches = id === FIREBALL_WEAPON_ID
-          ? [{key:"ember", name:"余烬火种", text:"命中留下可被奇点吸收的火种"}]
+          ? [{key:"ember", name:"余烬火种", text:"命中留下5秒火场，每0.75秒灼烧附近敌人，可与奇点共振"}]
           : [
               {key:"collapse", name:"坍缩奇点", text:"强化吞噬聚怪，III 级追加二段空间冲击"},
               {key:"anchor", name:"空间锚点", text:"弱牵引、持续空间枢纽，重定向经过的友方火球"}
@@ -71,8 +71,9 @@ export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorl
         });
       } else if (level === 2 && branch) {
         choices.push({id:"upgrade.power." + id, kind:"weapon_power", weaponId:id,
-          nextLevel:3, label:id === FIREBALL_WEAPON_ID ? "火种强化 III" : "奇点强化 III",
-          description:id === VOID_ORB_WEAPON_ID && branch === "anchor"
+          nextLevel:3, label:id === FIREBALL_WEAPON_ID ? "余烬蔓延 III" : "奇点强化 III",
+          description:id === FIREBALL_WEAPON_ID ? "火种灼烧半径36→48，周期基础伤害3→4" :
+            id === VOID_ORB_WEAPON_ID && branch === "anchor"
           ? "扩大空间锚点范围与弹体改向次数" : "加强当前分支的基础伤害与效果"});
       }
     }
@@ -80,7 +81,7 @@ export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorl
         player.weaponBranches.get(VOID_ORB_WEAPON_ID) === "collapse" && !player.dualBoonId) {
       choices.push({id:"upgrade.boon.collapse_inferno", kind:"dual_boon",
         boonId:"collapse_inferno", nextLevel:1, label:"坍缩爆炎",
-        description:"引力场吸入火种，终点释放强化爆炎（最多3枚）"});
+        description:"吸入最多3枚火种，将未释放的灼烧能量转换为坍缩爆发"});
     }
     for (const [passiveId, name, descriptions] of passiveEntries) {
       const level = player.passiveLevels.get(passiveId) ?? 0;

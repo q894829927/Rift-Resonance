@@ -6,11 +6,15 @@ import {
   COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO,
   COMBAT_EMBER_LIFETIME_TICKS,
   COMBAT_MAX_EMBERS_PER_PLAYER,
+  COMBAT_EMBER_DAMAGE_INTERVAL_TICKS,
+  COMBAT_EMBER_II_RADIUS, COMBAT_EMBER_III_RADIUS,
+  COMBAT_EMBER_II_DAMAGE, COMBAT_EMBER_III_DAMAGE,
   COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO,
   WEAPON_DEFINITIONS,
   getWeaponDamage,
   clampCombatPosition,
   type CombatProjectile,
+  type CombatEmber,
   type CombatVoidField,
   emitCombatEvent,
   distanceSquared,
@@ -133,7 +137,10 @@ export class DamageSystem {
         world.projectiles.delete(projectileId);
       }
     }
-    if (world.ruleset === "dual_v2") this.advanceVoidFields(world);
+    if (world.ruleset === "dual_v2") {
+      this.advanceVoidFields(world);
+      this.advanceEmberDamage(world);
+    }
   }
 
 
@@ -183,6 +190,8 @@ export class DamageSystem {
           const emberId = "ember:" + world.nextFieldSequence++;
           world.embers.set(emberId, {
             id: emberId, ownerId: projectile.sourcePlayerId, x: impactX, y: impactY,
+            createdTick: world.matchElapsedTicks,
+            nextPulseTick: world.matchElapsedTicks + COMBAT_EMBER_DAMAGE_INTERVAL_TICKS,
             expireTick: world.matchElapsedTicks + COMBAT_EMBER_LIFETIME_TICKS
           });
           const owned = [...world.embers.values()].filter(e => e.ownerId === projectile.sourcePlayerId);
@@ -194,7 +203,7 @@ export class DamageSystem {
         }
         // Level-III fireball hits the primary target once and splashes distinct
         // nearby enemies once each. IDs include projectile+enemy to be idempotent.
-        if ( projectile.weaponId === FIREBALL_WEAPON_ID &&
+        if ( projectile.weaponId === FIREBALL_WEAPON_ID && world.ruleset === "legacy" &&
             (world.players.get(projectile.sourcePlayerId)?.weaponLevels.get(FIREBALL_WEAPON_ID) ?? 1) >= 3) {
           emitCombatEvent(world, {
             type: "weapon.explosion", sourceId: projectile.sourcePlayerId,
@@ -260,7 +269,7 @@ export class DamageSystem {
       radius, kind, startedTick:startTick, startedWorldTick:world.tick,
       collapseTick:startTick + activeTicks,
       expireTick:startTick + activeTicks + (kind === "anchor" ? 0 : def.collapseWindupTicks),
-      phase:"active", absorbedEmbers:0, essenceCharges:0, redirectsUsed:0
+      phase:"active", absorbedEmbers:0, absorbedEmberBonusDamage:0, essenceCharges:0, redirectsUsed:0
     });
     emitCombatEvent(world, {
       type:"weapon.void_spawned", sourceId:owner.sessionId, targetId:id,
@@ -296,7 +305,7 @@ export class DamageSystem {
           owner.dualBoonId === "collapse_inferno" && field.absorbedEmbers > 0;
         const base = getWeaponDamage(owner, VOID_ORB_WEAPON_ID);
         const total = field.kind === "anchor" ? Math.max(1, Math.round(base * 0.4))
-          : base + Math.min(4,field.essenceCharges)*5 + (empowered ? field.absorbedEmbers*16 : 0);
+          : base + Math.min(4,field.essenceCharges)*5 + (empowered ? Math.min(84,field.absorbedEmberBonusDamage ?? 0) : 0);
         this.damageVoidArea(world, field, total, field.radius, "void-burst:");
         emitCombatEvent(world, {
           type:empowered ? "boon.collapse_inferno" : "weapon.void_pulse",
@@ -361,17 +370,72 @@ export class DamageSystem {
     }
   }
 
-  private absorbVoidEmbers(world: CombatWorld,field:CombatVoidField): void {
-    const max=WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxEmbers;
-    for(const [id,ember] of world.embers){
-      if(field.absorbedEmbers>=max)break;
-      if(distanceSquared(ember,field)>field.radius**2)continue;
-      world.embers.delete(id);
+
+  /** Count only unspent scheduled ticks, not historical burning damage. */
+  private remainingEmberPulseCount(ember: CombatEmber, now: number): number {
+    const first = Math.max(now + 1, ember.nextPulseTick ??
+      Math.max(0, ember.expireTick - COMBAT_EMBER_LIFETIME_TICKS) + COMBAT_EMBER_DAMAGE_INTERVAL_TICKS);
+    if (first >= ember.expireTick) return 0;
+    return Math.floor((ember.expireTick - 1 - first) / COMBAT_EMBER_DAMAGE_INTERVAL_TICKS) + 1;
+  }
+
+  private absorbVoidEmbers(world: CombatWorld, field: CombatVoidField): void {
+    const max = WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxEmbers;
+    const now = world.matchElapsedTicks;
+    const candidates = [...world.embers.values()].filter(ember =>
+      now < ember.expireTick && distanceSquared(ember, field) <= field.radius ** 2)
+      .sort((a,b)=>(a.createdTick ?? a.expireTick-COMBAT_EMBER_LIFETIME_TICKS) -
+        (b.createdTick ?? b.expireTick-COMBAT_EMBER_LIFETIME_TICKS) ||
+        a.ownerId.localeCompare(b.ownerId) || a.id.localeCompare(b.id));
+    for (const ember of candidates) {
+      if (field.absorbedEmbers >= max) break;
+      if (!world.embers.delete(ember.id)) continue;
+      const source = world.players.get(ember.ownerId);
+      const high = (source?.weaponLevels.get(FIREBALL_WEAPON_ID) ?? 2) >= 3 &&
+        source?.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember";
+      const damagePerPulse = high ? COMBAT_EMBER_III_DAMAGE : COMBAT_EMBER_II_DAMAGE;
+      const remaining = this.remainingEmberPulseCount(ember, now);
+      const converted = Math.min(28, 16 + Math.ceil(0.5 * remaining * damagePerPulse));
+      field.absorbedEmberBonusDamage = (field.absorbedEmberBonusDamage ?? 0) + converted;
       field.absorbedEmbers++;
       emitCombatEvent(world,{
         type:"weapon.ember_absorbed",sourceId:field.ownerId,targetId:field.id,
         assetId:VOID_ORB_WEAPON_ID,x:ember.x,y:ember.y,amount:field.absorbedEmbers
       });
+    }
+  }
+
+  /** Per-target de-duplication across up to 32 active ember ground zones. */
+  private advanceEmberDamage(world: CombatWorld): void {
+    const now = world.matchElapsedTicks;
+    const pulses: {ember: CombatEmber; damage: number; radius: number}[] = [];
+    for (const ember of world.embers.values()) {
+      if (now >= ember.expireTick) continue;
+      const due = ember.nextPulseTick ??
+        Math.max(0, ember.expireTick - COMBAT_EMBER_LIFETIME_TICKS) + COMBAT_EMBER_DAMAGE_INTERVAL_TICKS;
+      if (now < due) continue;
+      ember.nextPulseTick = now + COMBAT_EMBER_DAMAGE_INTERVAL_TICKS;
+      const owner = world.players.get(ember.ownerId);
+      if (!owner || owner.weaponBranches.get(FIREBALL_WEAPON_ID) !== "ember") continue;
+      const high = (owner.weaponLevels.get(FIREBALL_WEAPON_ID) ?? 1) >= 3;
+      pulses.push({ember, damage:high ? COMBAT_EMBER_III_DAMAGE : COMBAT_EMBER_II_DAMAGE,
+        radius:high ? COMBAT_EMBER_III_RADIUS : COMBAT_EMBER_II_RADIUS});
+    }
+    if (!pulses.length) return;
+    for (const enemy of [...world.enemies.values()].filter(e=>e.alive).sort((a,b)=>a.id.localeCompare(b.id))) {
+      if (now < (enemy.nextEmberHitTick ?? 0)) continue;
+      const selected = pulses.filter(p =>
+        distanceSquared(enemy,p.ember) <= (p.radius + enemy.collisionRadius) ** 2)
+        .sort((a,b)=>b.damage-a.damage ||
+          (a.ember.createdTick ?? 0) - (b.ember.createdTick ?? 0) ||
+          a.ember.ownerId.localeCompare(b.ember.ownerId) || a.ember.id.localeCompare(b.ember.id))[0];
+      if (!selected) continue;
+      const accepted = this.applyEnemyDamage(world,{
+        actionId:"ember-pulse:"+now+":"+selected.ember.id+":"+enemy.id,
+        sourceId:selected.ember.ownerId,targetId:enemy.id,amount:selected.damage,
+        assetId:FIREBALL_WEAPON_ID,x:enemy.x,y:enemy.y
+      });
+      if (accepted) enemy.nextEmberHitTick = now + COMBAT_EMBER_DAMAGE_INTERVAL_TICKS;
     }
   }
 

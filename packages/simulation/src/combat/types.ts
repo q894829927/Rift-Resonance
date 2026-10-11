@@ -22,6 +22,11 @@ export const COMBAT_PLAYER_MAX_HEALTH = 100;
 /** Server-owned ember lifetime: five seconds of active combat, paused during upgrades. */
 export const COMBAT_EMBER_LIFETIME_TICKS = 100;
 export const COMBAT_MAX_EMBERS_PER_PLAYER = 8;
+export const COMBAT_EMBER_DAMAGE_INTERVAL_TICKS = 15;
+export const COMBAT_EMBER_II_RADIUS = 36;
+export const COMBAT_EMBER_III_RADIUS = 48;
+export const COMBAT_EMBER_II_DAMAGE = 3;
+export const COMBAT_EMBER_III_DAMAGE = 4;
 
 // GDD values are kept in the simulation package. Renderer asset paths never enter
 // these definitions, so a visual replacement cannot change authoritative rules.
@@ -209,6 +214,8 @@ export interface CombatEnemy {
   chargeSequence: number;
   chargeHitTargetId: string | null;
   experienceAwarded: boolean;
+  /** One ember hit per enemy per 15 active-combat ticks, across all players. */
+  nextEmberHitTick?: number;
 }
 
 /** Server-only throw flight state. Not sent to clients; network projects x/y/phase. */
@@ -251,6 +258,9 @@ export interface CombatEmber {
   readonly x: number;
   readonly y: number;
   readonly expireTick: number;
+  /** Timers use matchElapsedTicks, which stops during manual upgrades. */
+  readonly createdTick?: number;
+  nextPulseTick?: number;
 }
 
 export interface CombatVoidField {
@@ -268,6 +278,7 @@ export interface CombatVoidField {
   readonly expireTick: number;
   phase: "active" | "collapsing" | "aftershock";
   absorbedEmbers: number;
+  absorbedEmberBonusDamage?: number;
   essenceCharges: number;
   redirectsUsed: number;
   aftershockTick?: number;
@@ -401,7 +412,8 @@ export function createEnemy(
     nextChargeTick: COMBAT_BERSERKER_CHARGE_FIRST_TICK,
     chargeSequence: 0,
     chargeHitTargetId: null,
-    experienceAwarded: false
+    experienceAwarded: false,
+    nextEmberHitTick: 0
   };
 }
 
