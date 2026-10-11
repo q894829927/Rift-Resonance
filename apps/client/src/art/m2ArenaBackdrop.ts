@@ -18,7 +18,7 @@ function hash(x: number, y: number): number {
   return (n ^ (n >>> 16)) >>> 0;
 }
 
-/** 16x16 source frames are intentionally not stretched into 960x540. */
+/** 16x16 source frames are intentionally not stretched into a fixed-size canvas. */
 function addAtlasIslet(scene: Phaser.Scene, px: number, py: number): void {
   const key = "env.dark.tiles";
   if (!scene.textures.exists(key)) return;
@@ -113,15 +113,15 @@ export function renderDarkArenaBackdrop(scene: Phaser.Scene): void {
 
   // Clear central fighting area, scene dressing toward the perimeter only.
   for (const [x, y] of [
-    [97, 94], [865, 86], [112, 456], [852, 460]
+    [97, 94], [W - 97, 86], [112, H - 84], [W - 108, H - 80]
   ] as const) addDecoration(scene, "env.dark.tree", x, y, PIXEL_ENVIRONMENT_SCALE, 0.94);
 
   for (const [x, y] of [
-    [203, 96], [755, 110], [191, 454], [772, 458]
+    [203, 96], [W - 205, 110], [191, H - 86], [W - 188, H - 82]
   ] as const) addDecoration(scene, "env.dark.rock", x, y, PIXEL_ENVIRONMENT_SCALE, 0.94);
 
   for (const [x, y] of [
-    [299, 62], [660, 68], [302, 485], [670, 486]
+    [299, 62], [W - 300, 68], [302, H - 55], [W - 290, H - 54]
   ] as const) addDecoration(scene, "env.dark.mushrooms", x, y, PIXEL_ENVIRONMENT_SCALE, 0.85);
 
   // Rift motif: quiet edge-lit altar instead of high-contrast HUD obstruction.
