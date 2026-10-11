@@ -449,7 +449,7 @@ new Phaser.Game({
   parent: "app",
   scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT, expandParent: false },
   // Pixel-art assets use nearest-neighbor sampling, not bilinear blur.
-  // Keep the 960x540 world-fit camera so CSS nameplates, server edges and
+  // Keep the shared world-fit camera so CSS nameplates, server edges and
   // multiplayer predictions stay aligned on every desktop viewport.
   pixelArt: true,
   antialias: false,
@@ -463,6 +463,10 @@ function element<T extends HTMLElement>(id: string): T {
   return e as T;
 }
 const uiShell = element<HTMLElement>("game-shell");
+const startSoloButton = element<HTMLButtonElement>("start-solo");
+const startMultiButton = element<HTMLButtonElement>("start-multi");
+const backToMenuButton = element<HTMLButtonElement>("back-to-menu");
+const soloPending = element<HTMLElement>("solo-pending");
 const nickname = element<HTMLInputElement>("nickname");
 const roomInput = element<HTMLInputElement>("room-id-input");
 const create = element<HTMLButtonElement>("create-room");
@@ -512,12 +516,47 @@ const restartRoom = element<HTMLButtonElement>("restart-room");
 let busy = false;
 let connected = false;
 let displayedView: LobbyView | null = null;
+type EntryMode = "menu" | "single" | "multi";
+let entryMode: EntryMode = "menu";
+let soloAutoState: "idle" | "loadout" | "ready" = "idle";
+
+function refreshScreen(): void {
+  const inMatch = displayedView !== null && displayedView.phase !== "LOBBY";
+  uiShell.dataset.uiScreen = inMatch ? "combat" :
+    entryMode === "single" ? "connecting" :
+    entryMode === "multi" ? "lobby" : "menu";
+  soloPending.hidden = entryMode !== "single" || inMatch;
+  startSoloButton.disabled = busy;
+  startMultiButton.disabled = busy;
+  backToMenuButton.disabled = busy;
+}
+
+function autoStartSolo(view: LobbyView | null): void {
+  if (entryMode !== "single" || !view || view.phase !== "LOBBY") return;
+  const local = view.players.get(view.sessionId);
+  if (!local || !local.connected || local.ready) return;
+  if (view.ruleset !== "dual_v2") {
+    if (soloAutoState !== "ready") {
+      soloAutoState = "ready";
+      connection.setReady(true);
+    }
+    return;
+  }
+  if (!local.loadoutConfirmed && soloAutoState !== "loadout") {
+    soloAutoState = "loadout";
+    connection.selectLoadout(["weapon.fireball", "weapon.void_orb"]);
+  } else if (local.loadoutConfirmed && soloAutoState !== "ready") {
+    soloAutoState = "ready";
+    connection.setReady(true);
+  }
+}
 
 function showStatus(message: string, error = false): void {
   status.textContent = message;
   status.classList.toggle("error", error);
 }
 function refreshControls(): void {
+  refreshScreen();
   create.disabled = busy || connected;
   join.disabled = busy || connected;
   nickname.disabled = busy || connected;
@@ -576,6 +615,7 @@ function render(view: LobbyView | null): void {
   updateUpgradePanel(view);
   updateMatchBanner(view);
   refreshControls();
+  autoStartSolo(view);
 }
 
 function updateHud(view: LobbyView | null): void {
@@ -766,6 +806,10 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
     : "对局阶段：" + view.phase);
 }, (message) => {
   releaseKeys();
+  if (entryMode === "single") {
+    entryMode = "menu";
+    soloAutoState = "idle";
+  }
   render(null);
   showStatus(message, true);
 }, (tick, match: MatchSnapshot) => {
@@ -775,6 +819,7 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
     const next = {...previous, ...match};
     displayedView = next;
     uiShell.dataset.uiPhase = next.phase;
+    refreshScreen();
     updateHud(next);
     // The server tick is 20 Hz: do not recreate lobby rows or upgrade buttons
     // every tick, which would steal keyboard focus during upgrade selection.
@@ -788,6 +833,36 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
 }, (positions, combat) => {
   if (scene.scene && scene.scene.isActive()) scene.showPositions(positions, combat);
 });
+startSoloButton.addEventListener("click", () => {
+  if (busy || connected) return;
+  entryMode = "single";
+  soloAutoState = "idle";
+  refreshControls();
+  void start(() => connection.create(nickname.value));
+});
+startMultiButton.addEventListener("click", () => {
+  if (busy || connected) return;
+  entryMode = "multi";
+  refreshControls();
+});
+backToMenuButton.addEventListener("click", async () => {
+  if (busy) return;
+  busy = true;
+  refreshControls();
+  try {
+    if (connected) await connection.leave();
+    entryMode = "menu";
+    soloAutoState = "idle";
+    releaseKeys();
+    render(null);
+  } catch (error) {
+    showStatus(error instanceof Error ? error.message : "离开房间失败", true);
+  } finally {
+    busy = false;
+    refreshControls();
+  }
+});
+
 async function start(action: () => Promise<void>): Promise<void> {
   if (busy || connected) return;
   busy = true;
@@ -795,6 +870,10 @@ async function start(action: () => Promise<void>): Promise<void> {
   showStatus("正在连接…");
   try { await action(); }
   catch (error) {
+    if (entryMode === "single") {
+      entryMode = "menu";
+      soloAutoState = "idle";
+    }
     showStatus(error instanceof Error ? error.message : "连接失败", true);
   } finally { busy = false; refreshControls(); }
 }
@@ -813,7 +892,10 @@ readyRoom.addEventListener("click", () => {
   const player = view?.players.get(view.sessionId);
   if (player) connection.setReady(!player.ready);
 });
-restartRoom.addEventListener("click", () => connection.restartMatch());
+restartRoom.addEventListener("click", () => {
+  if (entryMode === "single") soloAutoState = "idle";
+  connection.restartMatch();
+});
 upgradeReroll.addEventListener("click", () => {
   const view = displayedView;
   const player = view?.players.get(view.sessionId);
@@ -827,6 +909,8 @@ leave.addEventListener("click", async () => {
   try {
     await connection.leave();
     releaseKeys();
+    entryMode = "menu";
+    soloAutoState = "idle";
     render(null);
     showStatus("已退出房间");
   } catch (error) {
