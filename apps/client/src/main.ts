@@ -350,9 +350,14 @@ class LobbyScene extends Phaser.Scene {
         this.tweens.add({targets:refraction,scale:1.4,alpha:0,duration:200,
           onComplete:()=>refraction.destroy()});
       } else if (event.type === "weapon.ember_absorbed") {
-        const absorbed = this.add.circle(event.x, event.y, 12 + event.amount * 5,
-          0xffa75c, 0.32).setStrokeStyle(2, 0xffdaa2, 0.9).setDepth(1200);
-        this.tweens.add({targets:absorbed, alpha:0, scale:0.35, duration:210,
+        // The old seed is removed by authority; a short visual mote makes it
+        // clear that the orange flame is pulled INTO the void core.
+        const core = combat.voidFields.get(event.targetId);
+        const absorbed = this.add.circle(event.x, event.y, 8, 0xffbb64, 0.95)
+          .setStrokeStyle(2, 0xffe3ad, 0.95).setDepth(1210);
+        this.tweens.add({targets:absorbed,
+          x:core?.x ?? event.x,y:core?.y ?? event.y,
+          alpha:0,scale:0.35,duration:280,ease:"Cubic.easeIn",
           onComplete:()=>absorbed.destroy()});
       } else if (event.type === "weapon.returning" && event.assetId === "weapon.spin_blade") {
         // Distinct apex marker from the authoritative 168-unit turnaround.

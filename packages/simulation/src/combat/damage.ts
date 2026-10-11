@@ -362,7 +362,7 @@ export class DamageSystem {
       field.absorbedEmbers++;
       emitCombatEvent(world,{
         type:"weapon.ember_absorbed",sourceId:field.ownerId,targetId:field.id,
-        assetId:VOID_ORB_WEAPON_ID,x:field.x,y:field.y,amount:field.absorbedEmbers
+        assetId:VOID_ORB_WEAPON_ID,x:ember.x,y:ember.y,amount:field.absorbedEmbers
       });
     }
   }
