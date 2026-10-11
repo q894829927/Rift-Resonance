@@ -360,3 +360,175 @@ button:focus-visible, input:focus-visible {
 /* Small, always-visible game build identifier; no hardcoded version in CSS. */
 .app-version { display: inline-block; font-size: 10px; letter-spacing: .045em; color: #dcc59d; border: 1px solid rgba(207, 170, 116, .4); background: rgba(25, 19, 34, .85); padding: 3px 6px; border-radius: 4px; font-variant-numeric: tabular-nums; }
 @media (max-width: 650px) { .app-version { font-size: 8px; padding: 2px 4px; } }
+
+/* V2 menu refresh: world-size stage with centered in-game room management. */
+.game-shell {
+  width: min(1720px, calc(100% - 48px));
+  position: relative;
+  min-height: 100dvh;
+}
+.topbar { height: 76px; }
+.layout { display: block; width: 100%; }
+.arena {
+  width: 100%;
+  max-width: none;
+  border-radius: 13px;
+  box-shadow: 0 25px 100px rgba(0, 0, 0, .65), 0 0 0 4px rgba(99, 62, 130, .12);
+}
+#app { aspect-ratio: 16 / 9; }
+.arena-vignette { box-shadow: inset 0 0 105px 35px rgba(4, 5, 13, .43); }
+.brand-copy { gap: 0; }
+.brand-en { font-size: 16px; }
+.topbar-actions #app-version { flex: none; }
+.game-shell[data-ui-screen="menu"] .connection-badge,
+.game-shell[data-ui-screen="menu"] .dev-tick,
+.game-shell[data-ui-screen="menu"] #leave-room,
+.game-shell[data-ui-screen="lobby"] .dev-tick { display: none; }
+.game-shell:not([data-ui-screen="menu"]) #lobby-hero { display: none; }
+.game-shell[data-ui-screen="menu"] .lobby-hero {
+  display: block;
+  top: 49%;
+  width: min(98%, 1020px);
+  background: radial-gradient(ellipse at center, rgba(5, 7, 13, .73), rgba(7, 9, 18, .48) 51%, transparent 79%);
+  padding: 30px 10px 0;
+  filter: drop-shadow(0 8px 22px rgba(0,0,0,.58));
+  pointer-events: none;
+}
+.game-shell[data-ui-screen="menu"] .lobby-hero h1 {
+  font-size: clamp(48px, 6.25vw, 115px);
+  letter-spacing: .13em;
+  line-height: 1.25;
+}
+.game-shell[data-ui-screen="menu"] .hero-english {
+  font-size: clamp(11px, 1.45vw, 20px);
+  margin: 4px 0 0;
+}
+.game-shell[data-ui-screen="menu"] .hero-ornament {
+  font-size: 14px;
+  letter-spacing: .26em;
+  margin: 0 0 20px;
+}
+.menu-actions {
+  margin: clamp(40px, 10vh, 120px) auto 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 320px));
+  justify-content: center;
+  gap: clamp(12px, 2vw, 26px);
+  pointer-events: auto;
+}
+.mode-button {
+  min-height: clamp(56px, 5vw, 80px);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 20px;
+  border-radius: 9px;
+  font-size: clamp(17px, 1.55vw, 25px);
+  font-weight: 800;
+  letter-spacing: .065em;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.mode-button span { font-size: 24px; }
+.mode-solo {
+  color: #211823;
+  background: linear-gradient(180deg, #ffe2a0, #deb175);
+  border: 2px solid #ffe6b2;
+  box-shadow: inset 0 1px 0 #fff2d1, 0 0 28px rgba(231,178,100,.35);
+}
+.mode-multi {
+  color: #e9d8ff;
+  background: linear-gradient(135deg, #231e36, #131420);
+  border: 2px solid #756087;
+  box-shadow: inset 0 1px 0 rgba(189, 154, 221, .12);
+}
+.mode-button:hover:not(:disabled) { transform: translateY(-3px); }
+.mode-solo:hover:not(:disabled) { box-shadow: 0 0 38px rgba(231,178,100,.65); }
+.mode-multi:hover:not(:disabled) { border-color: #b18bd6; background: #332747; }
+.mode-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+#lobby-panel {
+  display: none;
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  width: min(680px, 92%);
+  max-height: calc(100% - 36px);
+  overflow-y: auto;
+  padding: 23px 29px;
+  background: linear-gradient(155deg, rgba(31,27,47,.985), rgba(11,16,27,.995));
+  box-shadow: 0 0 0 100vmax rgba(4,5,12,.48), 0 30px 75px rgba(0,0,0,.75);
+}
+.game-shell[data-ui-screen="lobby"] #lobby-panel { display: block; }
+#lobby-panel .panel-heading { position: relative; }
+#lobby-panel .panel-heading h2 { margin: 0 0 12px; }
+#lobby-panel .panel-body label { margin: 10px 0 5px; }
+#lobby-panel .panel-body input { padding: 9px 12px; }
+#lobby-panel #create-room, #lobby-panel #ready-room { margin-top: 10px; }
+#lobby-panel .room-details { margin-top: 15px; padding-top: 10px; }
+#lobby-panel .panel-footnote { display: none; }
+.menu-back {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 8px 10px;
+  color: #c9b6db;
+  border: 1px solid #665474;
+  background: #1b1b2b;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.menu-back:hover:not(:disabled) { background: #30243b; }
+.solo-pending {
+  position: absolute;
+  top: 49%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px 30px;
+  border: 1px solid #795f8d;
+  border-radius: 8px;
+  background: rgba(12, 12, 25, .94);
+  color: #f3deb0;
+  font-weight: 700;
+  letter-spacing: .07em;
+}
+.game-shell[data-ui-screen="combat"] .arena {
+  width: 100%;
+  max-width: none;
+}
+.game-shell[data-ui-screen="combat"] #lobby-panel { display: none; }
+.site-footer { padding: 12px 0 16px; color: #716780; }
+@media (max-width: 1000px) {
+  .game-shell { width: calc(100% - 24px); }
+  .arena { max-width: none; width: 100%; }
+  .mode-button { gap: 8px; }
+  #lobby-panel { width: min(600px, 94%); }
+}
+@media (max-width: 650px) {
+  .game-shell { width: calc(100% - 12px); }
+  .topbar { height: 58px; }
+  .topbar-actions { gap: 5px; }
+  .topbar-actions #app-version { font-size: 9px; }
+  .arena { max-width: none; }
+  .game-shell[data-ui-screen="menu"] .lobby-hero { top: 49%; width: 96%; padding: 3px 0; }
+  .game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size: clamp(26px, 7vw, 49px); }
+  .game-shell[data-ui-screen="menu"] .hero-ornament { margin: 0 0 5px; font-size: 8px; }
+  .game-shell[data-ui-screen="menu"] .hero-english { font-size: 9px; letter-spacing: .3em; }
+  .menu-actions { margin-top: 10px; gap: 8px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mode-button { min-height: 42px; font-size: 12px; gap: 3px; }
+  .mode-button span { font-size: 15px; }
+  #lobby-panel { width: 98%; padding: 15px; max-height: calc(100% - 10px); }
+  #lobby-panel .panel-heading h2 { font-size: 17px; }
+  #lobby-panel .panel-body label { margin: 5px 0 3px; }
+  #lobby-panel .panel-body input { padding: 5px 8px; }
+  #lobby-panel .separator { margin: 8px 0 0; }
+  #lobby-panel .room-details { margin-top: 7px; }
+  #lobby-panel .player-list { gap: 3px; }
+  #lobby-panel .player-list li { padding: 4px 6px; }
+  #lobby-panel .status { margin-top: 8px; }
+  .menu-back { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mode-button { transition: none; }
+}
