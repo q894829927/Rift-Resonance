@@ -64,7 +64,7 @@ export function isApprovedHistoricalRenumbering(oldVersion, newVersion, previous
     .replace(/^## \[0\.3\.0\.0\]/m, "## [0.1.2]")
     .replace(/^## \[0\.2\.0\.0\]/m, "## [0.1.1]")
     .replace(/^## \[0\.1\.0\.0\]/m, "## [0.1]");
-  return translated === newSections;
+  return translated.trimEnd() === newSections.trimEnd();
 }
 
 export function assertCoveredChanges(paths) {

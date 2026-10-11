@@ -47,6 +47,8 @@ test("historical numbering correction is exact and cannot hide changed release n
   const previous = "# 更新日志（CHANGELOG）\n\n## [0.3.0.0] - 2026-10-11\n\n- 屏幕响应式适配。\n\n## [0.2.0.0] - 2026-10-11\n\n- 主菜单改版。\n\n## [0.1.0.0] - 2026-10-11\n\n- 初版。\n";
   const corrected = previous.replace("0.3.0.0", "0.1.2").replace("0.2.0.0", "0.1.1").replace("0.1.0.0", "0.1");
   assert.ok(isApprovedHistoricalRenumbering("0.3.0.0", "0.1.2.0", previous, corrected));
+  // Git show is trimmed by the local helper; the repository file has a final newline.
+  assert.ok(isApprovedHistoricalRenumbering("0.3.0.0", "0.1.2.0", previous.trimEnd(), corrected));
   assert.equal(isApprovedHistoricalRenumbering("0.3.0.0", "0.1.2.0", previous, corrected.replace("主菜单改版", "删除说明")), false);
   assert.equal(isApprovedHistoricalRenumbering("0.3.0.0", "0.1.1.0", previous, corrected), false);
   assert.equal(isApprovedHistoricalRenumbering("0.1.3.0", "0.1.2.0", previous, corrected), false);
