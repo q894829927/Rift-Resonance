@@ -3,6 +3,9 @@ import {
   COMBAT_HIT_PROTECTION_TICKS,
   COMBAT_FIREBALL_EXPLOSION_RADIUS,
   COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO,
+  COMBAT_EMBER_LIFETIME_TICKS,
+  COMBAT_MAX_EMBERS_PER_PLAYER,
+  COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,
   COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO,
   WEAPON_DEFINITIONS,
   getWeaponDamage,
@@ -56,6 +59,10 @@ export class DamageSystem {
         this.advanceVoidOrbFlight(world, projectile, dtSeconds);
         continue;
       }
+      if (projectile.weaponId === FIREBALL_WEAPON_ID && projectile.fireballFlight) {
+        this.advanceV2Fireball(world, projectile, dtSeconds);
+        continue;
+      }
       if (projectile.voidAnchorOrbit && projectile.voidAnchorOrbit.remainingTicks > 0) {
         const orbit=projectile.voidAnchorOrbit;
         orbit.angle += Math.PI/6;
@@ -89,15 +96,83 @@ export class DamageSystem {
           x: impactX,
           y: impactY
         });
+        if (hit && projectile.weaponId === FIREBALL_WEAPON_ID)
+          this.resolveFireballImpact(world, projectile, target, impactX, impactY);
+        world.projectiles.delete(projectileId);
+        continue;
+      }
+
+      if (distance > 0) {
+        projectile.x += (dx / distance) * travel;
+        projectile.y += (dy / distance) * travel;
+      }
+      if (projectile.x < -32 || projectile.x > WORLD_VIEW_WIDTH + 32 ||
+          projectile.y < -32 || projectile.y > WORLD_VIEW_HEIGHT + 32) {
+        world.projectiles.delete(projectileId);
+      }
+    }
+    if (world.ruleset === "dual_v2") this.advanceVoidFields(world);
+  }
+
+
+  /** Bounded-angle homing at 20Hz: targets cannot turn a fireball around in one frame. */
+  private advanceV2Fireball(world:CombatWorld, projectile:CombatProjectile, dt:number):void {
+    const flight=projectile.fireballFlight!;
+    const target=world.enemies.get(projectile.targetEnemyId);
+    if (target?.alive) {
+      const dx=target.x-projectile.x, dy=target.y-projectile.y;
+      const distance=Math.hypot(dx,dy);
+      if(distance>0.001) {
+        const desired=Math.atan2(dy,dx);
+        const current=Math.atan2(flight.headingY,flight.headingX);
+        const difference=Math.atan2(Math.sin(desired-current),Math.cos(desired-current));
+        const turn=Math.max(-COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,
+          Math.min(COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,difference));
+        flight.headingX=Math.cos(current+turn);
+        flight.headingY=Math.sin(current+turn);
+      }
+    }
+    const x=projectile.x,y=projectile.y;
+    projectile.x+=flight.headingX*projectile.speed*dt;
+    projectile.y+=flight.headingY*projectile.speed*dt;
+    flight.remainingTicks--;
+    // First swept enemy collision on the flight path, sorted by impact distance.
+    const impactCandidates=[...world.enemies.values()].filter(e=>e.alive &&
+      segmentHitsCircle(x,y,projectile.x,projectile.y,e.x,e.y,e.collisionRadius+projectile.radius))
+      .sort((a,b)=>{
+        const d=(e:CombatEnemy)=>{
+          const vx=projectile.x-x,vy=projectile.y-y;
+          const len=vx*vx+vy*vy;
+          return len>0?Math.max(0,Math.min(1,((e.x-x)*vx+(e.y-y)*vy)/len)):0;
+        };
+        return d(a)-d(b)||a.id.localeCompare(b.id);
+      });
+    const enemy=impactCandidates[0];
+    if(enemy) {
+      const applied=this.applyEnemyDamage(world,{
+        actionId:"projectile-hit:"+projectile.id,sourceId:projectile.sourcePlayerId,
+        targetId:enemy.id,amount:projectile.damage,assetId:projectile.weaponId,
+        x:enemy.x,y:enemy.y
+      });
+      if(applied)this.resolveFireballImpact(world,projectile,enemy,enemy.x,enemy.y);
+      world.projectiles.delete(projectile.id);
+      return;
+    }
+    if(flight.remainingTicks<=0||projectile.x<0||projectile.x>WORLD_VIEW_WIDTH||
+      projectile.y<0||projectile.y>WORLD_VIEW_HEIGHT)world.projectiles.delete(projectile.id);
+  }
+
+  private resolveFireballImpact(world:CombatWorld,projectile:CombatProjectile,
+    target:CombatEnemy,impactX:number,impactY:number):void {
         if (hit && world.ruleset === "dual_v2" && projectile.weaponId === FIREBALL_WEAPON_ID &&
             world.players.get(projectile.sourcePlayerId)?.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember") {
           const emberId = "ember:" + world.nextFieldSequence++;
           world.embers.set(emberId, {
             id: emberId, ownerId: projectile.sourcePlayerId, x: impactX, y: impactY,
-            expireTick: world.matchElapsedTicks + 40
+            expireTick: world.matchElapsedTicks + COMBAT_EMBER_LIFETIME_TICKS
           });
           const owned = [...world.embers.values()].filter(e => e.ownerId === projectile.sourcePlayerId);
-          if (owned.length > 5) world.embers.delete(owned[0]!.id);
+          if (owned.length > COMBAT_MAX_EMBERS_PER_PLAYER) world.embers.delete(owned[0]!.id);
           emitCombatEvent(world, {
             type: "weapon.ember_spawned", sourceId: projectile.sourcePlayerId,
             targetId: emberId, assetId: FIREBALL_WEAPON_ID, x: impactX, y: impactY, amount: 0
@@ -126,20 +201,6 @@ export class DamageSystem {
             });
           }
         }
-        world.projectiles.delete(projectileId);
-        continue;
-      }
-
-      if (distance > 0) {
-        projectile.x += (dx / distance) * travel;
-        projectile.y += (dy / distance) * travel;
-      }
-      if (projectile.x < -32 || projectile.x > WORLD_VIEW_WIDTH + 32 ||
-          projectile.y < -32 || projectile.y > WORLD_VIEW_HEIGHT + 32) {
-        world.projectiles.delete(projectileId);
-      }
-    }
-    if (world.ruleset === "dual_v2") this.advanceVoidFields(world);
   }
 
   /**

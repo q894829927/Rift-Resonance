@@ -90,6 +90,8 @@ export class WeaponSystem {
     if (!target) return;
     const projectileId = "projectile:fireball:" + world.nextProjectileSequence++;
     const damage = getWeaponDamage(player, FIREBALL_WEAPON_ID);
+    const dx = target.x - player.x, dy = target.y - player.y;
+    const distance = Math.hypot(dx, dy);
     world.projectiles.set(projectileId, {
       id: projectileId,
       weaponId: FIREBALL_WEAPON_ID,
@@ -99,7 +101,11 @@ export class WeaponSystem {
       speed: definition.projectileSpeed,
       radius: definition.projectileRadius,
       x: player.x,
-      y: player.y
+      y: player.y,
+      ...(world.ruleset === "dual_v2" ? {
+        fireballFlight: {headingX:distance>0?dx/distance:1,
+          headingY:distance>0?dy/distance:0,remainingTicks:32}
+      } : {})
     });
     player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, FIREBALL_WEAPON_ID));
     emitCombatEvent(world, {

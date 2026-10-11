@@ -18,6 +18,12 @@ import {
 } from "@rift/shared";
 
 export const COMBAT_PLAYER_MAX_HEALTH = 100;
+/** Server-owned ember lifetime: five seconds of active combat, paused during upgrades. */
+export const COMBAT_EMBER_LIFETIME_TICKS = 100;
+export const COMBAT_MAX_EMBERS_PER_PLAYER = 8;
+/** Max steering of V2 fireballs per 50 ms simulation tick, prevents instant U-turns. */
+export const COMBAT_V2_FIREBALL_MAX_TURN_RADIANS = Math.PI / 7;
+export const COMBAT_V2_FIREBALL_FLIGHT_TICKS = 32;
 
 // GDD values are kept in the simulation package. Renderer asset paths never enter
 // these definitions, so a visual replacement cannot change authoritative rules.
@@ -235,6 +241,7 @@ export interface CombatProjectile {
   y: number;
   readonly returningBlade?: CombatReturningBladeFlight;
   readonly voidOrbFlight?: {readonly targetX: number; readonly targetY: number; readonly hitEnemies: Set<string>};
+  fireballFlight?: {headingX: number; headingY: number; remainingTicks: number};
   voidRedirected?: boolean;
   /** III-level anchor briefly curves the projectile around its fixed center. */
   voidAnchorOrbit?: { readonly centerX:number; readonly centerY:number; angle:number; remainingTicks:number };
