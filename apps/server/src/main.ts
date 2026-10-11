@@ -1,6 +1,6 @@
 import { diagnosticsSnapshot } from "./telemetry/metrics.js";
 import { defineRoom, defineServer } from "colyseus";
-import { PROTOCOL_VERSION, ROOM_TYPE } from "@rift/shared";
+import { APP_VERSION, PROTOCOL_VERSION, ROOM_TYPE } from "@rift/shared";
 import { ScaffoldRoom } from "./rooms/ScaffoldRoom.js";
 
 const port = Number.parseInt(process.env.PORT ?? "2567", 10);
@@ -13,7 +13,7 @@ const server = defineServer({
   express: (app) => {
     // M0-A 仅供本地开发与部署烟测，不返回敏感信息。
     app.get("/health", (_req: unknown, res: { json: (payload: object) => void }) => {
-      res.json({ status: "ok", service: "rift-server", protocolVersion: PROTOCOL_VERSION });
+      res.json({ status: "ok", service: "rift-server", protocolVersion: PROTOCOL_VERSION, appVersion: APP_VERSION });
     });
     // Disabled by default. Defense in depth: loopback-only even when enabled.
     if (process.env.M0_DIAGNOSTICS === "1") {
@@ -33,7 +33,7 @@ const server = defineServer({
 });
 
 void server.listen(port).then(() => {
-  console.info(`[rift-server] listening on :${port}; room=${ROOM_TYPE}`);
+  console.info(`[rift-server] listening on :${port}; room=${ROOM_TYPE}; version=${APP_VERSION}`);
 }).catch((error: unknown) => {
   console.error("[rift-server] failed to start", error);
   process.exitCode = 1;
