@@ -466,10 +466,23 @@ const uiShell = element<HTMLElement>("game-shell");
 // Room controls are a modal above the game, not confined to the arena's
 // clipping and layout containment. This keeps small-screen forms scrollable.
 uiShell.append(element<HTMLElement>("lobby-panel"));
+uiShell.append(element<HTMLElement>("solo-panel"));
 const startSoloButton = element<HTMLButtonElement>("start-solo");
 const startMultiButton = element<HTMLButtonElement>("start-multi");
 const backToMenuButton = element<HTMLButtonElement>("back-to-menu");
 const soloPending = element<HTMLElement>("solo-pending");
+const soloPanel = element<HTMLElement>("solo-panel");
+const soloNickname = element<HTMLInputElement>("solo-nickname");
+const soloWeaponOne = element<HTMLSelectElement>("solo-weapon-one");
+const soloWeaponTwo = element<HTMLSelectElement>("solo-weapon-two");
+const soloStart = element<HTMLButtonElement>("solo-start");
+const soloBack = element<HTMLButtonElement>("solo-back");
+const soloStatus = element<HTMLElement>("solo-status");
+const roomEntry = element<HTMLElement>("room-entry");
+const roomTabCreate = element<HTMLButtonElement>("room-tab-create");
+const roomTabJoin = element<HTMLButtonElement>("room-tab-join");
+const roomCreateForm = element<HTMLElement>("room-create-form");
+const roomJoinForm = element<HTMLElement>("room-join-form");
 const nickname = element<HTMLInputElement>("nickname");
 const roomInput = element<HTMLInputElement>("room-id-input");
 const create = element<HTMLButtonElement>("create-room");
@@ -511,7 +524,7 @@ const confirmLoadout = element<HTMLButtonElement>("v2-confirm-loadout");
 const loadoutStatus = element<HTMLElement>("v2-loadout-status");
 let loadoutUiInitialized = false;
 let renderedUpgradeKey = "";
-const idDisplay = element<HTMLElement>("current-room-id");
+const idDisplay = element<HTMLInputElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
 const list = element<HTMLUListElement>("players");
 const readyRoom = element<HTMLButtonElement>("ready-room");
@@ -521,14 +534,38 @@ let connected = false;
 let displayedView: LobbyView | null = null;
 type EntryMode = "menu" | "single" | "multi";
 let entryMode: EntryMode = "menu";
-let soloAutoState: "idle" | "loadout" | "ready" = "idle";
+let soloAutoState: "idle" | "loadout" | "ready" | "unsupported" = "idle";
+let soloStarting = false;
+let soloSelectedWeapons: readonly string[] = ["weapon.fireball", "weapon.void_orb"];
+let roomTab: "create" | "join" = "create";
+
+function refreshRoomTabs(): void {
+  const creating = roomTab === "create";
+  roomCreateForm.hidden = !creating;
+  roomJoinForm.hidden = creating;
+  roomTabCreate.setAttribute("aria-selected", String(creating));
+  roomTabJoin.setAttribute("aria-selected", String(!creating));
+  roomTabCreate.disabled = busy || connected;
+  roomTabJoin.disabled = busy || connected;
+}
+function selectRoomTab(mode: "create" | "join"): void {
+  roomTab = mode;
+  refreshRoomTabs();
+  if (!connected) (mode === "create" ? create : roomInput).focus();
+}
 
 function refreshScreen(): void {
   const inMatch = displayedView !== null && displayedView.phase !== "LOBBY";
   uiShell.dataset.uiScreen = inMatch ? "combat" :
-    entryMode === "single" ? "connecting" :
+    entryMode === "single" ? "solo" :
     entryMode === "multi" ? "lobby" : "menu";
-  soloPending.hidden = entryMode !== "single" || inMatch;
+  soloPending.hidden = entryMode !== "single" || !soloStarting || inMatch;
+  soloPanel.hidden = entryMode !== "single" || soloStarting || inMatch;
+  element<HTMLElement>("lobby-panel").hidden = entryMode !== "multi" || inMatch;
+  soloStart.disabled = busy || soloStarting || soloWeaponOne.value === soloWeaponTwo.value;
+  soloBack.disabled = busy;
+  roomEntry.hidden = connected;
+  refreshRoomTabs();
   startSoloButton.disabled = busy;
   startMultiButton.disabled = busy;
   backToMenuButton.disabled = busy;
@@ -539,15 +576,18 @@ function autoStartSolo(view: LobbyView | null): void {
   const local = view.players.get(view.sessionId);
   if (!local || !local.connected || local.ready) return;
   if (view.ruleset !== "dual_v2") {
-    if (soloAutoState !== "ready") {
-      soloAutoState = "ready";
-      connection.setReady(true);
+    if (soloAutoState !== "unsupported") {
+      soloAutoState = "unsupported";
+      soloStarting = false;
+      soloStatus.textContent = "服务器未启用双武器规则，无法按所选武器开始，请稍后重试";
+      soloStatus.classList.add("error");
+      void connection.leave();
     }
     return;
   }
   if (!local.loadoutConfirmed && soloAutoState !== "loadout") {
     soloAutoState = "loadout";
-    connection.selectLoadout(["weapon.fireball", "weapon.void_orb"]);
+    connection.selectLoadout(soloSelectedWeapons);
   } else if (local.loadoutConfirmed && soloAutoState !== "ready") {
     soloAutoState = "ready";
     connection.setReady(true);
@@ -601,7 +641,7 @@ function render(view: LobbyView | null): void {
   if (scene.scene && scene.scene.isActive()) scene.showLobby(view);
   if (view) {
     roomInput.value = view.roomId;
-    idDisplay.textContent = view.roomId;
+    idDisplay.value = view.roomId;
     count.textContent = String([...view.players.values()].filter(player => player.connected).length) + "/" + MAX_ROOM_PLAYERS;
     list.replaceChildren();
     for (const [sid, player] of view.players) {
@@ -855,11 +895,13 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
 }, (message) => {
   releaseKeys();
   if (entryMode === "single") {
-    entryMode = "menu";
+    soloStarting = false;
     soloAutoState = "idle";
+    soloStatus.textContent = message;
+    soloStatus.classList.add("error");
   }
   render(null);
-  showStatus(message, true);
+  if (entryMode !== "single") showStatus(message, true);
 }, (tick, match: MatchSnapshot) => {
   tickMonitor.textContent = "Tick " + tick;
   if (displayedView) {
@@ -883,15 +925,44 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
 });
 startSoloButton.addEventListener("click", () => {
   if (busy || connected) return;
+  soloNickname.value = nickname.value;
   entryMode = "single";
+  soloStarting = false;
   soloAutoState = "idle";
+  soloStatus.textContent = "";
+  soloStatus.classList.remove("error");
   refreshControls();
-  void start(() => connection.create(nickname.value));
+  soloWeaponOne.focus();
+});
+soloWeaponOne.addEventListener("change", refreshControls);
+soloWeaponTwo.addEventListener("change", refreshControls);
+soloStart.addEventListener("click", () => {
+  if (busy || connected || soloStarting) return;
+  if (soloWeaponOne.value === soloWeaponTwo.value) {
+    soloStatus.textContent = "开局需要两种不同的武器";
+    soloStatus.classList.add("error");
+    return;
+  }
+  soloStatus.classList.remove("error");
+  soloSelectedWeapons = [soloWeaponOne.value, soloWeaponTwo.value];
+  soloAutoState = "idle";
+  soloStarting = true;
+  nickname.value = soloNickname.value;
+  refreshControls();
+  void start(() => connection.create(soloNickname.value));
+});
+soloBack.addEventListener("click", () => {
+  if (busy || connected) return;
+  entryMode = "menu";
+  soloStarting = false;
+  refreshControls();
 });
 startMultiButton.addEventListener("click", () => {
   if (busy || connected) return;
   entryMode = "multi";
+  roomTab = "create";
   refreshControls();
+  nickname.focus();
 });
 backToMenuButton.addEventListener("click", async () => {
   if (busy) return;
@@ -901,6 +972,7 @@ backToMenuButton.addEventListener("click", async () => {
     if (connected) await connection.leave();
     entryMode = "menu";
     soloAutoState = "idle";
+    soloStarting = false;
     releaseKeys();
     render(null);
   } catch (error) {
@@ -918,13 +990,19 @@ async function start(action: () => Promise<void>): Promise<void> {
   showStatus("正在连接…");
   try { await action(); }
   catch (error) {
+    const message = error instanceof Error ? error.message : "连接失败";
     if (entryMode === "single") {
-      entryMode = "menu";
+      soloStarting = false;
       soloAutoState = "idle";
+      soloStatus.textContent = message;
+      soloStatus.classList.add("error");
+    } else {
+      showStatus(message, true);
     }
-    showStatus(error instanceof Error ? error.message : "连接失败", true);
   } finally { busy = false; refreshControls(); }
 }
+roomTabCreate.addEventListener("click", () => selectRoomTab("create"));
+roomTabJoin.addEventListener("click", () => selectRoomTab("join"));
 create.addEventListener("click", () => { void start(() => connection.create(nickname.value)); });
 join.addEventListener("click", () => { void start(() => connection.join(roomInput.value, nickname.value)); });
 confirmLoadout.addEventListener("click", () => {
@@ -959,18 +1037,34 @@ leave.addEventListener("click", async () => {
     releaseKeys();
     entryMode = "menu";
     soloAutoState = "idle";
+    soloStarting = false;
     render(null);
     showStatus("已退出房间");
   } catch (error) {
     showStatus(error instanceof Error ? error.message : "退出失败", true);
   } finally { busy = false; refreshControls(); }
 });
+async function copyInviteCode(roomId: string): Promise<boolean> {
+  // The clipboard API is usually blocked on a non-HTTPS public IP.
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(roomId);
+      return true;
+    } catch { /* Fallback to visible, selectable field. */ }
+  }
+  // Legacy fallback must execute within the original user click.
+  idDisplay.value = roomId;
+  idDisplay.focus();
+  idDisplay.select();
+  idDisplay.setSelectionRange(0, roomId.length);
+  try { return document.execCommand("copy"); }
+  catch { return false; }
+}
 copy.addEventListener("click", async () => {
-  if (!connection.roomId) return;
-  try {
-    await navigator.clipboard.writeText(connection.roomId);
-    showStatus("房间 ID 已复制");
-  } catch { showStatus("复制失败，可手动选择房间 ID", true); }
+  const roomId = connection.roomId;
+  if (!roomId) return;
+  const copied = await copyInviteCode(roomId);
+  showStatus(copied ? "邀请码已复制，可发送给朋友" : "无法自动复制，已选中邀请码，请手动复制", !copied);
 });
 window.addEventListener("beforeunload", () => {
   releaseKeys();
