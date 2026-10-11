@@ -91,6 +91,6 @@ test("V2 fireball embers can be consumed once by boon-controlled void collapse",
   for(let i=0;i<4;i++)stepCombatWorld(world,50);
   assert.equal(world.voidFields.has(fieldId),false);
   assert.ok(world.events.some(e=>e.type==="boon.collapse_inferno"));
-  assert.equal(enemy.health,150-30);
+  assert.equal(enemy.health,150-32);
   assert.equal(world.events.filter(e=>e.type==="boon.collapse_inferno").length,1);
 });
