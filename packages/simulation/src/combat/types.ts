@@ -333,10 +333,10 @@ export interface CombatUpgradeState {
 }
 
 export const COMBAT_PLAYER_SPAWNS = [
-  { x: 265, y: 245 },
-  { x: 695, y: 245 },
-  { x: 265, y: 420 },
-  { x: 695, y: 420 }
+  { x: WORLD_VIEW_WIDTH * 0.32, y: WORLD_VIEW_HEIGHT * 0.40 },
+  { x: WORLD_VIEW_WIDTH * 0.68, y: WORLD_VIEW_HEIGHT * 0.40 },
+  { x: WORLD_VIEW_WIDTH * 0.32, y: WORLD_VIEW_HEIGHT * 0.64 },
+  { x: WORLD_VIEW_WIDTH * 0.68, y: WORLD_VIEW_HEIGHT * 0.64 }
 ] as const;
 
 export const INITIAL_ENEMY_POSITION = { x: 80, y: 80 } as const;
