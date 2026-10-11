@@ -301,3 +301,74 @@ test("V2 fireball embers feed a server-authoritative enhanced collapse once", ()
   assert.equal(enemy.health,150-42);
   assert.equal(world.events.filter(e=>e.type==="boon.collapse_inferno").length,1);
 });
+
+test("V2 fireball has bounded homing and never visually U-turns when its target slips behind", () => {
+  const w=createCombatWorld("dual_v2"),p=addCombatPlayer(w,"p","Player");
+  setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
+  setCombatPlayerReady(w,"p",true);startCombatMatch(w);
+  p.weaponIds.splice(1,1); // Focus the test on a single V2 fireball.
+  w.initialEnemySpawned=true;
+  w.nextEnemySpawnTick=9999;
+  const enemy=createEnemy("dodge","rift_swarm",p.x+240,p.y);
+  enemy.health=1000;
+  w.enemies.set(enemy.id,enemy);
+  stepCombatWorld(w,50);
+  const projectile=[...w.projectiles.values()].find(v=>v.weaponId==="weapon.fireball");
+  assert.ok(projectile?.fireballFlight);
+  enemy.x=p.x-160;enemy.y=p.y; // Jump behind the initial launch direction.
+  let lastX=projectile.x;
+  for(let i=0;i<8;i++){
+    stepCombatWorld(w,50);
+    assert.ok(w.projectiles.has(projectile.id));
+    assert.ok(projectile.x>=lastX,"the same fireball must not reverse its launch heading");
+    assert.ok(projectile.fireballFlight.headingX>0.2,"forward heading constraint");
+    lastX=projectile.x;
+  }
+});
+
+test("V2 ember lasts five active seconds, pauses on manual upgrade and expires once", () => {
+  const w=createCombatWorld("dual_v2"),p=addCombatPlayer(w,"p","Player");
+  setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
+  setCombatPlayerReady(w,"p",true);startCombatMatch(w);
+  p.weaponIds.length=0;
+  w.initialEnemySpawned=true;w.nextEnemySpawnTick=9999;
+  const lifetime=100;
+  w.embers.set("flame",{id:"flame",ownerId:"p",x:p.x,y:p.y,expireTick:lifetime});
+  for(let i=0;i<60;i++)stepCombatWorld(w,50);
+  assert.equal(w.matchElapsedTicks,60);
+  assert.equal(w.embers.has("flame"),true);
+  w.phase="UPGRADING";
+  for(let i=0;i<150;i++)stepCombatWorld(w,50);
+  assert.equal(w.matchElapsedTicks,60);
+  assert.equal(w.embers.has("flame"),true);
+  w.phase="RUNNING";
+  for(let i=0;i<40;i++)stepCombatWorld(w,50);
+  assert.equal(w.matchElapsedTicks,100);
+  assert.equal(w.embers.has("flame"),true);
+  stepCombatWorld(w,50);
+  assert.equal(w.embers.has("flame"),false);
+});
+
+test("V2 ember pool evicts oldest and retains at most eight readable objects", () => {
+  const w=createCombatWorld("dual_v2"),p=addCombatPlayer(w,"p","Player");
+  setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
+  applyCombatUpgrade(p,getCombatUpgradeChoices(p,w).find(c=>c.branchId==="ember"));
+  setCombatPlayerReady(w,"p",true);startCombatMatch(w);
+  p.weaponIds.length=0;
+  w.initialEnemySpawned=true;w.nextEnemySpawnTick=9999;
+  const e=createEnemy("dummy","rift_swarm",p.x+50,p.y);
+  e.health=500;w.enemies.set(e.id,e);
+  const damage=new DamageSystem();
+  for(let i=0;i<11;i++){
+    const id="fireball:manual:"+i;
+    w.projectiles.set(id,{
+      id,weaponId:"weapon.fireball",sourcePlayerId:"p",targetEnemyId:e.id,
+      damage:1,speed:360,radius:7,x:e.x,y:e.y
+    });
+    damage.step(w,0.05);
+  }
+  assert.equal(w.embers.size,8);
+  assert.ok([...w.embers.values()].every(ember=>ember.expireTick===100));
+  assert.equal(w.embers.has("ember:1"),false,"oldest consumed by pool limit");
+  assert.equal(w.embers.has("ember:11"),true);
+});
