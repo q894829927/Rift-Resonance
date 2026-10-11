@@ -6,6 +6,7 @@ import {
   getCombatUpgradeChoices, draftCombatUpgradeChoices, applyCombatUpgrade, selectCombatUpgrade, DamageSystem
 } from "../packages/simulation/dist/index.js";
 import { createEnemy } from "../packages/simulation/dist/combat/types.js";
+import { createFireballHeading } from "../packages/simulation/src/combat/fireballTrajectory.ts";
 
 test("V2 chooses exactly two different server-approved weapons before ready", () => {
   const world = createCombatWorld("dual_v2");
@@ -374,4 +375,35 @@ test("V2 ember pool evicts oldest and retains at most eight readable objects", (
   assert.ok([...w.embers.values()].every(ember=>ember.expireTick===100));
   assert.equal(w.embers.has("ember:1"),false,"oldest consumed by pool limit");
   assert.equal(w.embers.has("ember:11"),true);
+});
+
+test("V2 real server hit uses first swept contact and spawns an ember at the impact point",()=>{
+  const w=createCombatWorld("dual_v2"),p=addCombatPlayer(w,"p","Player");
+  setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
+  applyCombatUpgrade(p,getCombatUpgradeChoices(p,w).find(c=>c.branchId==="ember"));
+  setCombatPlayerReady(w,"p",true);startCombatMatch(w);
+  p.weaponIds.length=0;
+  w.initialEnemySpawned=true;w.nextEnemySpawnTick=9999;
+  const near=createEnemy("near","rift_swarm",p.x+60,p.y);
+  const far=createEnemy("far","rift_swarm",p.x+115,p.y);
+  near.health=300;far.health=300;
+  w.enemies.set(near.id,near);w.enemies.set(far.id,far);
+  w.projectiles.set("fireball-test",{
+    id:"fireball-test",weaponId:"weapon.fireball",sourcePlayerId:"p",
+    targetEnemyId:far.id,damage:20,speed:360,radius:7,
+    x:p.x,y:p.y,fireballFlight:createFireballHeading(1,0)
+  });
+  new DamageSystem().step(w,0.4); // Cross both enemies in a single simulated move.
+  assert.equal(w.projectiles.has("fireball-test"),false);
+  assert.equal(near.health,280);
+  assert.equal(far.health,300);
+  const hit=w.events.find(e=>e.type==="damage.applied"&&e.targetId===near.id);
+  assert.ok(hit,"nearest along-path target takes damage");
+  assert.ok(hit.x>p.x+15 && hit.x<near.x,
+    "projectile impacts at circle boundary instead of teleporting to enemy center");
+  assert.equal(w.embers.size,1);
+  const ember=[...w.embers.values()][0];
+  assert.equal(ember.x,hit.x);
+  assert.equal(ember.y,hit.y);
+  assert.equal(w.events.filter(e=>e.type==="damage.applied"&&e.assetId==="weapon.fireball").length,1);
 });
