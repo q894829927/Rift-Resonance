@@ -16,7 +16,7 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <span id="app-version" class="app-version" title="游戏版本">v0.1.2</span>
+        <span id="app-version" class="app-version" title="游戏版本">v0.1.3.1</span>
         <span id="tick-monitor" class="dev-tick" title="服务器逻辑 Tick">Tick --</span>
         <span id="connection-badge" class="connection-badge" role="status">未连接</span>
         <button id="leave-room" class="text-button danger" disabled>退出房间</button>
@@ -187,11 +187,11 @@
         </div>
       </section>
       <section id="touch-controls" class="touch-controls" aria-label="触屏战斗操作">
-        <div class="touch-pad" role="group" aria-label="移动方向">
-          <button class="touch-key touch-up" data-touch-dir="up" type="button" aria-label="向上移动">▲</button>
-          <button class="touch-key touch-left" data-touch-dir="left" type="button" aria-label="向左移动">◀</button>
-          <button class="touch-key touch-down" data-touch-dir="down" type="button" aria-label="向下移动">▼</button>
-          <button class="touch-key touch-right" data-touch-dir="right" type="button" aria-label="向右移动">▶</button>
+        <div id="virtual-joystick" class="virtual-joystick" role="group" aria-label="移动摇杆">
+          <div class="joystick-ring" aria-hidden="true">
+            <div id="joystick-thumb" class="joystick-thumb"></div>
+          </div>
+          <span class="sr-only">触摸并拖动摇杆控制移动方向</span>
         </div>
         <button id="touch-dash" class="touch-dash" type="button" aria-label="冲刺">冲刺</button>
       </section>

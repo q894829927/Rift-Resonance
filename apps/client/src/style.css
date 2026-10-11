@@ -272,82 +272,6 @@ button:focus-visible, input:focus-visible {
 .result-stats { font-variant-numeric: tabular-nums; margin: 15px 0 20px; padding: 13px; border: 1px solid #4e445b; border-radius: 6px; color: #f5d8a5; background: rgba(8,12,19,.7); font-size: 13px; }
 #restart-room { min-width: 206px; margin: 0 auto; }
 .result-hint { font-size: 10px; color: #857b95; margin: 15px 0 0; }
-/* Gameplay is one uninterrupted stage. Room form never blocks combat. */
-.game-shell[data-ui-phase="RUNNING"] .layout,
-.game-shell[data-ui-phase="UPGRADING"] .layout,
-.game-shell[data-ui-phase="WON"] .layout,
-.game-shell[data-ui-phase="LOST"] .layout,
-.game-shell[data-ui-phase="RESULT"] .layout { display: flex; justify-content: center; }
-.game-shell[data-ui-phase="RUNNING"] .arena,
-.game-shell[data-ui-phase="UPGRADING"] .arena,
-.game-shell[data-ui-phase="WON"] .arena,
-.game-shell[data-ui-phase="LOST"] .arena,
-.game-shell[data-ui-phase="RESULT"] .arena { width: min(100%, 130dvh); }
-.game-shell:not([data-ui-phase="LOBBY"]) .panel { display: none; }
-.game-shell:not([data-ui-phase="LOBBY"]) .lobby-hero { display: none; }
-.game-shell[data-ui-phase="LOBBY"] .match-hud,
-.game-shell[data-ui-phase="LOBBY"] .combat-dock,
-.game-shell[data-ui-phase="WON"] .combat-dock,
-.game-shell[data-ui-phase="LOST"] .combat-dock,
-.game-shell[data-ui-phase="RESULT"] .combat-dock { display: none; }
-.game-shell[data-ui-phase="WON"] .match-hud,
-.game-shell[data-ui-phase="LOST"] .match-hud,
-.game-shell[data-ui-phase="RESULT"] .match-hud { opacity: .35; }
-@media (max-width: 1000px) {
-  .game-shell { width: min(calc(100% - 24px), 940px); }
-  .layout { grid-template-columns: minmax(0,1fr); }
-  .arena { max-width: min(100%, 130dvh); }
-  .panel { width: min(100%, 620px); justify-self: center; }
-  .site-footer { padding-bottom: 12px; }
-}
-@media (max-width: 650px) {
-  .game-shell { width: calc(100% - 14px); }
-  .topbar { height: 60px; }
-  .brand-en { font-size: 11px; }
-  .brand-sub { font-size: 9px; }
-  .brand-sigil { width: 34px; height: 34px; font-size: 24px; }
-  .dev-tick, .site-footer span:last-child { display: none; }
-  .connection-badge { font-size: 10px; padding: 6px 9px; }
-  .text-button { padding: 6px 8px; font-size: 10px; }
-  .lobby-hero { padding: 12px 9px; width: 93%; }
-  .lobby-hero h1 { font-size: clamp(29px, 7vw, 48px); }
-  .hero-description { font-size: 11px; }
-  .hero-caption, .hero-instruction { font-size: 9px; }
-  .hero-instruction { margin-top: 10px; padding: 6px; }
-  .hero-english { margin-bottom: 6px; font-size: 9px; }
-  .hero-ornament { margin: 5px 0; }
-  .match-hud { top: 5px; left: 5px; right: 5px; gap: 4px; grid-template-columns: 1fr auto 1fr; }
-  .hud-player, .hud-score { padding: 5px; border-radius: 5px; }
-  .hud-level { font-size: 10px; }
-  .hud-caption, .xp-caption { font-size: 8px; }
-  .hud-score { min-width: 0; gap: 3px; }
-  .hud-score strong { font-size: 9px; }
-  .health-track { height: 7px; margin-top: 4px; }
-  .xp-track { height: 4px; }
-  .hud-match { padding: 4px 5px 6px; }
-  .match-phase, .match-caption { font-size: 8px; }
-  .match-caption { display: none; }
-  .match-timer { font-size: 19px; }
-  .combat-dock { bottom: 18px; gap: 4px; padding: 4px; }
-  .skill-slot { width: 55px; min-height: 49px; padding: 3px; }
-  .skill-symbol { font-size: 16px; }
-  .skill-name { font-size: 8px; }
-  .skill-key { font-size: 7px; }
-  .arena-footer { bottom: 5px; left: 8px; right: 8px; font-size: 7px; }
-  .upgrade-panel, .match-banner { padding: 11px; width: 96%; max-height: calc(100% - 14px); }
-  .upgrade-panel h2, .match-banner h2 { font-size: 18px; }
-  .upgrade-choices { gap: 4px; margin-top: 8px; }
-  .upgrade-choice { min-height: 58px; padding: 5px 3px; gap: 3px; }
-  .upgrade-choice strong { font-size: 10px; }
-  .upgrade-choice small { font-size: 8px; }
-  .modal-divider { margin: 4px 0; }
-  .upgrade-panel p:not(.modal-eyebrow), .result-summary { font-size: 10px; }
-  .site-footer { font-size: 8px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bar-fill, .gold-button, .panel-body input { transition: none; }
-}
-
 /* V2 dual-weapon selection, shown only when the authoritative ruleset enables it. */
 .dual-loadout { display:grid; gap:7px; margin:12px 0; padding:12px; background:rgba(34,26,52,.7); border:1px solid rgba(174,140,235,.35); border-radius:8px; }
 .dual-loadout[hidden] { display:none; }
@@ -361,501 +285,364 @@ button:focus-visible, input:focus-visible {
 .app-version { display: inline-block; font-size: 10px; letter-spacing: .045em; color: #dcc59d; border: 1px solid rgba(207, 170, 116, .4); background: rgba(25, 19, 34, .85); padding: 3px 6px; border-radius: 4px; font-variant-numeric: tabular-nums; }
 @media (max-width: 650px) { .app-version { font-size: 8px; padding: 2px 4px; } }
 
-/* V2 menu refresh: world-size stage with centered in-game room management. */
+/* v0.1.3.1: SINGLE RESPONSIVE LAYOUT LAYER.
+   No historical v0.2/v0.3/fix selectors are left to fight for geometry. */
+html, body { width:100%; max-width:100%; }
+body { overflow-x:hidden; }
+.sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
 .game-shell {
-  width: min(1720px, calc(100% - 48px));
-  position: relative;
-  min-height: 100dvh;
+  --stage-width: min(96vw, 1720px);
+  --stage-height: 900px;
+  --ui-scale: 1;
+  display:flex;
+  flex-direction:column;
+  width:min(calc(100% - 24px), var(--stage-width));
+  min-height:100vh;
+  min-height:100dvh;
+  margin:0 auto;
+  padding:0;
+  position:relative;
+  container-type:inline-size;
 }
-.topbar { height: 76px; }
-.layout { display: block; width: 100%; }
-.arena {
-  width: 100%;
-  max-width: none;
-  border-radius: 13px;
-  box-shadow: 0 25px 100px rgba(0, 0, 0, .65), 0 0 0 4px rgba(99, 62, 130, .12);
+.topbar {
+  flex:none;
+  width:100%;
+  min-width:0;
+  height:clamp(44px, 5.5dvh, 60px);
+  min-height:44px;
+  gap:clamp(6px, 2cqw, 16px);
 }
-#app { aspect-ratio: 16 / 9; }
-.arena-vignette { box-shadow: inset 0 0 105px 35px rgba(4, 5, 13, .43); }
-.brand-copy { gap: 0; }
-.brand-en { font-size: 16px; }
-.topbar-actions #app-version { flex: none; }
+.topbar-actions { flex:none; gap:clamp(5px, 1cqw, 12px); }
+.brand-lockup { min-width:0; gap:clamp(6px, 1cqw, 12px); }
+.brand-sigil { width:clamp(30px, 3.6cqw, 42px); height:clamp(30px, 3.6cqw, 42px); font-size:clamp(20px, 2.8cqw, 30px); }
+.brand-en { font-size:clamp(10px, calc(15px * var(--ui-scale)), 17px); letter-spacing:clamp(.07em, .12vw, .19em); overflow-wrap:anywhere; }
+.connection-badge { font-size:clamp(10px, calc(12px * var(--ui-scale)), 13px); }
+.layout {
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-width:0;
+  min-height:0;
+  gap:0;
+}
+.game-shell .layout .arena {
+  flex:0 0 auto;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  aspect-ratio:16/9;
+  height:auto;
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border-radius:12px;
+  container-type:inline-size;
+  box-shadow:0 18px 70px rgba(0,0,0,.6), 0 0 0 3px rgba(99,62,130,.12);
+}
+#app { width:100%; height:100%; aspect-ratio:auto; overflow:hidden; }
+#app canvas { display:block; max-width:100%; max-height:100%; touch-action:none; }
+.arena-vignette { box-shadow:inset 0 0 105px 23px rgba(4,5,13,.42); }
+.arena-overlay { pointer-events:none; }
+.site-footer {
+  flex:none;
+  width:100%;
+  padding:8px 0 max(8px, env(safe-area-inset-bottom));
+  font-size:clamp(8px, calc(10px * var(--ui-scale)), 11px);
+  color:#716780;
+}
 .game-shell[data-ui-screen="menu"] .connection-badge,
 .game-shell[data-ui-screen="menu"] .dev-tick,
 .game-shell[data-ui-screen="menu"] #leave-room,
-.game-shell[data-ui-screen="lobby"] .dev-tick { display: none; }
-.game-shell:not([data-ui-screen="menu"]) #lobby-hero { display: none; }
+.game-shell[data-ui-screen="solo"] .dev-tick,
+.game-shell[data-ui-screen="lobby"] .dev-tick { display:none; }
+.game-shell:not([data-ui-screen="menu"]) #lobby-hero { display:none; }
+.game-shell:not([data-ui-phase="LOBBY"]) #lobby-hero { display:none; }
+.game-shell[data-ui-phase="LOBBY"] .match-hud,
+.game-shell[data-ui-phase="LOBBY"] .combat-dock,
+.game-shell[data-ui-phase="WON"] .combat-dock,
+.game-shell[data-ui-phase="LOST"] .combat-dock,
+.game-shell[data-ui-phase="RESULT"] .combat-dock { display:none; }
+.game-shell[data-ui-phase="WON"] .match-hud,
+.game-shell[data-ui-phase="LOST"] .match-hud,
+.game-shell[data-ui-phase="RESULT"] .match-hud { opacity:.36; }
 .game-shell[data-ui-screen="menu"] .lobby-hero {
-  display: block;
-  top: 49%;
-  width: min(98%, 1020px);
-  background: radial-gradient(ellipse at center, rgba(5, 7, 13, .73), rgba(7, 9, 18, .48) 51%, transparent 79%);
-  padding: 30px 10px 0;
-  filter: drop-shadow(0 8px 22px rgba(0,0,0,.58));
-  pointer-events: none;
+  top:49%;
+  left:50%;
+  width:min(94%,980px);
+  max-width:94%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:clamp(8px, 2cqw, 24px);
+  background:radial-gradient(ellipse at center,rgba(6,7,14,.80),rgba(6,8,17,.43) 52%,transparent 76%);
+  filter:drop-shadow(0 7px 24px rgba(0,0,0,.55));
+  pointer-events:none;
 }
 .game-shell[data-ui-screen="menu"] .lobby-hero h1 {
-  font-size: clamp(48px, 6.25vw, 115px);
-  letter-spacing: .13em;
-  line-height: 1.25;
+  font-size:clamp(30px, calc(90px * var(--ui-scale)), 116px);
+  line-height:1.18;
+  letter-spacing:clamp(.05em, 0.85cqw, .13em);
+  max-width:100%;
+  overflow-wrap:break-word;
 }
 .game-shell[data-ui-screen="menu"] .hero-english {
-  font-size: clamp(11px, 1.45vw, 20px);
-  margin: 4px 0 0;
+  font-size:clamp(9px, calc(17px * var(--ui-scale)), 21px);
+  letter-spacing:clamp(.11em, .29cqw, .4em);
+  margin:clamp(3px, .8cqw, 10px) 0 0;
+  white-space:nowrap;
+  max-width:100%;
 }
 .game-shell[data-ui-screen="menu"] .hero-ornament {
-  font-size: 14px;
-  letter-spacing: .26em;
-  margin: 0 0 20px;
+  font-size:clamp(8px, calc(13px * var(--ui-scale)), 15px);
+  letter-spacing:.2em;
+  margin:0 0 clamp(5px, 1.8cqw, 22px);
 }
 .menu-actions {
-  margin: clamp(40px, 10vh, 120px) auto 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 320px));
-  justify-content: center;
-  gap: clamp(12px, 2vw, 26px);
-  pointer-events: auto;
+  width:min(92%, 710px);
+  margin:clamp(10px, 4.1cqw, 72px) auto 0;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:clamp(8px, 1.4cqw, 24px);
+  pointer-events:auto;
 }
 .mode-button {
-  min-height: clamp(56px, 5vw, 80px);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  gap: 20px;
-  border-radius: 9px;
-  font-size: clamp(17px, 1.55vw, 25px);
-  font-weight: 800;
-  letter-spacing: .065em;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  width:100%;
+  min-width:0;
+  min-height:clamp(44px, calc(72px * var(--ui-scale)), 84px);
+  padding:clamp(7px, 1.1cqw, 17px);
+  display:flex;
+  gap:clamp(5px, 1cqw, 17px);
+  align-items:center;
+  justify-content:space-around;
+  border-radius:9px;
+  font-size:clamp(12px, calc(22px * var(--ui-scale)), 27px);
+  font-weight:800;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  transition:background 160ms ease,transform 160ms ease,box-shadow 160ms ease;
 }
-.mode-button span { font-size: 24px; }
-.mode-solo {
-  color: #211823;
-  background: linear-gradient(180deg, #ffe2a0, #deb175);
-  border: 2px solid #ffe6b2;
-  box-shadow: inset 0 1px 0 #fff2d1, 0 0 28px rgba(231,178,100,.35);
-}
-.mode-multi {
-  color: #e9d8ff;
-  background: linear-gradient(135deg, #231e36, #131420);
-  border: 2px solid #756087;
-  box-shadow: inset 0 1px 0 rgba(189, 154, 221, .12);
-}
-.mode-button:hover:not(:disabled) { transform: translateY(-3px); }
-.mode-solo:hover:not(:disabled) { box-shadow: 0 0 38px rgba(231,178,100,.65); }
-.mode-multi:hover:not(:disabled) { border-color: #b18bd6; background: #332747; }
-.mode-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-#lobby-panel {
-  display: none;
-  position: absolute;
-  z-index: 8;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-  width: min(680px, 92%);
-  max-height: calc(100% - 36px);
-  overflow-y: auto;
-  padding: 23px 29px;
-  background: linear-gradient(155deg, rgba(31,27,47,.985), rgba(11,16,27,.995));
-  box-shadow: 0 0 0 100vmax rgba(4,5,12,.48), 0 30px 75px rgba(0,0,0,.75);
-}
-.game-shell[data-ui-screen="lobby"] #lobby-panel { display: block; }
-#lobby-panel .panel-heading { position: relative; }
-#lobby-panel .panel-heading h2 { margin: 0 0 12px; }
-#lobby-panel .panel-body label { margin: 10px 0 5px; }
-#lobby-panel .panel-body input { padding: 9px 12px; }
-#lobby-panel #create-room, #lobby-panel #ready-room { margin-top: 10px; }
-#lobby-panel .room-details { margin-top: 15px; padding-top: 10px; }
-#lobby-panel .panel-footnote { display: none; }
-.menu-back {
-  position: absolute;
-  right: 0;
-  top: 0;
-  padding: 8px 10px;
-  color: #c9b6db;
-  border: 1px solid #665474;
-  background: #1b1b2b;
-  border-radius: 6px;
-  font-size: 12px;
-}
-.menu-back:hover:not(:disabled) { background: #30243b; }
+.mode-button span { font-size:clamp(15px,calc(23px * var(--ui-scale)),26px); }
+.mode-solo { color:#231823; background:linear-gradient(180deg,#ffe1a2,#ddb277); border:2px solid #ffe5b5; box-shadow:inset 0 1px 0 #fff2d4,0 0 24px rgba(234,179,99,.30); }
+.mode-multi { color:#e5d3ef; background:linear-gradient(140deg,#262035,#151523); border:2px solid #725e87; }
+.mode-button:hover:not(:disabled) { transform:translateY(-2px); }
+.mode-solo:hover:not(:disabled) { box-shadow:0 0 34px rgba(231,178,100,.56); }
+.mode-multi:hover:not(:disabled) { border-color:#b18bd6; background:#30263b; }
+.mode-button:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+.menu-back { position:absolute;right:0;top:0;border:1px solid #665474;background:#1b1b2b;border-radius:6px;padding:8px 10px;color:#c9b6db;font-size:clamp(11px,calc(12px * var(--ui-scale)),14px); }
+.menu-back:hover:not(:disabled) { background:#30243b; }
 .solo-pending {
-  position: absolute;
-  top: 49%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 20px 30px;
-  border: 1px solid #795f8d;
-  border-radius: 8px;
-  background: rgba(12, 12, 25, .94);
-  color: #f3deb0;
-  font-weight: 700;
-  letter-spacing: .07em;
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  max-width:90%;padding:14px 18px;border-radius:8px;border:1px solid #795f8d;
+  color:#f3deb0;background:rgba(12,12,25,.94);font-size:clamp(12px,calc(14px * var(--ui-scale)),17px);
 }
-.game-shell[data-ui-screen="combat"] .arena {
-  width: 100%;
-  max-width: none;
+.panel.entry-dialog {
+  position:fixed;
+  z-index:100;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(610px,calc(100dvw - 24px));
+  max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:clamp(14px,3vw,28px);
+  border:1px solid #71577d;
+  border-radius:12px;
+  background:linear-gradient(155deg,rgba(30,25,44,.99),rgba(10,14,24,.99));
+  box-shadow:0 0 0 100vmax rgba(3,5,12,.71),0 20px 70px rgba(0,0,0,.75);
+  -webkit-overflow-scrolling:touch;
 }
-.game-shell[data-ui-screen="combat"] #lobby-panel { display: none; }
-.site-footer { padding: 12px 0 16px; color: #716780; }
-@media (max-width: 1000px) {
-  .game-shell { width: calc(100% - 24px); }
-  .arena { max-width: none; width: 100%; }
-  .mode-button { gap: 8px; }
-  #lobby-panel { width: min(600px, 94%); }
+#solo-panel[hidden],#lobby-panel[hidden],#room-entry[hidden],#room-details[hidden],
+#room-create-form[hidden],#room-join-form[hidden],#loadout-panel[hidden],
+#solo-pending[hidden],#upgrade-panel[hidden],#match-banner[hidden] { display:none!important; }
+.entry-dialog .panel-heading { position:relative; }
+.entry-dialog .panel-heading h2 { font-size:clamp(20px,calc(24px * var(--ui-scale)),28px);margin:5px 0 19px; }
+.entry-dialog .panel-body input,.entry-dialog .panel-body select { max-width:100%; }
+.entry-subtitle { color:#f3dbad;font-size:15px;margin:20px 0 6px; }
+.entry-note { color:#a99eb9;font-size:11px;line-height:1.6;margin:11px 0; }
+.entry-primary { width:100%;margin:12px 0 0;min-height:44px; }
+.weapon-pair { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px; }
+.weapon-pair label { min-width:0;font-size:12px; }
+.weapon-pair select { display:block;width:100%;margin-top:7px;padding:10px;border:1px solid #866d96;border-radius:7px;background:#131b2a;color:#f5e5d8;min-height:44px; }
+.room-tabs { display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:14px;padding:4px;border:1px solid #554861;border-radius:8px;background:rgba(8,11,22,.73); }
+.room-tab { min-height:44px;border:1px solid transparent;border-radius:6px;color:#bfb1ca;background:transparent;font-size:13px;font-weight:700; }
+.room-tab[aria-selected="true"] { color:#f4ddb3;border-color:#9c7a91;background:linear-gradient(140deg,#45314e,#27223a); }
+.room-tab:focus-visible, .entry-dialog button:focus-visible { outline:2px solid #f7d79b;outline-offset:2px; }
+.entry-dialog .room-details { margin-top:0;padding-top:0;border-top:0; }
+.entry-dialog .room-code { grid-template-columns:minmax(0,1fr) auto; }
+.entry-dialog .room-code input { width:100%;min-width:0;padding:8px;border:1px solid #766080;border-radius:5px;background:#101421;font:13px ui-monospace,Consolas,monospace;color:#f1d8b5;user-select:text; }
+.entry-dialog .room-code .copy-button { min-height:42px;padding:6px 13px; }
+.entry-dialog .dual-loadout { margin:12px 0; }
+.entry-dialog .dual-loadout .outline-button { width:100%;flex:auto; }
+.entry-dialog .status { min-height:15px;margin-top:9px; }
+.match-hud {
+  font-size:clamp(9px,calc(12px * var(--ui-scale)),14px);
+  top:clamp(5px, 1cqw, 16px);
+  left:clamp(5px, 1cqw, 16px);
+  right:clamp(5px, 1cqw, 16px);
+  gap:clamp(3px, 1.2cqw, 14px);
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
 }
-@media (max-width: 650px) {
-  .game-shell { width: calc(100% - 12px); }
-  .topbar { height: 58px; }
-  .topbar-actions { gap: 5px; }
-  .topbar-actions #app-version { font-size: 9px; }
-  .arena { max-width: none; }
-  .game-shell[data-ui-screen="menu"] .lobby-hero { top: 49%; width: 96%; padding: 3px 0; }
-  .game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size: clamp(26px, 7vw, 49px); }
-  .game-shell[data-ui-screen="menu"] .hero-ornament { margin: 0 0 5px; font-size: 8px; }
-  .game-shell[data-ui-screen="menu"] .hero-english { font-size: 9px; letter-spacing: .3em; }
-  .menu-actions { margin-top: 10px; gap: 8px; grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .mode-button { min-height: 42px; font-size: 12px; gap: 3px; }
-  .mode-button span { font-size: 15px; }
-  #lobby-panel { width: 98%; padding: 15px; max-height: calc(100% - 10px); }
-  #lobby-panel .panel-heading h2 { font-size: 17px; }
-  #lobby-panel .panel-body label { margin: 5px 0 3px; }
-  #lobby-panel .panel-body input { padding: 5px 8px; }
-  #lobby-panel .separator { margin: 8px 0 0; }
-  #lobby-panel .room-details { margin-top: 7px; }
-  #lobby-panel .player-list { gap: 3px; }
-  #lobby-panel .player-list li { padding: 4px 6px; }
-  #lobby-panel .status { margin-top: 8px; }
-  .menu-back { font-size: 10px; }
+.hud-player { width:min(100%,calc(240px * var(--ui-scale)));min-width:0;padding:clamp(5px,calc(11px * var(--ui-scale)),13px); }
+.hud-score { min-width:0;gap:clamp(3px,calc(8px * var(--ui-scale)),9px);padding:clamp(5px,calc(11px * var(--ui-scale)),13px); }
+.hud-match { padding:clamp(4px,calc(8px * var(--ui-scale)),11px) clamp(6px,calc(18px * var(--ui-scale)),20px); }
+.match-timer { font-size:clamp(15px,calc(36px * var(--ui-scale)),39px); }
+.hud-level { font-size:clamp(10px,calc(15px * var(--ui-scale)),17px); }
+.hud-caption,.xp-caption { font-size:clamp(8px,calc(11px * var(--ui-scale)),12px); }
+.combat-dock { bottom:clamp(10px,3cqw,40px);gap:clamp(3px, .5cqw, 8px);padding:clamp(4px,.8cqw,9px); }
+.skill-slot { width:clamp(46px,calc(73px * var(--ui-scale)),85px);min-height:clamp(50px,calc(76px * var(--ui-scale)),90px); }
+.skill-symbol { font-size:clamp(17px,calc(26px * var(--ui-scale)),29px); }
+.skill-name { font-size:clamp(8px,calc(10px * var(--ui-scale)),12px); }
+.arena-footer { font-size:clamp(8px,calc(10px * var(--ui-scale)),11px); }
+.upgrade-panel,.match-banner {
+  width:min(94%,730px);
+  max-height:calc(100% - 20px);
+  padding:clamp(8px,2cqw,27px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
 }
-@media (prefers-reduced-motion: reduce) {
-  .mode-button { transition: none; }
+.upgrade-panel h2,.match-banner h2 { font-size:clamp(18px,calc(32px * var(--ui-scale)),38px); }
+.upgrade-choice { min-height:clamp(55px,calc(120px * var(--ui-scale)),125px);padding:clamp(6px,calc(13px * var(--ui-scale)),14px);gap:clamp(3px,calc(8px * var(--ui-scale)),10px); }
+.touch-controls { display:none; }
+.virtual-joystick {
+  width:clamp(102px,12vw,152px);
+  height:clamp(102px,12vw,152px);
+  position:relative;
+  border-radius:50%;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  pointer-events:auto;
 }
-
-/* V0.3 responsive presentation. A fixed 1440x810 simulation is never resized by the
-   browser: only the Phaser canvas / surrounding UI changes with the viewport. */
-html, body { width: 100%; }
-body { overflow-x: hidden; }
-.game-shell {
-  box-sizing: border-box;
-  width: min(1720px, calc(100% - 24px));
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  margin-inline: auto;
-  padding-inline: max(0px, env(safe-area-inset-left)) max(0px, env(safe-area-inset-right));
+.joystick-ring { position:absolute;inset:0;border-radius:50%;border:2px solid rgba(182,152,218,.83);background:radial-gradient(circle,rgba(95,66,122,.30),rgba(19,18,33,.87));box-shadow:0 7px 30px rgba(0,0,0,.65),inset 0 0 20px rgba(165,131,207,.1); }
+.joystick-ring::after { content:"";position:absolute;inset:28%;border:1px solid rgba(195,167,227,.4);border-radius:50%;pointer-events:none; }
+.joystick-thumb {
+  position:absolute;left:50%;top:50%;width:40%;height:40%;
+  border-radius:50%;transform:translate(calc(-50% + var(--joy-x,0px)),calc(-50% + var(--joy-y,0px)));
+  border:2px solid #e2c19c;
+  background:radial-gradient(circle at 35% 30%,#8b6d9e,#49365f 62%,#27203e);
+  box-shadow:0 3px 16px rgba(0,0,0,.6);pointer-events:none;
 }
-.topbar {
-  flex: none;
-  height: clamp(44px, 7dvh, 72px);
-  min-height: 44px;
-}
-.layout,
-.game-shell[data-ui-phase="RUNNING"] .layout,
-.game-shell[data-ui-phase="UPGRADING"] .layout,
-.game-shell[data-ui-phase="WON"] .layout,
-.game-shell[data-ui-phase="LOST"] .layout,
-.game-shell[data-ui-phase="RESULT"] .layout {
-  display: grid;
-  place-items: center;
-  position: relative;
-  flex: 1 1 auto;
-  align-content: center;
-  min-height: 0;
-  width: 100%;
-  gap: 0;
-}
-/* Use both available width and available screen height. At 21:9 the unused
-   sides become harmless ambient margin instead of cropping the 16:9 world. */
-.layout .arena,
-.game-shell[data-ui-phase="RUNNING"] .layout .arena,
-.game-shell[data-ui-phase="UPGRADING"] .layout .arena,
-.game-shell[data-ui-phase="WON"] .layout .arena,
-.game-shell[data-ui-phase="LOST"] .layout .arena,
-.game-shell[data-ui-phase="RESULT"] .layout .arena {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: min(100%, calc((100dvh - 114px) * 16 / 9));
-  min-width: 0;
-  height: auto;
-  aspect-ratio: 16 / 9;
-  justify-self: center;
-}
-#app { width: 100%; height: 100%; aspect-ratio: 16 / 9; overflow: hidden; }
-#app canvas { max-width: 100%; max-height: 100%; touch-action: none; }
-.site-footer { flex: none; padding: 8px 0 max(8px, env(safe-area-inset-bottom)); }
-/* Relative to the *arena* rather than viewport width: the title remains
-   proportional on a tablet, a 4K monitor and a small landscape phone. */
-.arena { container-type: inline-size; }
-.game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size: clamp(24px, 7.6cqw, 114px); }
-.game-shell[data-ui-screen="menu"] .hero-english { font-size: clamp(9px, 1.35cqw, 19px); }
-.game-shell[data-ui-screen="menu"] .hero-ornament { font-size: clamp(8px, 1.15cqw, 15px); margin-bottom: clamp(3px, 1.4cqw, 18px); }
-.game-shell[data-ui-screen="menu"] .lobby-hero { padding: 0 2%; top: 49%; }
-.game-shell[data-ui-screen="menu"] .menu-actions {
-  margin-top: clamp(10px, 5.4cqw, 78px);
-  grid-template-columns: repeat(2, minmax(0, min(36cqw, 310px)));
-  gap: clamp(8px, 1.5cqw, 24px);
-}
-.game-shell[data-ui-screen="menu"] .mode-button {
-  min-height: clamp(40px, 5.4cqw, 78px);
-  font-size: clamp(12px, 1.55cqw, 24px);
-  gap: clamp(4px, 1cqw, 16px);
-}
-.game-shell[data-ui-screen="menu"] .mode-button span { font-size: clamp(14px, 2cqw, 23px); }
-/* When viewport is short, dialogs must be scrollable independently of the
-   stage. Move focusable room controls out of a tiny clipped battlefield. */
-.game-shell[data-ui-screen="lobby"] #lobby-panel {
-  position: fixed;
-  z-index: 50;
-  top: 50%;
-  left: 50%;
-  width: min(680px, calc(100dvw - 28px));
-  max-height: calc(100dvh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-.game-shell[data-ui-screen="lobby"] .arena { isolation: auto; overflow: visible; }
-/* Keep the menu and result dialogs clickable without scrolling the document. */
-.game-shell[data-ui-screen="combat"] .upgrade-panel,
-.game-shell[data-ui-screen="combat"] .match-banner {
-  max-height: calc(100% - 16px);
-  overscroll-behavior: contain;
-}
-.touch-controls { display: none; }
-.touch-key, .touch-dash {
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  background: rgba(29, 24, 44, .89);
-  border: 1px solid rgba(188, 157, 222, .79);
-  border-radius: 13px;
-  color: #f4e7ff;
-  box-shadow: 0 3px 13px rgba(0,0,0,.42);
-  font-size: 19px;
-  font-weight: 750;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-.touch-key:active, .touch-key.is-pressed, .touch-dash:active {
-  background: rgba(106, 76, 141, .95);
-  border-color: #ffdc9b;
-}
-.touch-pad {
-  width: 150px;
-  height: 144px;
-  display: grid;
-  grid-template: repeat(3, 46px) / repeat(3, 46px);
-  gap: 3px;
-  pointer-events: auto;
-}
-.touch-up { grid-area: 1 / 2; }
-.touch-left { grid-area: 2 / 1; }
-.touch-down { grid-area: 3 / 2; }
-.touch-right { grid-area: 2 / 3; }
+.virtual-joystick.is-active .joystick-thumb { border-color:#ffe2a5;box-shadow:0 0 20px rgba(233,182,113,.35); }
 .touch-dash {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  color: #231720;
-  background: linear-gradient(#ffe3ae, #c99c61);
-  pointer-events: auto;
+  width:clamp(60px,7vw,83px);height:clamp(60px,7vw,83px);
+  pointer-events:auto;touch-action:none;user-select:none;
+  border-radius:50%;border:2px solid #e6c38a;
+  background:linear-gradient(150deg,#ffe5a8,#be8b52);color:#251b21;
+  font-size:clamp(13px,calc(17px * var(--ui-scale)),19px);font-weight:800;
+  box-shadow:0 8px 22px rgba(0,0,0,.5);
 }
-/* Coarse pointers include tablets and phones; no on-screen D-pad is shown
-   during room setup, level-up or result dialogs. */
-@media (pointer: coarse) {
+.touch-dash:active { transform:scale(.96);background:#ffedc6; }
+@media (pointer:coarse) {
+  .site-footer,.arena-footer { display:none; }
   .game-shell[data-ui-screen="combat"][data-ui-phase="RUNNING"] .touch-controls {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    position: absolute;
-    z-index: 6;
-    pointer-events: none;
-    inset: auto 0 max(10px, env(safe-area-inset-bottom)) 0;
-    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    display:flex;justify-content:space-between;align-items:flex-end;
+    width:100%;position:absolute;z-index:7;bottom:max(5px,env(safe-area-inset-bottom));
+    left:0;right:0;
+    padding-inline:max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right));
+    pointer-events:none;
   }
-  .arena-footer, .site-footer { display: none; }
-  .game-shell[data-ui-screen="combat"] .combat-dock { bottom: 7px; }
-  .touch-pad { transform-origin: bottom left; transform: scale(.83); }
-  .touch-dash { width: 68px; height: 68px; }
+  .layout { position:relative; }
+  .game-shell[data-ui-screen="combat"] .combat-dock { bottom:5px; }
 }
-@media (max-width: 850px) {
-  .game-shell { width: calc(100% - 12px); }
-  .topbar { height: 44px; min-height: 44px; }
-  .brand-sigil { width: 31px; height: 31px; font-size: 22px; }
-  .brand-en { font-size: 11px; }
-  .topbar-actions { gap: 6px; }
-  .topbar-actions .dev-tick { display: none; }
-  .text-button { padding: 7px; }
-  .site-footer { padding: 5px 0; }
-  .layout .arena, .game-shell[data-ui-phase="RUNNING"] .layout .arena,
-  .game-shell[data-ui-phase="UPGRADING"] .layout .arena,
-  .game-shell[data-ui-phase="WON"] .layout .arena,
-  .game-shell[data-ui-phase="LOST"] .layout .arena,
-  .game-shell[data-ui-phase="RESULT"] .layout .arena {
-    max-width: min(100%, calc((100dvh - 72px) * 16 / 9));
-  }
-  .game-shell[data-ui-screen="lobby"] #lobby-panel {
-    width: min(540px, calc(100dvw - 18px));
-    max-height: calc(100dvh - 18px);
-    padding: 12px 16px;
-  }
-  .game-shell[data-ui-screen="lobby"] #lobby-panel .room-details { margin-top: 8px; }
-  .game-shell[data-ui-screen="lobby"] #lobby-panel .dual-loadout { gap: 4px; margin: 7px 0; padding: 7px; }
-  .game-shell[data-ui-screen="combat"] .match-hud { top: 4px; left: 4px; right: 4px; }
-  .game-shell[data-ui-screen="combat"] .hud-score { gap: 2px; padding: 4px; }
-  .game-shell[data-ui-screen="combat"] .hud-player { padding: 4px; }
-  .game-shell[data-ui-screen="combat"] .hud-match { padding: 3px 8px 4px; }
-  .game-shell[data-ui-screen="combat"] .match-timer { font-size: clamp(15px, 2.5vw, 25px); }
+@media (max-width:850px) {
+  .game-shell { width:min(calc(100% - 12px),var(--stage-width)); }
+  .topbar { height:44px;min-height:44px; }
+  .brand-en { letter-spacing:.09em; }
+  .brand-sigil { width:32px;height:32px;font-size:22px; }
+  .topbar-actions { gap:5px; }
+  .topbar-actions .dev-tick { display:none; }
+  .text-button { padding:6px;font-size:10px; }
+  .app-version { font-size:9px; }
+  .match-hud { grid-template-columns:minmax(0,1fr) auto minmax(0,.7fr); }
+  .hud-score { padding:4px;gap:2px; }
+  .hud-score strong { font-size:9px; }
+  .hud-player { padding:4px; }
+  .hud-match { padding:4px 6px; }
+  .match-caption,.match-phase { font-size:8px; }
+  .health-track { height:7px; }
+  .xp-track { height:4px; }
+  .panel.entry-dialog { width:min(540px,calc(100dvw - 16px));max-height:calc(100dvh - 16px);padding:clamp(12px,2vw,18px); }
+  .entry-dialog .panel-heading h2 { margin:5px 0 12px; }
+  .entry-dialog .panel-body label { margin:7px 0 3px; }
 }
-@media (pointer: coarse) and (orientation: portrait) {
-  .game-shell { min-height: 100dvh; justify-content: flex-start; }
-  .layout,
-  .game-shell[data-ui-phase="RUNNING"] .layout,
-  .game-shell[data-ui-phase="UPGRADING"] .layout,
-  .game-shell[data-ui-phase="WON"] .layout,
-  .game-shell[data-ui-phase="LOST"] .layout,
-  .game-shell[data-ui-phase="RESULT"] .layout {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    justify-content: flex-start;
-    gap: 16px;
+@media (max-width:530px) {
+  .game-shell[data-ui-screen="menu"] .menu-actions {
+    width:min(84%,300px);
+    grid-template-columns:1fr;
+    gap:clamp(9px,2cqw,14px);
+    margin-top:clamp(15px,5cqw,27px);
   }
-  .layout .arena,
-  .game-shell[data-ui-phase="RUNNING"] .layout .arena,
-  .game-shell[data-ui-phase="UPGRADING"] .layout .arena,
-  .game-shell[data-ui-phase="WON"] .layout .arena,
-  .game-shell[data-ui-phase="LOST"] .layout .arena,
-  .game-shell[data-ui-phase="RESULT"] .layout .arena {
-    flex: none;
-    max-width: 100%;
+  .game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size:clamp(28px,calc(48px * var(--ui-scale)),54px); }
+  .game-shell[data-ui-screen="menu"] .mode-button { min-height:48px;font-size:clamp(13px,calc(18px * var(--ui-scale)),19px); }
+  .brand-en { font-size:10px; }
+  .connection-badge { padding:5px 7px;font-size:9px; }
+  .hud-score { display:none; }
+  .match-hud { grid-template-columns:minmax(0,1fr) auto; }
+  .match-caption { display:none; }
+  .upgrade-choices { grid-template-columns:1fr;gap:5px;margin-top:7px; }
+  .upgrade-choice { min-height:45px;padding:6px;gap:3px; }
+  .upgrade-description { min-height:0;font-size:10px; }
+  .upgrade-panel p:not(.modal-eyebrow),.result-summary { font-size:10px; }
+  .weapon-pair { grid-template-columns:1fr;gap:0; }
+}
+@media (max-width:720px) and (orientation:portrait) {
+  .game-shell { width:calc(100% - 12px); }
+  .game-shell .layout .arena {
+    aspect-ratio:auto;
+    height:var(--stage-height);
+    min-height:290px;
   }
+  .game-shell[data-ui-screen="menu"] .arena,
+  .game-shell[data-ui-screen="solo"] .arena,
+  .game-shell[data-ui-screen="lobby"] .arena {
+    background:radial-gradient(ellipse at 50% 49%,#253048 0%,#141b2a 40%,#0c0e1b 81%);
+  }
+  .game-shell[data-ui-screen="menu"] .lobby-hero { width:96%;max-width:96%;top:50%; }
+  .game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size:clamp(32px,11vw,65px);letter-spacing:.07em; }
+  .game-shell[data-ui-screen="menu"] .hero-english { font-size:clamp(10px,3vw,15px); }
+  .game-shell[data-ui-screen="menu"] .hero-ornament { font-size:10px; }
+  .game-shell[data-ui-screen="menu"] .mode-button { min-height:clamp(47px,7.5dvh,64px); }
   .game-shell[data-ui-screen="combat"][data-ui-phase="RUNNING"] .touch-controls {
-    position: relative;
-    inset: auto;
-    z-index: 5;
-    width: 100%;
-    min-height: 170px;
-    padding-inline: 15px;
-    align-items: center;
+    position:relative;inset:auto;bottom:auto;
+    z-index:7;
+    flex:0 0 155px;
+    height:155px;
+    width:100%;
+    padding-inline:max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right));
+    padding-bottom:8px;
+    align-items:center;
   }
-  .touch-pad { transform: none; }
-  .touch-dash { width: 78px; height: 78px; }
-  .game-shell[data-ui-screen="combat"] .combat-dock { bottom: 2px; }
-  .game-shell[data-ui-screen="menu"] .lobby-hero { top: 50%; }
-  .game-shell[data-ui-screen="combat"] .hud-score { display: none; }
-  .game-shell[data-ui-screen="combat"] .match-hud { grid-template-columns: minmax(0,1fr) auto; }
-  .game-shell[data-ui-screen="combat"] .upgrade-panel,
-  .game-shell[data-ui-screen="combat"] .match-banner {
-    width: 97%;
-    max-height: 95%;
-    padding: 7px;
-  }
-  .upgrade-choices { grid-template-columns: 1fr; gap: 4px; margin-top: 5px; }
-  .upgrade-choice { min-height: 34px; padding: 5px 7px; gap: 2px; }
-  .upgrade-description { min-height: 0; }
+  .virtual-joystick { width:130px;height:130px; }
+  .touch-dash { width:74px;height:74px; }
+  .game-shell[data-ui-screen="combat"] .combat-dock { bottom:8px;transform:translateX(-50%) scale(.9);transform-origin:bottom center; }
+  .game-shell[data-ui-screen="combat"] .hud-score { display:none; }
+  .game-shell[data-ui-screen="combat"] .match-hud { grid-template-columns:minmax(0,1fr) auto; }
+  .game-shell[data-ui-screen="combat"] .arena-vignette { box-shadow:inset 0 0 50px 13px rgba(5,7,13,.4); }
 }
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 480px) {
-  .game-shell { width: calc(100% - 8px); }
-  .topbar { height: 35px; min-height: 35px; }
-  .brand-sigil { width: 27px; height: 27px; font-size: 19px; }
-  .layout .arena, .game-shell[data-ui-phase="RUNNING"] .layout .arena,
-  .game-shell[data-ui-phase="UPGRADING"] .layout .arena,
-  .game-shell[data-ui-phase="WON"] .layout .arena,
-  .game-shell[data-ui-phase="LOST"] .layout .arena,
-  .game-shell[data-ui-phase="RESULT"] .layout .arena {
-    max-width: min(100%, calc((100dvh - 43px) * 16 / 9));
-  }
-  .touch-pad { transform: scale(.72); }
-  .touch-dash { width: 56px; height: 56px; font-size: 14px; }
-  .game-shell[data-ui-screen="combat"] .combat-dock { transform: translateX(-50%) scale(.78); transform-origin: bottom center; }
-  .game-shell[data-ui-screen="menu"] .lobby-hero { top: 48%; }
+@media (pointer:coarse) and (orientation:landscape) and (max-height:480px) {
+  .brand-sigil { width:27px;height:27px;font-size:18px; }
+  .game-shell .topbar { height:36px;min-height:36px; }
+  .game-shell[data-ui-screen="combat"][data-ui-phase="RUNNING"] .touch-controls { bottom:4px; }
+  .virtual-joystick { width:clamp(82px,22dvh,112px);height:clamp(82px,22dvh,112px); }
+  .touch-dash { width:56px;height:56px;font-size:13px; }
+  .game-shell[data-ui-screen="combat"] .combat-dock { transform:translateX(-50%) scale(.75);transform-origin:bottom center; }
+  .game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size:clamp(27px,calc(58px * var(--ui-scale)),66px); }
+  .game-shell[data-ui-screen="menu"] .menu-actions { margin-top:12px; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .mode-button, .touch-key, .touch-dash { transition: none; }
+@media (max-height:360px) and (orientation:landscape) {
+  .game-shell { min-height:310px; }
+  .game-shell .layout .arena { min-height:235px;aspect-ratio:16/9; }
+  .game-shell[data-ui-screen="menu"] .hero-ornament { margin-bottom:3px; }
+  .game-shell[data-ui-screen="menu"] .lobby-hero h1 { font-size:clamp(25px,calc(52px * var(--ui-scale)),54px); }
+  .game-shell[data-ui-screen="menu"] .menu-actions { margin-top:10px; }
+  .game-shell[data-ui-screen="menu"] .mode-button { min-height:42px; }
 }
-
-/* v0.1.3: keep the whole frame (header, arena and footer) at one responsive
-   width. The stage is 16:9 and constrained by BOTH viewport dimensions. */
-.game-shell {
-  width: min(calc(100vw - 24px), 1720px, calc((100dvh - 112px) * 16 / 9));
-  max-width: 100%;
-  margin-inline: auto;
-}
-.game-shell .layout .arena,
-.game-shell[data-ui-phase] .layout .arena {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-.game-shell .topbar, .game-shell .layout, .game-shell .site-footer { width: 100%; }
-/* Explicit [hidden] guard: tab/panel state must win over old display rules. */
-#lobby-panel[hidden], #solo-panel[hidden],
-#room-create-form[hidden], #room-join-form[hidden],
-#room-entry[hidden], #room-details[hidden],
-#loadout-panel[hidden], #solo-pending[hidden] { display: none !important; }
-.entry-dialog {
-  position: fixed;
-  z-index: 50;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(610px, calc(100dvw - 24px));
-  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  padding: 24px 30px;
-  border-radius: 12px;
-  border: 1px solid #71577d;
-  background: linear-gradient(155deg, rgba(30,25,44,.99), rgba(10,14,24,.99));
-  box-shadow: 0 0 0 100vmax rgba(3,5,12,.66), 0 24px 80px rgba(0,0,0,.7);
-}
-.game-shell[data-ui-screen="solo"] #solo-panel,
-.game-shell[data-ui-screen="lobby"] #lobby-panel { display: block; }
-.entry-dialog .panel-heading { position: relative; }
-.entry-dialog .panel-heading h2 { margin: 5px 0 20px; }
-.entry-dialog .panel-body label { display: block; margin: 10px 0 6px; }
-.entry-dialog .panel-body input, .entry-dialog .panel-body select { box-sizing: border-box; }
-.entry-dialog .menu-back { top: 0; }
-.entry-subtitle { font-size: 15px; color: #f3dbad; margin: 21px 0 6px; }
-.entry-note { color: #a99eb9; font-size: 11px; line-height: 1.6; margin: 11px 0; }
-.entry-primary { width: 100%; margin: 16px 0 0; min-height: 46px; }
-.weapon-pair { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-.weapon-pair label { font-size: 12px; }
-.weapon-pair select { display: block; width: 100%; margin-top: 7px; padding: 10px; background: #131b2a; border: 1px solid #866d96; border-radius: 7px; color: #f5e5d8; min-height: 43px; }
-.room-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 15px; background: rgba(8,11,22,.73); border: 1px solid #554861; border-radius: 8px; }
-.room-tab { min-height: 43px; border-radius: 6px; background: transparent; color: #bfb1ca; border: 1px solid transparent; font-size: 13px; font-weight: 700; }
-.room-tab[aria-selected="true"] { background: linear-gradient(140deg, #45314e, #27223a); color: #f4ddb3; border-color: #9c7a91; }
-.room-tab:focus-visible, .entry-dialog button:focus-visible { outline: 2px solid #f7d79b; outline-offset: 2px; }
-.entry-dialog .room-details { margin-top: 0; padding-top: 0; border-top: none; }
-.entry-dialog .room-code { grid-template-columns: minmax(0,1fr) auto; }
-.entry-dialog .room-code input {
-  min-width: 0; width: 100%; font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  background: #101421; border: 1px solid #766080; border-radius: 5px; font-size: 13px;
-  color: #f1d8b5; padding: 8px; user-select: text;
-}
-.entry-dialog .room-code .copy-button { min-height: 38px; padding: 6px 13px; }
-.entry-dialog .dual-loadout { margin: 12px 0; }
-.entry-dialog .dual-loadout .outline-button { flex: auto; width: 100%; margin: 5px 0; }
-.entry-dialog .status { min-height: 15px; margin-top: 9px; }
-@media (max-width: 850px) {
-  .game-shell { width: min(calc(100vw - 12px), calc((100dvh - 72px) * 16 / 9)); }
-  .entry-dialog { width: min(540px, calc(100dvw - 18px)); max-height: calc(100dvh - 18px); padding: 16px; }
-  .entry-dialog .panel-heading h2 { margin-bottom: 12px; }
-}
-@media (pointer: coarse) and (orientation: portrait) {
-  .game-shell { width: calc(100vw - 12px); }
-}
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 480px) {
-  .game-shell { width: min(calc(100vw - 8px), calc((100dvh - 43px) * 16 / 9)); }
-  .entry-dialog { max-height: calc(100dvh - 12px); padding: 9px 14px; }
-  .entry-dialog .panel-heading h2 { margin: 2px 0 8px; font-size: 18px; }
-  .entry-dialog .entry-primary { min-height: 35px; margin-top: 8px; }
-  .entry-dialog .panel-body label { margin: 5px 0 3px; }
-  .entry-dialog .room-tabs { margin-bottom: 5px; }
+@media (prefers-reduced-motion:reduce) {
+  .mode-button,.gold-button,.bar-fill { transition:none!important; }
 }

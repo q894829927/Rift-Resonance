@@ -15,7 +15,7 @@ test("menu uses a full-width stage with accessible single and multiplayer entry"
   assert.match(html, /单人游戏/);
   assert.match(html, /多人游戏/);
   assert.doesNotMatch(html, /<aside/);
-  assert.match(css, /\.game-shell\[data-ui-screen="lobby"\] #lobby-panel/);
+  assert.match(css, /#lobby-panel\[hidden\]/);
   assert.match(css, /\.game-shell\[data-ui-screen="menu"\] \.lobby-hero/);
   assert.match(main, /autoStartSolo\(view\)/);
   assert.match(main, /connection\.selectLoadout\(soloSelectedWeapons\)/);

@@ -2,33 +2,37 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const html = readFileSync(new URL("../apps/client/index.html", import.meta.url), "utf8");
-const css = readFileSync(new URL("../apps/client/src/style.css", import.meta.url), "utf8");
-const client = readFileSync(new URL("../apps/client/src/main.ts", import.meta.url), "utf8");
+const html=readFileSync(new URL("../apps/client/index.html",import.meta.url),"utf8");
+const css=readFileSync(new URL("../apps/client/src/style.css",import.meta.url),"utf8");
+const main=readFileSync(new URL("../apps/client/src/main.ts",import.meta.url),"utf8");
 
-test("responsive shell has safe viewport and touchscreen action controls", () => {
-  assert.match(html, /viewport-fit=cover/);
-  for (const id of ["touch-controls", "touch-dash", "start-solo", "start-multi", "lobby-panel"]) {
-    assert.ok(html.includes(`id="${id}"`), id);
-  }
-  for (const value of ["up", "down", "left", "right"]) {
-    assert.match(html, new RegExp('data-touch-dir="' + value + '"'));
-  }
-  assert.match(css, /100dvh/);
-  assert.match(css, /safe-area-inset-bottom/);
-  assert.match(css, /orientation: portrait/);
-  assert.match(css, /orientation: landscape/);
-  assert.match(css, /pointer: coarse/);
-  assert.match(css, /aspect-ratio: 16 \/ 9/);
+test("menu and combat share one scene sizing authority with portrait reflow",()=>{
+  assert.match(html,/viewport-fit=cover/);
+  for(const id of ["start-solo","start-multi","lobby-panel","virtual-joystick","joystick-thumb","touch-dash"])
+    assert.ok(html.includes('id="'+id+'"'),id);
+  assert.doesNotMatch(html,/data-touch-dir=/);
+  assert.match(css,/--stage-width/);
+  assert.match(css,/--stage-height/);
+  assert.match(css,/--ui-scale/);
+  assert.match(css,/container-type:inline-size/);
+  assert.match(css,/@media \(max-width:720px\) and \(orientation:portrait\)/);
+  assert.match(css,/grid-template-columns:1fr/);
+  assert.match(css,/@media \(max-height:360px\)/);
+  assert.match(css,/safe-area-inset-bottom/);
+  assert.match(main,/visualViewport\?\.width/);
+  assert.match(main,/visualViewport\?\.height/);
+  assert.match(main,/scheduleResponsiveFrame/);
 });
 
-test("touch controls are gated to active combat and release on cancellation", () => {
-  assert.match(css, /data-ui-screen="combat"\]\[data-ui-phase="RUNNING"/);
-  assert.match(client, /pointerdown/);
-  assert.match(client, /pointerup/);
-  assert.match(client, /pointercancel/);
-  assert.match(client, /lostpointercapture/);
-  assert.match(client, /heldTouchPointers\.clear\(\)/);
-  assert.match(client, /connection\.queueDash\(\)/);
-  assert.match(client, /movementAxis\(/);
+test("touch input uses a pointer-captured joystick and resets before upgrades",()=>{
+  assert.match(css,/#virtual-joystick|\.virtual-joystick/);
+  assert.match(css,/data-ui-screen="combat"\]\[data-ui-phase="RUNNING"/);
+  assert.match(main,/joystick\.setPointerCapture\(event.pointerId\)/);
+  assert.match(main,/joystick\.addEventListener\("pointermove"/);
+  assert.match(main,/joystick\.addEventListener\("pointercancel"/);
+  assert.match(main,/joystick\.addEventListener\("lostpointercapture"/);
+  assert.match(main,/activeJoystickPointer = null/);
+  assert.match(main,/window\.addEventListener\("blur", releaseKeys\)/);
+  assert.match(main,/connection\.queueDash\(\)/);
+  assert.match(main,/sampleJoystick\(dx,dy,radius\)/);
 });

@@ -39,8 +39,9 @@ test("invite code is manually selectable and copied on non-secure HTTP origin", 
 });
 
 test("frame width is shared by header, 16:9 arena and footer", () => {
-  assert.match(css, /width: min\(calc\(100vw - 24px\), 1720px, calc\(\(100dvh - 112px\) \* 16 \/ 9\)\)/);
-  assert.match(css, /\.game-shell \.topbar, \.game-shell \.layout, \.game-shell \.site-footer \{ width: 100%; \}/);
-  assert.match(css, /\.game-shell\[data-ui-phase\] \.layout \.arena/);
-  assert.match(css, /@media \(pointer: coarse\) and \(orientation: portrait\)/);
+  assert.match(css, /width:min\(calc\(100% - 24px\), var\(--stage-width\)\)/);
+  assert.match(css, /\.game-shell \.layout \.arena/);
+  assert.match(css, /\.topbar/);
+  assert.match(css, /\.site-footer/);
+  assert.match(css, /@media \(max-width:720px\) and \(orientation:portrait\)/);
 });

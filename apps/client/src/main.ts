@@ -14,7 +14,7 @@ import {
   createM1DamageNumber,
   updateM1HealthBar
 } from "./art/m1Visuals.js";
-import { APP_VERSION, formatAppVersion, MAX_ROOM_PLAYERS, movementAxis, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
+import { APP_VERSION, formatAppVersion, MAX_ROOM_PLAYERS, movementAxis, sampleJoystick, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
 import {
   LobbyConnection,
   getServerEndpoint,
@@ -463,6 +463,41 @@ function element<T extends HTMLElement>(id: string): T {
   return e as T;
 }
 const uiShell = element<HTMLElement>("game-shell");
+
+// One layout authority for the game frame and its UI scale. VisualViewport
+// accounts for browser chrome/soft keyboards; logical combat remains 1440x810.
+function updateResponsiveFrame(): void {
+  const width = Math.max(240, window.visualViewport?.width ?? window.innerWidth);
+  const height = Math.max(220, window.visualViewport?.height ?? window.innerHeight);
+  const portrait = width <= 720 && height > width;
+  const compact = width <= 850 || height < 500;
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const controlsHeight = coarse && portrait && uiShell.dataset.uiScreen === "combat" &&
+    uiShell.dataset.uiPhase === "RUNNING" ? 160 : 0;
+  const header = compact ? 44 : 56;
+  const footer = coarse ? 0 : 24;
+  const safeWidth = compact ? 12 : 24;
+  const availableHeight = Math.max(160, height - header - footer - (compact ? 12 : 18) - controlsHeight);
+  const stageWidth = portrait ? width - safeWidth : Math.min(width - safeWidth, availableHeight * 16 / 9);
+  const stageHeight = portrait ? availableHeight : stageWidth * 9 / 16;
+  const uiScale = Math.max(0.72, Math.min(1.32, Math.min(stageWidth / 1240, stageHeight / 700)));
+  uiShell.style.setProperty("--stage-width", Math.max(220, stageWidth).toFixed(2) + "px");
+  uiShell.style.setProperty("--stage-height", stageHeight.toFixed(2) + "px");
+  uiShell.style.setProperty("--ui-scale", uiScale.toFixed(3));
+}
+let resizeRequest = 0;
+function scheduleResponsiveFrame(): void {
+  if (resizeRequest) return;
+  resizeRequest = requestAnimationFrame(() => {
+    resizeRequest = 0;
+    updateResponsiveFrame();
+  });
+}
+window.addEventListener("resize", scheduleResponsiveFrame, {passive: true});
+window.visualViewport?.addEventListener("resize", scheduleResponsiveFrame, {passive: true});
+window.addEventListener("orientationchange", scheduleResponsiveFrame);
+scheduleResponsiveFrame();
+
 // Room controls are a modal above the game, not confined to the arena's
 // clipping and layout containment. This keeps small-screen forms scrollable.
 uiShell.append(element<HTMLElement>("lobby-panel"));
@@ -556,9 +591,13 @@ function selectRoomTab(mode: "create" | "join"): void {
 
 function refreshScreen(): void {
   const inMatch = displayedView !== null && displayedView.phase !== "LOBBY";
-  uiShell.dataset.uiScreen = inMatch ? "combat" :
+  const nextScreen = inMatch ? "combat" :
     entryMode === "single" ? "solo" :
     entryMode === "multi" ? "lobby" : "menu";
+  if (uiShell.dataset.uiScreen !== nextScreen) {
+    uiShell.dataset.uiScreen = nextScreen;
+    scheduleResponsiveFrame();
+  }
   soloPending.hidden = entryMode !== "single" || !soloStarting || inMatch;
   soloPanel.hidden = entryMode !== "single" || soloStarting || inMatch;
   element<HTMLElement>("lobby-panel").hidden = entryMode !== "multi" || inMatch;
@@ -634,7 +673,10 @@ function refreshControls(): void {
 }
 function render(view: LobbyView | null): void {
   displayedView = view;
+  const previousPhase = uiShell.dataset.uiPhase;
   uiShell.dataset.uiPhase = view?.phase ?? "LOBBY";
+  if (previousPhase !== uiShell.dataset.uiPhase) scheduleResponsiveFrame();
+  if (view?.phase !== "RUNNING") centerJoystick();
   if (!view) tickMonitor.textContent = "Tick --";
   connected = view !== null;
   if (!view) loadoutUiInitialized = false;
@@ -804,60 +846,68 @@ function updateMatchBanner(view: LobbyView | null): void {
 }
 /** Keyboard state is sampled at the independent 20 Hz input sender. */
 const heldKeys = new Set<string>();
-type TouchDirection = "left" | "right" | "up" | "down";
-const heldTouchPointers = new Map<number, TouchDirection>();
-function touchHeld(direction: TouchDirection): boolean {
-  return [...heldTouchPointers.values()].includes(direction);
-}
+const joystick = element<HTMLElement>("virtual-joystick");
+const joystickThumb = element<HTMLElement>("joystick-thumb");
+let activeJoystickPointer: number | null = null;
+let joystickAxes: {moveX:-1|0|1;moveY:-1|0|1} = {moveX:0,moveY:0};
 function updateMovement(): void {
   connection.setMoveDirection({
-    moveX: movementAxis(heldKeys.has("KeyA") || heldKeys.has("ArrowLeft") || touchHeld("left"),
-      heldKeys.has("KeyD") || heldKeys.has("ArrowRight") || touchHeld("right")),
-    moveY: movementAxis(heldKeys.has("KeyW") || heldKeys.has("ArrowUp") || touchHeld("up"),
-      heldKeys.has("KeyS") || heldKeys.has("ArrowDown") || touchHeld("down"))
+    moveX: movementAxis(heldKeys.has("KeyA") || heldKeys.has("ArrowLeft") || joystickAxes.moveX < 0,
+      heldKeys.has("KeyD") || heldKeys.has("ArrowRight") || joystickAxes.moveX > 0),
+    moveY: movementAxis(heldKeys.has("KeyW") || heldKeys.has("ArrowUp") || joystickAxes.moveY < 0,
+      heldKeys.has("KeyS") || heldKeys.has("ArrowDown") || joystickAxes.moveY > 0)
   });
+}
+function centerJoystick(): void {
+  activeJoystickPointer = null;
+  joystickAxes = {moveX:0,moveY:0};
+  joystickThumb.style.setProperty("--joy-x", "0px");
+  joystickThumb.style.setProperty("--joy-y", "0px");
+  joystick.classList.remove("is-active");
+  updateMovement();
 }
 function releaseKeys(): void {
   heldKeys.clear();
-  heldTouchPointers.clear();
-  document.querySelectorAll(".touch-key.is-pressed").forEach(button => button.classList.remove("is-pressed"));
+  centerJoystick();
+}
+function moveJoystick(event: PointerEvent): void {
+  if (event.pointerId !== activeJoystickPointer) return;
+  const bounds = joystick.getBoundingClientRect();
+  const radius = Math.min(bounds.width, bounds.height) * .30;
+  const dx = event.clientX - (bounds.left + bounds.width/2);
+  const dy = event.clientY - (bounds.top + bounds.height/2);
+  const sample = sampleJoystick(dx,dy,radius);
+  joystickAxes = {moveX:sample.moveX,moveY:sample.moveY};
+  joystickThumb.style.setProperty("--joy-x", sample.x.toFixed(1)+"px");
+  joystickThumb.style.setProperty("--joy-y", sample.y.toFixed(1)+"px");
   updateMovement();
 }
-// One active direction per pointer; supports diagonal D-pad touches and an
-// independent dash finger. Releases are handled even after leaving a button.
-document.querySelectorAll<HTMLButtonElement>("[data-touch-dir]").forEach(button => {
-  const direction = button.dataset.touchDir as TouchDirection;
-  button.addEventListener("pointerdown", event => {
-    if (!connection.connected || displayedView?.phase !== "RUNNING") return;
-    event.preventDefault();
-    button.setPointerCapture(event.pointerId);
-    heldTouchPointers.set(event.pointerId, direction);
-    button.classList.add("is-pressed");
-    updateMovement();
-  });
-  const release = (event: PointerEvent): void => {
-    if (!heldTouchPointers.has(event.pointerId)) return;
-    event.preventDefault();
-    heldTouchPointers.delete(event.pointerId);
-    button.classList.toggle("is-pressed",
-      [...heldTouchPointers.values()].includes(direction));
-    updateMovement();
-  };
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("lostpointercapture", release);
-  button.addEventListener("contextmenu", event => event.preventDefault());
+joystick.addEventListener("pointerdown", event => {
+  if (!connection.connected || displayedView?.phase !== "RUNNING" || activeJoystickPointer !== null) return;
+  event.preventDefault();
+  activeJoystickPointer = event.pointerId;
+  joystick.setPointerCapture(event.pointerId);
+  joystick.classList.add("is-active");
+  moveJoystick(event);
 });
+joystick.addEventListener("pointermove", event => {
+  if (event.pointerId !== activeJoystickPointer) return;
+  event.preventDefault();
+  moveJoystick(event);
+});
+function releaseJoystickPointer(event: PointerEvent): void {
+  if (event.pointerId !== activeJoystickPointer) return;
+  event.preventDefault();
+  centerJoystick();
+}
+joystick.addEventListener("pointerup", releaseJoystickPointer);
+joystick.addEventListener("pointercancel", releaseJoystickPointer);
+joystick.addEventListener("lostpointercapture", releaseJoystickPointer);
+joystick.addEventListener("contextmenu", event => event.preventDefault());
 document.getElementById("touch-dash")?.addEventListener("pointerdown", event => {
   if (!connection.connected || displayedView?.phase !== "RUNNING") return;
   event.preventDefault();
   connection.queueDash();
-});
-window.addEventListener("pointerup", event => {
-  if (heldTouchPointers.delete(event.pointerId)) {
-    document.querySelectorAll(".touch-key.is-pressed").forEach(button => button.classList.remove("is-pressed"));
-    updateMovement();
-  }
 });
 window.addEventListener("keydown", event => {
   if (!connection.connected || event.repeat && heldKeys.has(event.code)) return;
@@ -909,7 +959,9 @@ const connection = new LobbyConnection(getServerEndpoint(), (view) => {
     const next = {...previous, ...match};
     displayedView = next;
     uiShell.dataset.uiPhase = next.phase;
+    if (next.phase !== "RUNNING" && previous.phase === "RUNNING") releaseKeys();
     refreshScreen();
+    if (next.phase !== previous.phase) scheduleResponsiveFrame();
     updateHud(next);
     // The server tick is 20 Hz: do not recreate lobby rows or upgrade buttons
     // every tick, which would steal keyboard focus during upgrade selection.
