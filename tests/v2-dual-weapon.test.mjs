@@ -259,10 +259,13 @@ test("V2 cross-player ember is consumed only once by the qualifying owner", () =
     startedTick:n,startedWorldTick:w.tick,collapseTick:n+5,expireTick:n+9,
     phase:"active",absorbedEmbers:0,essenceCharges:0,redirectsUsed:0
   });
-  w.embers.set("teammate",{id:"teammate",ownerId:"b",x:owner.x,y:owner.y,expireTick:n+20});
+  w.embers.set("teammate",{id:"teammate",ownerId:"b",x:owner.x+25,y:owner.y-15,expireTick:n+20});
   stepCombatWorld(w,50);
   assert.equal(w.voidFields.get("f").absorbedEmbers,1);
   assert.equal(w.embers.has("teammate"),false);
+  const absorbed=w.events.find(e=>e.type==="weapon.ember_absorbed");
+  assert.equal(absorbed?.x,owner.x+25);
+  assert.equal(absorbed?.y,owner.y-15);
   stepCombatWorld(w,50);
   assert.equal(w.voidFields.get("f").absorbedEmbers,1);
 });
