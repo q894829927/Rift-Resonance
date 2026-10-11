@@ -128,8 +128,14 @@ export class DamageSystem {
         const difference=Math.atan2(Math.sin(desired-current),Math.cos(desired-current));
         const turn=Math.max(-COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,
           Math.min(COMBAT_V2_FIREBALL_MAX_TURN_RADIANS,difference));
-        flight.headingX=Math.cos(current+turn);
-        flight.headingY=Math.sin(current+turn);
+        // The same shot never U-turns behind its original launch direction.
+        // A space anchor is allowed to reset that direction on an intentional redirect.
+        const origin=Math.atan2(flight.originY,flight.originX);
+        const angle=current+turn;
+        const deviation=Math.atan2(Math.sin(angle-origin),Math.cos(angle-origin));
+        const bounded=origin+Math.max(-Math.PI/2.4,Math.min(Math.PI/2.4,deviation));
+        flight.headingX=Math.cos(bounded);
+        flight.headingY=Math.sin(bounded);
       }
     }
     const x=projectile.x,y=projectile.y;
@@ -374,6 +380,16 @@ export class DamageSystem {
       if(!next)continue;
       projectile.targetEnemyId=next.id;
       projectile.voidRedirected=true;
+      if(projectile.fireballFlight) {
+        const dx=next.x-projectile.x,dy=next.y-projectile.y;
+        const length=Math.hypot(dx,dy);
+        if(length>0) {
+          projectile.fireballFlight.originX=dx/length;
+          projectile.fireballFlight.originY=dy/length;
+          projectile.fireballFlight.headingX=dx/length;
+          projectile.fireballFlight.headingY=dy/length;
+        }
+      }
       if ((owner.weaponLevels.get(VOID_ORB_WEAPON_ID)??1)>=3) {
         const angle=Math.atan2(projectile.y-field.y,projectile.x-field.x);
         projectile.voidAnchorOrbit={centerX:field.x,centerY:field.y,angle,remainingTicks:4};

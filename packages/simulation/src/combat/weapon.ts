@@ -104,7 +104,9 @@ export class WeaponSystem {
       y: player.y,
       ...(world.ruleset === "dual_v2" ? {
         fireballFlight: {headingX:distance>0?dx/distance:1,
-          headingY:distance>0?dy/distance:0,remainingTicks:32}
+          headingY:distance>0?dy/distance:0,
+          originX:distance>0?dx/distance:1,originY:distance>0?dy/distance:0,
+          remainingTicks:32}
       } : {})
     });
     player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, FIREBALL_WEAPON_ID));

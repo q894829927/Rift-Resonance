@@ -76,7 +76,7 @@ export interface VoidFieldView {
   essence: number;
   embers: number;
 }
-export interface EmberView { x: number; y: number; }
+export interface EmberView { x: number; y: number; remainingTicks: number; }
 export interface CombatEventView {
   id: string;
   tick: number;
@@ -419,7 +419,7 @@ export class LobbyConnection {
       voidFields.set(id,{kind:f.kind,phase:f.phase,x:f.x,y:f.y,radius:f.radius,essence:f.essence,embers:f.embers});
     }
     const embers = new Map<string, EmberView>();
-    for (const [id, e] of state.embers ?? []) embers.set(id,{x:e.x,y:e.y});
+    for (const [id, e] of state.embers ?? []) embers.set(id,{x:e.x,y:e.y,remainingTicks:e.remainingTicks ?? 0});
     const events: CombatEventView[] = [];
     for (const [id, event] of state.events ?? []) {
       if (this.seenEventIds.has(id)) continue;
