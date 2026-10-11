@@ -8,7 +8,9 @@
  */
 export const FIREBALL_TURN_PER_TICK = Math.PI / 16; // 11.25 degrees at 20 Hz
 export const FIREBALL_CONE_HALF_ANGLE = Math.PI * 0.4; // +/- 72 degrees
-export const FIREBALL_FLIGHT_LIFETIME_TICKS = 32;
+export const FIREBALL_FLIGHT_LIFETIME_TICKS = 24;
+/** V2 fireball outruns the 500 units/s dash to remain visibly in front. */
+export const FIREBALL_V2_SPEED = 600;
 
 export interface FireballHeading {
   headingX: number;

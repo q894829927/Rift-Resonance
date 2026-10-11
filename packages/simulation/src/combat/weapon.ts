@@ -1,4 +1,4 @@
-import { createFireballHeading } from "./fireballTrajectory.js";
+import { createFireballHeading, FIREBALL_V2_SPEED } from "./fireballTrajectory.js";
 import {
   FIREBALL_PROJECTILE_ASSET_ID,
   FIREBALL_WEAPON_ID,
@@ -72,7 +72,7 @@ export class WeaponSystem {
       sourcePlayerId: player.sessionId,
       targetEnemyId: target.id,
       damage: Math.max(1, Math.round(getWeaponDamage(player, VOID_ORB_WEAPON_ID) * 0.25)),
-      speed: definition.projectileSpeed,
+      speed: world.ruleset === "dual_v2" ? FIREBALL_V2_SPEED : definition.projectileSpeed,
       radius: definition.projectileRadius,
       x: player.x, y: player.y,
       voidOrbFlight: { targetX: target.x, targetY: target.y, hitEnemies: new Set() }
