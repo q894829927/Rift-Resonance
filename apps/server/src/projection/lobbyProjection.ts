@@ -126,6 +126,7 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
   target.directionX = projectile.fireballFlight?.headingX ?? 0;
   target.directionY = projectile.fireballFlight?.headingY ?? 0;
   target.speed = projectile.fireballFlight ? projectile.speed : 0;
+  target.split = projectile.fireballSplitChild === true;
   target.x = projectile.x;
   target.y = projectile.y;
 }

@@ -1,4 +1,4 @@
-import { stepFireballFlight, fireballSweptHitFraction, redirectFireballFlight } from "./fireballTrajectory.js";
+import { createFireballHeading, stepFireballFlight, fireballSweptHitFraction, redirectFireballFlight } from "./fireballTrajectory.js";
 import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID, VOID_ORB_WEAPON_ID } from "@rift/shared";
 import {
   COMBAT_HIT_PROTECTION_TICKS,
@@ -54,7 +54,8 @@ export class DamageSystem {
 
   step(world: CombatWorld, dtSeconds: number): void {
     if (world.phase !== "RUNNING") return;
-    for (const [projectileId, projectile] of world.projectiles) {
+    // Children spawned during a hit begin travel on the NEXT fixed tick.
+    for (const [projectileId, projectile] of [...world.projectiles]) {
       if (projectile.weaponId === SPIN_BLADE_WEAPON_ID && projectile.returningBlade) {
         this.advanceReturningBlade(world, projectile, dtSeconds);
         continue;
@@ -153,7 +154,8 @@ export class DamageSystem {
     const start={x:projectile.x,y:projectile.y};
     const target=world.enemies.get(projectile.targetEnemyId);
     const step=stepFireballFlight(flight,start,target?.alive?target:null,projectile.speed,dt);
-    const hits=[...world.enemies.values()].filter(enemy=>enemy.alive)
+    const hits=[...world.enemies.values()].filter(enemy=>
+      enemy.alive && enemy.id !== projectile.fireballSplitOriginEnemyId)
       .map(enemy=>({
         enemy,
         t:fireballSweptHitFraction(start,step,enemy,enemy.collisionRadius+projectile.radius)
@@ -185,6 +187,12 @@ export class DamageSystem {
 
   private resolveFireballImpact(world:CombatWorld,projectile:CombatProjectile,
     target:CombatEnemy,impactX:number,impactY:number):void {
+    const owner=world.players.get(projectile.sourcePlayerId);
+    if (world.ruleset === "dual_v2" && owner &&
+        owner.weaponBranches.get(FIREBALL_WEAPON_ID) === "split" &&
+        !projectile.fireballSplitChild) {
+      this.spawnSplitFireballs(world, projectile, target, impactX, impactY, owner);
+    }
         if ( world.ruleset === "dual_v2" && projectile.weaponId === FIREBALL_WEAPON_ID &&
             world.players.get(projectile.sourcePlayerId)?.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember") {
           const emberId = "ember:" + world.nextFieldSequence++;
@@ -224,6 +232,38 @@ export class DamageSystem {
             });
           }
         }
+  }
+
+  /** II creates two, III creates three bounded non-recursive 35%-damage
+   * sparks on any legitimate direct hit. Child projectiles are authoritative.
+   * A lonely boss cannot be immediately re-hit by a spark born inside it. */
+  private spawnSplitFireballs(world:CombatWorld, projectile:CombatProjectile,
+    victim:CombatEnemy, x:number, y:number, owner:CombatPlayer):void {
+    const high=(owner.weaponLevels.get(FIREBALL_WEAPON_ID) ?? 1) >= 3;
+    const offsets=high ? [-0.34,0,0.34] : [-0.24,0.24];
+    const candidates=[...world.enemies.values()].filter(enemy=>enemy.alive &&
+      enemy.id !== victim.id && distanceSquared(enemy,{x,y}) <= 280 ** 2)
+      .sort((a,b)=>distanceSquared(a,{x,y})-distanceSquared(b,{x,y}) ||
+        a.id.localeCompare(b.id));
+    const baseHeading=projectile.fireballFlight;
+    const fallbackAngle=Math.atan2(baseHeading?.headingY ?? 0,baseHeading?.headingX ?? 1);
+    for(let i=0;i<offsets.length;i++) {
+      const target=candidates.length ? candidates[i % candidates.length]! : null;
+      const targetAngle=target ? Math.atan2(target.y-y,target.x-x) : fallbackAngle;
+      const angle=targetAngle+offsets[i]!;
+      const childId="projectile:split-fireball:"+world.nextProjectileSequence++;
+      world.projectiles.set(childId,{
+        id:childId,weaponId:FIREBALL_WEAPON_ID,sourcePlayerId:projectile.sourcePlayerId,
+        targetEnemyId:target?.id ?? "",damage:Math.max(1,Math.round(projectile.damage*0.35)),
+        speed:projectile.speed*0.86,radius:5,x,y,
+        fireballFlight:createFireballHeading(Math.cos(angle),Math.sin(angle)),
+        fireballSplitChild:true,fireballSplitOriginEnemyId:victim.id
+      });
+    }
+    emitCombatEvent(world,{
+      type:"weapon.fireball_split",sourceId:owner.sessionId,targetId:victim.id,
+      assetId:FIREBALL_WEAPON_ID,x,y,amount:offsets.length
+    });
   }
 
   /**
@@ -443,7 +483,7 @@ export class DamageSystem {
     const max=(owner.weaponLevels.get(VOID_ORB_WEAPON_ID)??1)>=3?8:5;
     for (const projectile of world.projectiles.values()) {
       if(field.redirectsUsed>=max)break;
-      if(projectile.weaponId!==FIREBALL_WEAPON_ID||projectile.voidRedirected ||
+      if(projectile.weaponId!==FIREBALL_WEAPON_ID||projectile.fireballSplitChild || projectile.voidRedirected ||
         distanceSquared(projectile,field)>field.radius**2)continue;
       const candidates=[...world.enemies.values()].filter(enemy=>enemy.alive &&
         enemy.id!==projectile.targetEnemyId && distanceSquared(enemy,field)<=320**2)

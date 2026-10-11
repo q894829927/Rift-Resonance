@@ -247,6 +247,10 @@ export interface CombatProjectile {
   readonly returningBlade?: CombatReturningBladeFlight;
   readonly voidOrbFlight?: {readonly targetX: number; readonly targetY: number; readonly hitEnemies: Set<string>};
   fireballFlight?: FireballHeading;
+  /** Branch split shards are real authoritative projectiles, never recursive. */
+  fireballSplitChild?: boolean;
+  /** The initial victim cannot be struck again by a split shard spawned inside it. */
+  fireballSplitOriginEnemyId?: string;
   voidRedirected?: boolean;
   /** III-level anchor briefly curves the projectile around its fixed center. */
   voidAnchorOrbit?: { readonly centerX:number; readonly centerY:number; angle:number; remainingTicks:number; entryRadius?:number };

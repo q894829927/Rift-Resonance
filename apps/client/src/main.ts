@@ -247,6 +247,9 @@ class LobbyScene extends Phaser.Scene {
         this.projectiles.set(id, entity);
       } else if (!entity && (projectile.weaponId === "weapon.arcane_bolt" || projectile.weaponId === "weapon.fireball" || projectile.weaponId === "weapon.spin_blade")) {
         entity = createM1Projectile(this, projectile.weaponId, projectile.x, projectile.y);
+        if (projectile.weaponId === "weapon.fireball" && projectile.split) {
+          entity.setScale(0.64).setAlpha(0.90); // distinct small shards, same authored flame asset
+        }
         this.projectiles.set(id, entity);
       }
       if (!entity) continue;

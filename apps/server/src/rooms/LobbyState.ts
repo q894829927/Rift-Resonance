@@ -58,6 +58,7 @@ export const ProjectileNetworkState = schema({
   directionX: t.number().default(0),
   directionY: t.number().default(0),
   speed: t.number().default(0),
+  split: t.boolean().default(false),
   x: t.number().default(0),
   y: t.number().default(0)
 }, "RiftProjectileNetworkState");

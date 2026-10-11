@@ -59,7 +59,10 @@ export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorl
       const branch = player.weaponBranches.get(id);
       if (level === 1 && !branch) {
         const branches = id === FIREBALL_WEAPON_ID
-          ? [{key:"ember", name:"余烬火种", text:"命中留下5秒火场，每0.75秒灼烧附近敌人，可与奇点共振"}]
+          ? [
+              {key:"split", name:"裂变火球", text:"直接命中分裂成2枚弱化火星，III级增加至3枚；不可再次分裂"},
+              {key:"ember", name:"余烬火种", text:"命中留下5秒火场，每0.75秒灼烧附近敌人，可与奇点共振"}
+            ]
           : [
               {key:"collapse", name:"坍缩奇点", text:"强化吞噬聚怪，III 级追加二段空间冲击"},
               {key:"anchor", name:"空间锚点", text:"弱牵引、持续空间枢纽，重定向经过的友方火球"}
@@ -71,8 +74,12 @@ export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorl
         });
       } else if (level === 2 && branch) {
         choices.push({id:"upgrade.power." + id, kind:"weapon_power", weaponId:id,
-          nextLevel:3, label:id === FIREBALL_WEAPON_ID ? "余烬蔓延 III" : "奇点强化 III",
-          description:id === FIREBALL_WEAPON_ID ? "火种灼烧半径36→48，周期基础伤害3→4" :
+          nextLevel:3, label:id === FIREBALL_WEAPON_ID ?
+            (branch === "split" ? "裂变蔓延 III" : "余烬蔓延 III") :
+            (branch === "anchor" ? "空间锚点 III" : "坍缩奇点 III"),
+          description:id === FIREBALL_WEAPON_ID ?
+            (branch === "split" ? "合法直击产生的火星由2枚提升至3枚，火星不会再分裂" :
+              "火种灼烧半径36→48，周期基础伤害3→4") :
             id === VOID_ORB_WEAPON_ID && branch === "anchor"
           ? "扩大空间锚点范围与弹体改向次数" : "加强当前分支的基础伤害与效果"});
       }
@@ -149,6 +156,15 @@ export function draftCombatUpgradeChoices(
     if (priority) {
       selected.push(priority);
       pool.splice(pool.indexOf(priority), 1);
+      // Keep the two mutually exclusive branches together on an upgrade draft.
+      if (priority.kind === "weapon_branch") {
+        const counterpart = pool.find(c => c.kind === "weapon_branch" &&
+          c.weaponId === priority.weaponId);
+        if (counterpart) {
+          selected.push(counterpart);
+          pool.splice(pool.indexOf(counterpart), 1);
+        }
+      }
     }
   }
   // First & third upgrade guarantee at least one free weapon slot option.
@@ -210,7 +226,7 @@ export function rerollCombatUpgrade(world: CombatWorld, sessionId: string): bool
       player.upgradeRerollUsed || pending.selections.has(sessionId)) return false;
   const previous = pending.choicesByPlayer.get(sessionId);
   if (!previous?.length) return false;
-  const fresh = getCombatUpgradeChoices(player).some(c => !previous.some(p => p.id === c.id));
+  const fresh = getCombatUpgradeChoices(player, world).some(c => !previous.some(p => p.id === c.id));
   if (!fresh) return false; // Do not consume once-per-run reroll with no alternatives
   pending.choicesByPlayer.set(sessionId, draftCombatUpgradeChoices(world, player, previous));
   player.upgradeRerollUsed = true;
@@ -267,7 +283,8 @@ export function applyCombatUpgrade(player: CombatPlayer, choice: CombatUpgradeCh
   if (choice.kind === "weapon_branch" && choice.weaponId && choice.branchId &&
       player.weaponIds.includes(choice.weaponId) && (player.weaponLevels.get(choice.weaponId) ?? 1) === 1 &&
       !player.weaponBranches.has(choice.weaponId) &&
-      ((choice.weaponId === FIREBALL_WEAPON_ID && choice.branchId === "ember") ||
+      ((choice.weaponId === FIREBALL_WEAPON_ID &&
+        (choice.branchId === "ember" || choice.branchId === "split")) ||
         (choice.weaponId === VOID_ORB_WEAPON_ID &&
           (choice.branchId === "collapse" || choice.branchId === "anchor")))) {
     player.weaponBranches.set(choice.weaponId, choice.branchId);

@@ -67,6 +67,7 @@ export interface ProjectileView {
   directionX: number;
   directionY: number;
   speed: number;
+  split: boolean;
   x: number;
   y: number;
 }
@@ -415,6 +416,7 @@ export class LobbyConnection {
         directionX: Number(projectile.directionX ?? 0),
         directionY: Number(projectile.directionY ?? 0),
         speed: Number(projectile.speed ?? 0),
+        split: projectile.split === true,
         x: projectile.x,
         y: projectile.y
       });

@@ -23,6 +23,7 @@ export type CombatProjectileAssetId = typeof ARCANE_BOLT_PROJECTILE_ASSET_ID
 
 export type CombatEventType =
   | "weapon.fired"
+  | "weapon.fireball_split"
   | "weapon.explosion"
   | "weapon.returning"
   | "weapon.void_launched"
