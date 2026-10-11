@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 
 const visual = readFileSync(new URL("../apps/client/src/art/v2VoidVisuals.ts", import.meta.url), "utf8");
 const client = readFileSync(new URL("../apps/client/src/main.ts", import.meta.url), "utf8");
-const version = readFileSync(new URL("../packages/shared/src/version.ts", import.meta.url), "utf8");
 
 test("void field is a circular dark gravitational well, not a ground ellipse", () => {
   const field = visual.slice(visual.indexOf("function paintGravityWell"));
@@ -33,5 +32,5 @@ test("visuals preserve server authority, pause behavior and weapon branch colors
   assert.match(visual, /state\.radius = Math\.max\(24, view\.radius\)/);
   assert.match(visual, /view\.phase === "collapsing"/);
   assert.match(client, /updateV2VoidCore\(entity, field, this\.latestView\?\.phase === "RUNNING"\)/);
-  assert.match(version, /APP_VERSION = "0\.1\.3\.3"/);
+  // Release version is verified separately; VFX assertions must survive subsequent patches.
 });
