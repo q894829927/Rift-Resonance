@@ -22,9 +22,6 @@ export const COMBAT_PLAYER_MAX_HEALTH = 100;
 /** Server-owned ember lifetime: five seconds of active combat, paused during upgrades. */
 export const COMBAT_EMBER_LIFETIME_TICKS = 100;
 export const COMBAT_MAX_EMBERS_PER_PLAYER = 8;
-/** Max steering of V2 fireballs per 50 ms simulation tick, prevents instant U-turns. */
-export const COMBAT_V2_FIREBALL_MAX_TURN_RADIANS = Math.PI / 7;
-export const COMBAT_V2_FIREBALL_FLIGHT_TICKS = 32;
 
 // GDD values are kept in the simulation package. Renderer asset paths never enter
 // these definitions, so a visual replacement cannot change authoritative rules.
