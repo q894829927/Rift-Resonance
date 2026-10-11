@@ -12,6 +12,7 @@ import {
   stepCombatWorld
 } from "../packages/simulation/dist/index.js";
 import { advanceDeterministicMovement } from "../packages/shared/dist/index.js";
+import { COMBAT_PLAYER_SPAWNS } from "../packages/simulation/dist/combat/types.js";
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -53,7 +54,10 @@ test("server weapons resolve tracking fireball damage, death and finite event ID
   assert.ok(world.events.some(event => event.type === "weapon.fired" && event.assetId === "weapon.fireball"));
   assert.ok(world.events.some(event => event.type === "damage.applied" && event.targetId === death.targetId));
   assert.equal(new Set(world.events.map(event => event.id)).size, world.events.length);
-  assert.equal(world.projectiles.size, 0);
+  // On the larger logical arena a valid fireball may still be travelling.
+  assert.ok(world.projectiles.size < 10);
+  assert.ok([...world.projectiles.values()].every(p =>
+    Number.isFinite(p.x) && Number.isFinite(p.y)));
   assert.equal(world.enemies.get(death.targetId).alive, false);
   assert.ok(world.stats.get("player-a").kills >= 1);
   assert.ok(world.stats.get("player-a").totalDamage >= 35);
@@ -463,7 +467,7 @@ test("a second match starts from clean spawn, facing, cooldown and statistics", 
   stats.damageTaken = 18;
   stats.survivalTicks = 12;
   assert.equal(resetCombatMatch(world), true);
-  assert.deepEqual({x: player.x, y: player.y}, {x: 265, y: 245});
+  assert.deepEqual({x: player.x, y: player.y}, COMBAT_PLAYER_SPAWNS[0]);
   assert.deepEqual({x: player.facingX, y: player.facingY}, {x: 1, y: 0});
   assert.deepEqual({x: player.dashDirectionX, y: player.dashDirectionY}, {x: 1, y: 0});
   assert.equal(player.dashRemainingTicks, 0);
