@@ -31,6 +31,7 @@ import {
   type ProjectileVisualTrack
 } from "./art/m2ProjectileInterpolation.js";
 import { createV2VoidFlight, createV2VoidCore, updateV2VoidCore } from "./art/v2VoidVisuals.js";
+import {createV2Ember,updateV2Ember} from "./art/v2EmberVisuals.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
@@ -38,7 +39,7 @@ class LobbyScene extends Phaser.Scene {
   private readonly enemies = new Map<string, Phaser.GameObjects.Container>();
   private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
   private readonly voidFields = new Map<string, Phaser.GameObjects.Container>();
-  private readonly voidEmbers = new Map<string, Phaser.GameObjects.Arc>();
+  private readonly voidEmbers = new Map<string, Phaser.GameObjects.Container>();
   private readonly handledCombatEventIds = new Set<string>();
   private readonly nameLabels = new Map<string, HTMLSpanElement>();
   private nameLayer: HTMLElement | null = null;
@@ -82,8 +83,6 @@ class LobbyScene extends Phaser.Scene {
       this.avatars.clear();
       this.enemies.clear();
       this.projectiles.clear();
-      for (const obj of this.voidFields.values()) obj.destroy();
-      for (const obj of this.voidEmbers.values()) obj.destroy();
       this.voidFields.clear();
       this.voidEmbers.clear();
       this.handledCombatEventIds.clear();
@@ -279,11 +278,11 @@ class LobbyScene extends Phaser.Scene {
     for (const [id, ember] of combat.embers) {
       let entity = this.voidEmbers.get(id);
       if (!entity) {
-        entity = this.add.circle(ember.x, ember.y, 7, 0xffa044, 0.89)
-          .setStrokeStyle(2, 0xffd1a0, 0.95).setDepth(960);
+        entity = createV2Ember(this,ember.x,ember.y);
         this.voidEmbers.set(id, entity);
       }
       entity.setPosition(ember.x, ember.y);
+      updateV2Ember(entity,ember,this.time.now,this.latestView?.phase === "RUNNING");
     }
 
     if (this.bladeDebug) {
