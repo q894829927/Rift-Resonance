@@ -14,7 +14,7 @@ import {
   createM1DamageNumber,
   updateM1HealthBar
 } from "./art/m1Visuals.js";
-import { APP_VERSION, formatAppVersion, MAX_ROOM_PLAYERS, movementAxis, sampleJoystick, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
+import { APP_VERSION, formatAppVersion, MAX_ROOM_PLAYERS, movementAxis, sampleJoystick, calculateAdaptiveFrame, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT, calculateCameraZoom, projectWorldToViewport } from "@rift/shared";
 import {
   LobbyConnection,
   getServerEndpoint,
@@ -464,26 +464,52 @@ function element<T extends HTMLElement>(id: string): T {
 }
 const uiShell = element<HTMLElement>("game-shell");
 
-// One layout authority for the game frame and its UI scale. VisualViewport
-// accounts for browser chrome/soft keyboards; logical combat remains 1440x810.
+// Small screens must never place the full-size HUD, skills, and joystick
+// on the same canvas. In compact mode we move UI to NORMAL FLOW around the
+// arena, keeping the world-sized Phaser scene untouched.
 function updateResponsiveFrame(): void {
   const width = Math.max(240, window.visualViewport?.width ?? window.innerWidth);
   const height = Math.max(220, window.visualViewport?.height ?? window.innerHeight);
-  const portrait = width <= 720 && height > width;
-  const compact = width <= 850 || height < 500;
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const controlsHeight = coarse && portrait && uiShell.dataset.uiScreen === "combat" &&
-    uiShell.dataset.uiPhase === "RUNNING" ? 160 : 0;
-  const header = compact ? 44 : 56;
-  const footer = coarse ? 0 : 24;
-  const safeWidth = compact ? 12 : 24;
-  const availableHeight = Math.max(160, height - header - footer - (compact ? 12 : 18) - controlsHeight);
-  const stageWidth = portrait ? width - safeWidth : Math.min(width - safeWidth, availableHeight * 16 / 9);
-  const stageHeight = portrait ? availableHeight : stageWidth * 9 / 16;
-  const uiScale = Math.max(0.72, Math.min(1.32, Math.min(stageWidth / 1240, stageHeight / 700)));
-  uiShell.style.setProperty("--stage-width", Math.max(220, stageWidth).toFixed(2) + "px");
-  uiShell.style.setProperty("--stage-height", stageHeight.toFixed(2) + "px");
-  uiShell.style.setProperty("--ui-scale", uiScale.toFixed(3));
+  const coarse = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+  const frame = calculateAdaptiveFrame(width, height,
+    (uiShell.dataset.uiScreen ?? "menu") as "menu" | "solo" | "lobby" | "combat",
+    uiShell.dataset.uiPhase ?? "LOBBY", coarse);
+  const {compact, compactMenu} = frame;
+  uiShell.style.setProperty("--stage-width", frame.stageWidth.toFixed(2) + "px");
+  uiShell.style.setProperty("--stage-height", frame.menuHeight.toFixed(2) + "px");
+  uiShell.style.setProperty("--ui-scale", frame.uiScale.toFixed(3));
+
+  const layout = uiShell.querySelector<HTMLElement>(".layout");
+  const arena = layout?.querySelector<HTMLElement>(".arena");
+  const overlay = arena?.querySelector<HTMLElement>(".arena-overlay");
+  const hud = document.getElementById("match-hud");
+  const dock = document.getElementById("combat-dock");
+  const controls = document.getElementById("touch-controls");
+  const upgrade = document.getElementById("upgrade-panel");
+  const result = document.getElementById("match-banner");
+  const hero = document.getElementById("lobby-hero");
+  if (!layout || !arena || !overlay || !hud || !dock || !controls || !upgrade || !result || !hero) return;
+
+  if (compactMenu) {
+    if (hero.parentElement !== layout) layout.insertBefore(hero, arena);
+  } else if (hero.parentElement !== overlay) {
+    overlay.prepend(hero);
+  }
+
+  if (compact) {
+    if (hud.parentElement !== layout) layout.insertBefore(hud, arena);
+    if (dock.parentElement !== layout) layout.insertBefore(dock, controls);
+    // A dialog clipped to a 200px-high game canvas would be unusable.
+    if (upgrade.parentElement !== uiShell) uiShell.append(upgrade);
+    if (result.parentElement !== uiShell) uiShell.append(result);
+  } else {
+    if (hud.parentElement !== overlay) overlay.prepend(hud);
+    if (dock.parentElement !== overlay) overlay.append(dock);
+    if (upgrade.parentElement !== overlay) overlay.append(upgrade);
+    if (result.parentElement !== overlay) overlay.append(result);
+  }
+  uiShell.dataset.uiLayout = compact ? "compact" : compactMenu ? "menu-compact" : "wide";
+  uiShell.dataset.touchEnabled = coarse ? "true" : "false";
 }
 let resizeRequest = 0;
 function scheduleResponsiveFrame(): void {
@@ -495,6 +521,7 @@ function scheduleResponsiveFrame(): void {
 }
 window.addEventListener("resize", scheduleResponsiveFrame, {passive: true});
 window.visualViewport?.addEventListener("resize", scheduleResponsiveFrame, {passive: true});
+window.visualViewport?.addEventListener("scroll", scheduleResponsiveFrame, {passive: true});
 window.addEventListener("orientationchange", scheduleResponsiveFrame);
 scheduleResponsiveFrame();
 

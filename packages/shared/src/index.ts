@@ -1,5 +1,6 @@
 export { APP_VERSION, formatAppVersion } from "./version.js";
 export { sampleJoystick, type JoystickSample, type JoystickAxis } from "./joystick.js";
+export { calculateAdaptiveFrame, type AdaptiveFrame } from "./responsive-layout.js";
 export const PROTOCOL_VERSION = 1;
 export const ROOM_TYPE = "rift_scaffold" as const;
 export const SIMULATION_TICK_HZ = 20;
