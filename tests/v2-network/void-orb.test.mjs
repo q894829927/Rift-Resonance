@@ -26,6 +26,16 @@ test("V2 Colyseus room requires manual dual loadout and projects traveling orbs 
     await waitUntil(()=>room.state.players.get(room.sessionId)?.loadoutConfirmed===true,"loadout approval");
     room.send("match.ready",{ready:true});
     await waitUntil(()=>room.state.phase==="RUNNING","match start");
+    await waitUntil(()=>[...room.state.projectiles.values()].some(p =>
+      p.weaponId==="weapon.fireball" &&
+      Math.hypot(p.directionX,p.directionY)>0.95 && p.speed>0
+    ),"authoritative fireball heading and speed",6000);
+    const fireball=[...room.state.projectiles.values()].find(p=>
+      p.weaponId==="weapon.fireball" && Math.hypot(p.directionX,p.directionY)>0.95);
+    assert.ok(fireball);
+    assert.ok(Math.abs(Math.hypot(fireball.directionX,fireball.directionY)-1)<0.02);
+    assert.ok(fireball.speed>=300);
+
     await waitUntil(()=>[...room.state.projectiles.values()].some(p=>p.weaponId==="weapon.void_orb") ||
       room.state.voidFields.size>0,"server traveling orb or arrived field",6000);
     await waitUntil(()=>room.state.voidFields.size>0,"synced void core",6000);
