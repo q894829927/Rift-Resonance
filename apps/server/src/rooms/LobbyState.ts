@@ -60,6 +60,23 @@ export const ProjectileNetworkState = schema({
 }, "RiftProjectileNetworkState");
 export type ProjectileNetworkState = SchemaType<typeof ProjectileNetworkState>;
 
+export const VoidFieldNetworkState = schema({
+  kind: t.string().default("collapse"),
+  phase: t.string().default("active"),
+  x: t.number().default(0),
+  y: t.number().default(0),
+  radius: t.number().default(0),
+  essence: t.number().default(0),
+  embers: t.number().default(0)
+}, "RiftVoidFieldNetworkState");
+export type VoidFieldNetworkState = SchemaType<typeof VoidFieldNetworkState>;
+
+export const EmberNetworkState = schema({
+  x: t.number().default(0),
+  y: t.number().default(0)
+}, "RiftEmberNetworkState");
+export type EmberNetworkState = SchemaType<typeof EmberNetworkState>;
+
 export const CombatEventNetworkState = schema({
   tick: t.number().default(0),
   type: t.string().default("damage.applied"),
@@ -92,6 +109,8 @@ export const CombatNetworkState = schema({
   players: t.map(PlayerNetworkState),
   enemies: t.map(EnemyNetworkState),
   projectiles: t.map(ProjectileNetworkState),
+  voidFields: t.map(VoidFieldNetworkState),
+  embers: t.map(EmberNetworkState),
   events: t.map(CombatEventNetworkState)
 }, "RiftCombatNetworkState");
 export type CombatNetworkState = SchemaType<typeof CombatNetworkState>;

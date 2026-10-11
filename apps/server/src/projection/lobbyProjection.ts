@@ -4,6 +4,8 @@ import {
   EnemyNetworkState,
   PlayerNetworkState,
   ProjectileNetworkState,
+  VoidFieldNetworkState,
+  EmberNetworkState,
   type LobbyNetworkState
 } from "../rooms/LobbyState.js";
 
@@ -193,6 +195,38 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
   for (const id of [...state.projectiles.keys()]) {
     if (!projectileIds.has(id)) state.projectiles.delete(id);
   }
+
+  // Active cores and ember objects are synchronized, not recreated from an
+  // unreliable local animation timer; they remain visible while upgrades pause.
+  const fieldIds = new Set<string>();
+  for (const field of world.voidFields.values()) {
+    fieldIds.add(field.id);
+    let target = state.voidFields.get(field.id);
+    if (!target) {
+      target = new VoidFieldNetworkState();
+      state.voidFields.set(field.id, target);
+    }
+    target.kind = field.kind;
+    target.phase = field.phase;
+    target.x = field.x;
+    target.y = field.y;
+    target.radius = field.radius;
+    target.essence = field.essenceCharges;
+    target.embers = field.absorbedEmbers;
+  }
+  for (const id of [...state.voidFields.keys()]) if (!fieldIds.has(id)) state.voidFields.delete(id);
+  const emberIds = new Set<string>();
+  for (const ember of world.embers.values()) {
+    emberIds.add(ember.id);
+    let target = state.embers.get(ember.id);
+    if (!target) {
+      target = new EmberNetworkState();
+      state.embers.set(ember.id, target);
+    }
+    target.x = ember.x;
+    target.y = ember.y;
+  }
+  for (const id of [...state.embers.keys()]) if (!emberIds.has(id)) state.embers.delete(id);
 
   const eventIds = new Set<string>();
   for (const event of world.events) {

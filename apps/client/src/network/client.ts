@@ -67,6 +67,16 @@ export interface ProjectileView {
   x: number;
   y: number;
 }
+export interface VoidFieldView {
+  kind: string;
+  phase: string;
+  x: number;
+  y: number;
+  radius: number;
+  essence: number;
+  embers: number;
+}
+export interface EmberView { x: number; y: number; }
 export interface CombatEventView {
   id: string;
   tick: number;
@@ -86,6 +96,8 @@ export interface CombatEventView {
 export interface CombatRenderState {
   enemies: ReadonlyMap<string, EnemyView>;
   projectiles: ReadonlyMap<string, ProjectileView>;
+  voidFields: ReadonlyMap<string, VoidFieldView>;
+  embers: ReadonlyMap<string, EmberView>;
   /** Only events not previously observed by this client connection. */
   events: readonly CombatEventView[];
 }
@@ -267,6 +279,8 @@ export class LobbyConnection {
         players?: Map<string, LobbyPlayerView>;
         enemies?: Map<string, EnemyView>;
         projectiles?: Map<string, ProjectileView>;
+        voidFields?: Map<string, VoidFieldView>;
+        embers?: Map<string, EmberView>;
         events?: Map<string, Omit<CombatEventView, "id">>;
       };
       const players = state.players;
@@ -370,6 +384,8 @@ export class LobbyConnection {
     enemies?: Map<string, EnemyView>;
     projectiles?: Map<string, ProjectileView>;
     events?: Map<string, Omit<CombatEventView, "id">>;
+    voidFields?: Map<string, VoidFieldView>;
+    embers?: Map<string, EmberView>;
   }): CombatRenderState {
     const enemies = new Map<string, EnemyView>();
     for (const [id, enemy] of state.enemies ?? []) {
@@ -398,6 +414,12 @@ export class LobbyConnection {
       });
     }
 
+    const voidFields = new Map<string, VoidFieldView>();
+    for (const [id, f] of state.voidFields ?? []) {
+      voidFields.set(id,{kind:f.kind,phase:f.phase,x:f.x,y:f.y,radius:f.radius,essence:f.essence,embers:f.embers});
+    }
+    const embers = new Map<string, EmberView>();
+    for (const [id, e] of state.embers ?? []) embers.set(id,{x:e.x,y:e.y});
     const events: CombatEventView[] = [];
     for (const [id, event] of state.events ?? []) {
       if (this.seenEventIds.has(id)) continue;
@@ -417,7 +439,7 @@ export class LobbyConnection {
       if (!oldest) break;
       this.seenEventIds.delete(oldest);
     }
-    return { enemies, projectiles, events };
+    return { enemies, projectiles, voidFields, embers, events };
   }
 }
 
