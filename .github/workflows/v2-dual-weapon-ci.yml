@@ -13,11 +13,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Verify version and changelog coverage
+        run: npm run version:check
       - name: Typecheck and build
         run: npm run typecheck && npm run build
       - name: Unit tests (legacy and V2)
