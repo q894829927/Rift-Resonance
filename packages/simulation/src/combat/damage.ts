@@ -164,7 +164,7 @@ export class DamageSystem {
 
   private resolveFireballImpact(world:CombatWorld,projectile:CombatProjectile,
     target:CombatEnemy,impactX:number,impactY:number):void {
-        if (hit && world.ruleset === "dual_v2" && projectile.weaponId === FIREBALL_WEAPON_ID &&
+        if ( world.ruleset === "dual_v2" && projectile.weaponId === FIREBALL_WEAPON_ID &&
             world.players.get(projectile.sourcePlayerId)?.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember") {
           const emberId = "ember:" + world.nextFieldSequence++;
           world.embers.set(emberId, {
@@ -180,7 +180,7 @@ export class DamageSystem {
         }
         // Level-III fireball hits the primary target once and splashes distinct
         // nearby enemies once each. IDs include projectile+enemy to be idempotent.
-        if (hit && projectile.weaponId === FIREBALL_WEAPON_ID &&
+        if ( projectile.weaponId === FIREBALL_WEAPON_ID &&
             (world.players.get(projectile.sourcePlayerId)?.weaponLevels.get(FIREBALL_WEAPON_ID) ?? 1) >= 3) {
           emitCombatEvent(world, {
             type: "weapon.explosion", sourceId: projectile.sourcePlayerId,
