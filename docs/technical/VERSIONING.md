@@ -1,65 +1,64 @@
-# 《异界共振》四段式版本管理与更新日志
+# 《异界共振》版本管理与更新日志
 
-游戏首个版本是 **v0.1**，在代码中记录为 `0.1.0.0`。完整格式为 `主版本.功能版本.修复版本.微调版本`，网页隐藏末尾多余的零，因此 `0.1.0.0` 显示 `v0.1`，`0.1.1.1` 完整显示 `v0.1.1.1`。
+初始版本 **v0.1**，后续常规更新按 **v0.1.1 → v0.1.2 → v0.1.3** 递增，**不因为普通 UI/武器功能直接跳到 v0.2**。
 
-## 1. 升级等级
+## 1. 版本结构
 
-| 等级 | 例子（从 0.1.1.1 开始） | 判定原则 |
+代码中保存四段规范格式 `主版本.里程碑.常规更新.微调`，例如 `0.1.2.0`；网页与 `CHANGELOG.md` 去掉尾随零显示 `v0.1.2`。只有真正重大里程碑才提升第二位至 `v0.2`；正式大版本才提升第一位至 `v1.0`。
+
+| 命令等级 | 从 v0.1.2 开始 | 用途 |
 |---|---|---|
-| `revision` / 微调 | 0.1.1.2 | 样式、文案、数值、特效和细节 |
-| `fix` / 修复 | 0.1.2.0 | 游戏 Bug、网络同步、技能轨迹、交互问题 |
-| `feature` / 新功能 | 0.2.0.0 | 新武器、新技能构筑、系统和重要内容 |
-| `major` / 大版本 | 1.0.0.0 | 核心结构或玩法重大升级、正式版里程碑 |
+| `revision`（微调） | v0.1.2.1 | 文案、参数、单个视觉/交互细节 |
+| `fix`（修复） | v0.1.3 | 一般 Bug 修复、联网/弹道修复 |
+| `feature`（常规功能） | v0.1.3 | UI 改版、适配屏幕、新武器或常规新玩法 |
+| `milestone`（重大里程碑） | v0.2 | 多系统大阶段完成且用户确认是里程碑 |
+| `major`（正式大版本） | v1.0 | 正式版或架构性重构，需用户确认 |
 
-每次只按本次发布**对玩家影响最高**的内容升级对应一位，右侧低位归零；不按代码行数或提交次数自动猜测。纯文档、测试、开发工具变更一般不改变游戏版本。
+一个发布包含多种改动时按影响最大的类别选择；`feature` 和 `fix` 都递增第三位，不按代码行数判定。纯文档、工具和测试一般不升级游戏版本。
 
-## 2. 更新日志是版本必备文件
+## 2. 本次历史标签纠正（2026-10-11）
 
-- 所有游戏版本记录在根目录的 [CHANGELOG.md](../../CHANGELOG.md)，**最新版本在最上方**，历史条目不得删改。
-- 每个版本必须有至少一条具体、真实、可验证的更新说明，有多个独立改动就记多条。不要写“优化代码”“若干调整”等无信息量描述。
-- 基线版本 `0.1.0.0` 记录了截至 2026-10-11 已确认的游戏原型能力；之后首次需要升级时从它继续递增。
-- `packages/shared/src/version.ts` 中 `APP_VERSION` 是唯一游戏版本源。客户端页脚显示短版本，服务端 `GET /health` 返回四段完整的 `appVersion`。
+| 真实开发内容 | 原来误记为 | 更正后显示 | 内部格式 |
+|---|---|---|---|
+| 基础多人游戏原型 | v0.1 | v0.1 | 0.1.0.0 |
+| 全宽主菜单 + 单/多人入口 + 地图扩容 | v0.2 | **v0.1.1** | 0.1.1.0 |
+| 桌面/平板/手机响应式布局及触屏 | v0.3 | **v0.1.2** | 0.1.2.0 |
 
-## 3. 只用一条命令同时维护两个文件
+原 Git commit SHA、代码和既有日志中每项功能说明均保留；只更正游戏版本标签和未来升级规则。原版本编号已经出现在之前的 Git 历史、日志和可能的 ECS 旧部署版本中，此次调整不删除其历史事实。
 
-在完成一项玩家可见的开发任务后，按改动大小选择：
+## 3. 统一自动更新版本号和日志
+
+修改玩家可见内容时，先判断影响大小，**从下面挑一条命令运行**：
 
 ```powershell
-npm run version:bump -- revision "改善火球尾焰与操作反馈"
-npm run version:bump -- fix "修复联机断线后玩家状态未正确清理"
-npm run version:bump -- feature "新增穿透箭及两个进阶分支" "加入穿透箭与静电链的高级联动"
-npm run version:bump -- major "完成并发布 1.0 正式模式"
+npm run version:bump -- revision "微调地图按钮的高亮与间距"
+npm run version:bump -- fix "修复移动端触屏松手后角色继续移动"
+npm run version:bump -- feature "加入新的武器进阶分支" "新增对应祝福效果"
+npm run version:bump -- milestone "完成经确认的重大里程碑"
 ```
 
-**以上是四种选项示例，不要连续全部执行。** 选择一种；可在命令后提供任意多条更新说明。命令会先检查输入，再同时修改 `packages/shared/src/version.ts` 和 `CHANGELOG.md`，并把新版本记录插在最上面。没有具体说明会直接报错。
+不能把上述示例连续全部运行。命令一次更新 `packages/shared/src/version.ts` 和 `CHANGELOG.md`，并自动写入当前短版本号标题及具体内容。未来普通新功能的下一版本是 **v0.1.3**。除非明确确立大的里程碑，否则不得使用 `milestone`。
 
-代码、版本更新和更新日志应作为同一项发布修改一起提交、一起推送，不能只更改版本数字。
+## 4. 所有 AI 都必须遵守
 
-## 4. 换 AI 也要遵守的项目规范
+- 根目录 [AGENTS.md](../../AGENTS.md) 是统一 AI 开发约束；[CLAUDE.md](../../CLAUDE.md) 和 [.github/copilot-instructions.md](../../.github/copilot-instructions.md) 提醒各类工具。
+- 发布提交同时包含游戏代码、更新后的 APP_VERSION 和 CHANGELOG。仓库 CI 检查版本与日志匹配，阻止未更新版本号的游戏改动进入 ECS。
+- 完成游戏修改后运行 `npm run verify`；提交后运行 `npm run version:check`，成功才能推送并等待 CI。
+- APP_VERSION 是游戏版号；`PROTOCOL_VERSION` 是独立网络协议号；npm workspace 的 `0.0.0` 是包占位，不应改成四段游戏版本号。
+- 更新日志标题使用短版号 `## [0.1.2]`，但健康接口 `/health` 返回 `appVersion: "0.1.2.0"` 以便机器比较。两者代表同一个版本。
 
-根目录 [AGENTS.md](../../AGENTS.md) 对 Codex 和其他代理生效；[CLAUDE.md](../../CLAUDE.md) 供 Claude Code；[.github/copilot-instructions.md](../../.github/copilot-instructions.md) 供 Copilot。所有 AI 必须先阅读项目规则，在完成游戏功能/修复后执行上面的命令。
-
-**GitHub CI 还有强制门禁**：`npm run version:check` 检查当前游戏版本、CHANGELOG 最新条目，以及从最近一次版本记录之后是否存在未覆盖的游戏代码改动。没有版本记录就让 CI 失败，ECS 不应自动部署。由于测试以已提交的 Git 历史为准，本地需要在创建 Git 提交后执行 `npm run version:check`；在提交前可先运行 `npm run verify`。
-
-受检范围包括客户端源码/入口网页/公开素材、服务器源码、共享代码和模拟代码；纯文档、测试或工具脚本通常不需要游戏版本升级。版本的**影响级别仍由开发者或 AI 判断**，CI 不能客观判断一个功能“多大”；但是可以阻止缺少版本记录的游戏改动进入发布流程。
-
-## 5. 本地开发及 ECS 部署
+## 5. 自动部署
 
 ```powershell
 git switch codex/v2-dual-weapon-foundation
 git pull --ff-only origin codex/v2-dual-weapon-foundation
-# 实现游戏功能并测试后，任选一个级别（例如新功能）
-npm run version:bump -- feature "具体完成内容"
+# 修改游戏代码并完成测试后
+npm run version:bump -- feature "实际完成的功能"
 npm run verify
 git add -A
-git commit -m "feat: 新功能和版本记录"
+git commit -m "feat: 实际功能和小版本更新"
 npm run version:check
 git push origin codex/v2-dual-weapon-foundation
 ```
 
-GitHub Actions 成功后，ECS 上的 `rift-deploy.timer` 定时拉取并发布新的提交。网页刷新后，检查页脚 `vX.Y...`，以及 `http://127.0.0.1:2567/health` 的 `appVersion` 是否一致。CI 成功不等于已经通过浏览器视觉、真实双人联机或压力测试。
-
-## 6. 不要混淆另外两种版本
-
-- `PROTOCOL_VERSION` 是网络协议版本号，只有不兼容的网络协议变化才需要改动；和游戏版本无关。
-- npm workspace 中的 `package.json` `version: "0.0.0"` 是包管理占位，npm 使用三段 SemVer，不要直接写入四段游戏版本。
+CI 通过后，ECS 的定时器会检查并部署新提交。推送后需实际浏览器验收。

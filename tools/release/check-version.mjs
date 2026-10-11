@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseVersion } from "./bump-version.mjs";
+import { parseVersion, formatVersionLabel } from "./bump-version.mjs";
 
 const CHANGELOG = "CHANGELOG.md";
 const VERSION_FILE = "packages/shared/src/version.ts";
@@ -25,7 +25,7 @@ export function readVersion(source) {
 }
 
 export function checkChangelog(changelog, version) {
-  const header = "## [" + version + "] - ";
+  const header = "## [" + formatVersionLabel(version) + "] - ";
   const headings = changelog.match(/^## \[[^\]]+\] - \d{4}-\d{2}-\d{2}$/gm) || [];
   if (!headings.length || !headings[0].startsWith(header)) {
     throw new Error("CHANGELOG.md 的第一条更新记录必须是当前版本 " + version);
@@ -50,6 +50,21 @@ export function latestReleaseAnchor(policyBaseline, lastVersionCommit, isAncesto
   // The creation of CHANGELOG.md establishes the historical v0.1 baseline.
   // Subsequent version changes move the release coverage anchor forward.
   return isAncestor(policyBaseline, lastVersionCommit) ? lastVersionCommit : policyBaseline;
+}
+
+/** One-time correction of the two over-incremented UI release labels.
+ *  Requires identical historical release notes; no generic downgrade bypass.
+ *  Git commits and their original SHAs remain unchanged. */
+export function isApprovedHistoricalRenumbering(oldVersion, newVersion, previousLog, nextLog) {
+  if (oldVersion !== "0.3.0.0" || newVersion !== "0.1.2.0") return false;
+  const oldSections = previousLog.slice(previousLog.indexOf("\n## ["));
+  const newSections = nextLog.slice(nextLog.indexOf("\n## ["));
+  if (!oldSections || !newSections) return false;
+  const translated = oldSections
+    .replace(/^## \[0\.3\.0\.0\]/m, "## [0.1.2]")
+    .replace(/^## \[0\.2\.0\.0\]/m, "## [0.1.1]")
+    .replace(/^## \[0\.1\.0\.0\]/m, "## [0.1]");
+  return translated === newSections;
 }
 
 export function assertCoveredChanges(paths) {
@@ -85,18 +100,20 @@ function main() {
     const before = parseVersion(oldVersion);
     const after = parseVersion(version);
     const changed = after.findIndex((n, i) => n !== before[i]);
-    if (changed < 0 || after[changed] <= before[changed] ||
-        after.slice(changed + 1).some(n => n !== 0)) {
-      throw new Error("版本号必须递增且低位归零：" + oldVersion + " -> " + version);
-    }
     const predecessor = git(["rev-parse", lastVersionCommit + "^"]);
     const priorChangelog = git(["show", predecessor + ":" + CHANGELOG]);
-    if (priorChangelog.includes("## [" + version + "] - ")) {
+    const renumbering = isApprovedHistoricalRenumbering(oldVersion, version, priorChangelog, changelog);
+    if (!renumbering && (changed < 0 || after[changed] <= before[changed] ||
+        after.slice(changed + 1).some(n => n !== 0))) {
+      throw new Error("版本号必须递增且低位归零：" + oldVersion + " -> " + version);
+    }
+    if (!renumbering && priorChangelog.includes("## [" + formatVersionLabel(version) + "] - ")) {
       // GitHub Contents API writes one file per commit; allow CHANGELOG and
       // APP_VERSION as two *adjacent* commits, but reject reused old entries.
       const changedInPredecessor = git(["diff-tree", "--no-commit-id", "--name-only", "-r", predecessor]).split("\n");
       const olderChangelog = git(["show", predecessor + "^:" + CHANGELOG]);
-      if (!changedInPredecessor.includes(CHANGELOG) || olderChangelog.includes("## [" + version + "] - ")) {
+      if (!changedInPredecessor.includes(CHANGELOG) ||
+          olderChangelog.includes("## [" + formatVersionLabel(version) + "] - ")) {
         throw new Error("版本 " + version + " 的日志必须与版本升级同时或紧邻新增，不能复用历史条目");
       }
     }

@@ -19,13 +19,13 @@ export function parseVersion(value) {
 
 export function bumpVersion(current, level) {
   const levels = {
-    revision: 3, tiny: 3,
-    fix: 2, patch: 2,
-    feature: 1, minor: 1,
+    revision: 3, tiny: 3, patch: 3,
+    fix: 2, feature: 2, minor: 2,
+    milestone: 1,
     major: 0
   };
   if (!Object.hasOwn(levels, level)) {
-    throw new Error('用法: npm run version:bump -- <revision|fix|feature|major> "更新内容" ["更多内容"]');
+    throw new Error('用法: npm run version:bump -- <revision|fix|feature|milestone|major> "更新内容" ["更多内容"]');
   }
   const parts = parseVersion(current);
   const index = levels[level];
@@ -33,6 +33,13 @@ export function bumpVersion(current, level) {
   parts[index]++;
   for (let i = index + 1; i < parts.length; i++) parts[i] = 0;
   return parts.join(".");
+}
+
+/** Short public version and changelog heading, with only *trailing* zeros removed. */
+export function formatVersionLabel(version) {
+  const segments = parseVersion(version).map(String);
+  while (segments.length > 2 && segments.at(-1) === "0") segments.pop();
+  return segments.join(".");
 }
 
 export function validateNotes(notes) {
@@ -52,10 +59,11 @@ export function insertChangelogEntry(changelog, version, notes, date) {
   const cleanedNotes = validateNotes(notes);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("日期格式应为 YYYY-MM-DD");
   if (!changelog.startsWith("# 更新日志（CHANGELOG）\n")) throw new Error("CHANGELOG.md 缺少规定标题");
-  if (changelog.split("\n").some(line => line.startsWith(`## [${version}] - `))) {
-    throw new Error(`CHANGELOG.md 已存在版本 ${version}，请勿重复创建`);
+  const label = formatVersionLabel(version);
+  if (changelog.split("\n").some(line => line.startsWith(`## [${label}] - `))) {
+    throw new Error(`CHANGELOG.md 已存在版本 ${label}，请勿重复创建`);
   }
-  const heading = `## [${version}] - ${date}`;
+  const heading = `## [${label}] - ${date}`;
   const entry = `${heading}\n\n${cleanedNotes.map(x => `- ${x}`).join("\n")}\n\n`;
   const firstEntry = changelog.indexOf("\n## [");
   if (firstEntry < 0) {
