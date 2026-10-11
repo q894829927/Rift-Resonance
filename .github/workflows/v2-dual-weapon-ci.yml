@@ -1,0 +1,24 @@
+name: V2 Dual Weapon CI
+on:
+  push:
+    branches: [codex/v2-dual-weapon-foundation]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Typecheck and build
+        run: npm run typecheck && npm run build
+      - name: Unit tests (legacy and V2)
+        run: npm test
+      - name: Two-client integration regression
+        run: npm run test:integration
