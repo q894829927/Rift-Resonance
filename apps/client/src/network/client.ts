@@ -350,6 +350,7 @@ export class LobbyConnection {
     this.phase = match.phase;
     this.onView({
       roomId: room.roomId,
+      ruleset: match.ruleset,
       sessionId: room.sessionId,
       phase: match.phase,
       matchElapsedTicks: match.matchElapsedTicks,
@@ -421,6 +422,7 @@ export class LobbyConnection {
 }
 
 interface MatchStateShape {
+  ruleset?: string;
   phase?: string;
   matchElapsedTicks?: number;
   matchDurationTicks?: number;
@@ -435,6 +437,7 @@ interface MatchStateShape {
 
 function readMatchSnapshot(state: MatchStateShape): MatchSnapshot {
   return {
+    ruleset: String(state.ruleset ?? "legacy"),
     phase: state.phase ?? "LOBBY",
     matchElapsedTicks: Number(state.matchElapsedTicks ?? 0),
     matchDurationTicks: Number(state.matchDurationTicks ?? 4800),
@@ -491,6 +494,9 @@ function toLobbyPlayerView(value: LobbyPlayerView): LobbyPlayerView {
     dashCooldownRemainingTicks: value.dashCooldownRemainingTicks, hitProtectionRemainingTicks: value.hitProtectionRemainingTicks,
     weaponIds: parseJson<readonly string[]>(String(raw.weaponIds ?? "[]"), []),
     weaponLevels: parseJson<Readonly<Record<string, number>>>(String(raw.weaponLevels ?? "{}"), {}),
+    weaponBranches: parseJson<Readonly<Record<string, string>>>(String(raw.weaponBranches ?? "{}"), {}),
+    dualBoonId: String(raw.dualBoonId ?? ""),
+    loadoutConfirmed: Boolean(raw.loadoutConfirmed ?? true),
     passiveLevels: parseJson<Readonly<Record<string, number>>>(String(raw.passiveLevels ?? "{}"), {}),
     upgradeChoices: parseJson<readonly UpgradeChoiceView[]>(String(raw.upgradeChoices ?? "[]"), []),
     upgradeSelectionId: String(raw.upgradeSelectionId ?? ""),

@@ -250,7 +250,28 @@ class LobbyScene extends Phaser.Scene {
     for (const event of combat.events) {
       if (this.handledCombatEventIds.has(event.id)) continue;
       this.handledCombatEventIds.add(event.id);
-      if (event.type === "weapon.returning" && event.assetId === "weapon.spin_blade") {
+      if (event.type === "weapon.void_spawned") {
+        const vortex = this.add.circle(event.x, event.y, event.amount, 0x633ca8, 0.16)
+          .setStrokeStyle(2, 0xc8a0ff, 0.78).setDepth(940);
+        this.tweens.add({targets:vortex, scale:0.93, alpha:0, duration:1400,
+          onComplete:()=>vortex.destroy()});
+      } else if (event.type === "weapon.ember_spawned") {
+        const ember = this.add.circle(event.x, event.y, 10, 0xff973f, 0.75)
+          .setStrokeStyle(2, 0xffd38c, 0.9).setDepth(975);
+        this.tweens.add({targets:ember, alpha:0, scale:0.6, duration:2000,
+          onComplete:()=>ember.destroy()});
+      } else if (event.type === "boon.collapse_inferno" || event.type === "weapon.void_pulse") {
+        const empowered = event.type === "boon.collapse_inferno";
+        const pulse = this.add.circle(event.x, event.y, event.amount, empowered ? 0xff712e : 0x8858d3, 0.32)
+          .setStrokeStyle(3, empowered ? 0xffd08a : 0xbba1fd, 0.9).setDepth(1200);
+        this.tweens.add({targets:pulse, alpha:0, scale:1.4, duration:340,
+          onComplete:()=>pulse.destroy()});
+      } else if (event.type === "weapon.ember_absorbed") {
+        const absorbed = this.add.circle(event.x, event.y, 18 + event.amount * 8, 0xffb258, 0.28)
+          .setStrokeStyle(2, 0xffdaa2, 0.9).setDepth(1200);
+        this.tweens.add({targets:absorbed, alpha:0, scale:1.4, duration:210,
+          onComplete:()=>absorbed.destroy()});
+      } else if (event.type === "weapon.returning" && event.assetId === "weapon.spin_blade") {
         // Distinct apex marker from the authoritative 168-unit turnaround.
         // Never infer a turn from a delayed position patch or local animation.
         const apex = this.add.circle(event.x, event.y, 22, 0xe6cbff, 0.28)
@@ -369,6 +390,12 @@ const upgradeChoices = element<HTMLElement>("upgrade-choices");
 const upgradeReroll = element<HTMLButtonElement>("upgrade-reroll");
 const upgradeRerollHint = element<HTMLElement>("upgrade-reroll-hint");
 const buildSummary = element<HTMLElement>("build-summary");
+const loadoutPanel = element<HTMLElement>("loadout-panel");
+const loadoutOne = element<HTMLSelectElement>("v2-weapon-one");
+const loadoutTwo = element<HTMLSelectElement>("v2-weapon-two");
+const confirmLoadout = element<HTMLButtonElement>("v2-confirm-loadout");
+const loadoutStatus = element<HTMLElement>("v2-loadout-status");
+let loadoutUiInitialized = false;
 let renderedUpgradeKey = "";
 const idDisplay = element<HTMLElement>("current-room-id");
 const count = element<HTMLElement>("player-count");
@@ -392,7 +419,21 @@ function refreshControls(): void {
   copy.disabled = busy || !connected;
   const view = displayedView;
   const localPlayer = view?.players.get(view.sessionId);
-  readyRoom.disabled = busy || !connected || view?.phase !== "LOBBY" || localPlayer?.connected !== true;
+  readyRoom.disabled = busy || !connected || view?.phase !== "LOBBY" || localPlayer?.connected !== true ||
+    (view?.ruleset === "dual_v2" && !localPlayer?.loadoutConfirmed);
+  loadoutPanel.hidden = !connected || view?.ruleset !== "dual_v2" || view?.phase !== "LOBBY";
+  if (view?.ruleset === "dual_v2" && !loadoutUiInitialized) {
+    loadoutOne.value = localPlayer?.weaponIds[0] ?? "weapon.fireball";
+    loadoutTwo.value = localPlayer?.weaponIds[1] ?? "weapon.void_orb";
+    if (loadoutOne.value === loadoutTwo.value) loadoutTwo.value = "weapon.void_orb";
+    loadoutUiInitialized = true;
+  }
+  loadoutOne.disabled = busy || !!localPlayer?.ready;
+  loadoutTwo.disabled = busy || !!localPlayer?.ready;
+  confirmLoadout.disabled = busy || !connected || !!localPlayer?.ready ||
+    loadoutOne.value === loadoutTwo.value;
+  loadoutStatus.textContent = localPlayer?.ready ? "已准备，武器已锁定" :
+    localPlayer?.loadoutConfirmed ? "服务器已确认双武器，可以准备" : "确认双武器后才能准备";
   readyRoom.textContent = localPlayer?.ready ? "取消准备" : "准备并开始";
   const finished = view?.phase === "RESULT";
   restartRoom.hidden = !finished;
@@ -407,6 +448,7 @@ function render(view: LobbyView | null): void {
   uiShell.dataset.uiPhase = view?.phase ?? "LOBBY";
   if (!view) tickMonitor.textContent = "Tick --";
   connected = view !== null;
+  if (!view) loadoutUiInitialized = false;
   if (scene.scene && scene.scene.isActive()) scene.showLobby(view);
   if (view) {
     roomInput.value = view.roomId;
@@ -466,7 +508,7 @@ function updateHud(view: LobbyView | null): void {
   hudHealth.textContent = Math.max(0, Math.ceil(local.health)) + "/" + Math.ceil(local.maxHealth);
   hudHealthFill.style.width = Math.max(0, Math.min(100, local.health / Math.max(1, local.maxHealth) * 100)) + "%";
   const weaponLabel = (id: string): string => id === "weapon.fireball" ? "火焰弹" :
-    id === "weapon.spin_blade" ? "回旋刃" : "未知武器";
+    id === "weapon.spin_blade" ? "回旋刃" : id === "weapon.void_orb" ? "虚空法球" : "未知武器";
   skillSlot1.textContent = local.weaponIds[0] ? weaponLabel(local.weaponIds[0]) : "未装备";
   skillSlot2.textContent = local.weaponIds[1] ? weaponLabel(local.weaponIds[1]) : "未解锁";
   hudDash.textContent = local.dashActive ? "冲刺中" : local.dashCooldownRemainingTicks > 0
@@ -499,14 +541,17 @@ function updateUpgradePanel(view: LobbyView | null): void {
   upgradeRerollHint.textContent = local.upgradeRerollUsed
     ? "重抽次数已用完" : "由服务器抽取新候选，同一局仅可重抽一次";
   const weapons = local.weaponIds.map(id =>
-    (id === "weapon.fireball" ? "火焰弹" : id === "weapon.spin_blade" ? "回旋刃" : id) +
+    (id === "weapon.fireball" ? "火焰弹" : id === "weapon.spin_blade" ? "回旋刃" :
+      id === "weapon.void_orb" ? "虚空法球" : id) +
     " Lv" + (local.weaponLevels[id] ?? 1));
   const passives = Object.entries(local.passiveLevels)
     .filter(([, lvl]) => lvl > 0)
     .map(([id, level]) => (id === "passive.rage" ? "狂怒之心" :
       id === "passive.swift_cast" ? "迅捷施法" :
       id === "passive.fortitude" ? "坚韧体魄" : id) + " " + level + "级");
-  buildSummary.textContent = "当前构筑：" + [...weapons, ...passives].join(" · ");
+  const branches = Object.values(local.weaponBranches);
+  buildSummary.textContent = "当前构筑：" + [...weapons, ...branches,
+    ...(local.dualBoonId ? ["坍缩爆炎"] : []), ...passives].join(" · ");
   const renderKey = [view.upgradeId, local.upgradeSelected ? "selected" : "pending",
     local.upgradeRerollUsed ? "rerolled" : "fresh",
     ...local.upgradeChoices.map(choice =>
@@ -522,7 +567,9 @@ function updateUpgradePanel(view: LobbyView | null): void {
     title.textContent = choice.label;
     const kind = document.createElement("small");
     kind.textContent = (choice.kind === "weapon_unlock" ? "解锁武器" :
-      choice.kind === "weapon_power" ? "武器强化" : "被动") +
+      choice.kind === "weapon_power" ? "武器强化" :
+      choice.kind === "weapon_branch" ? "武器分支" :
+      choice.kind === "dual_boon" ? "双重祝福" : "被动") +
       " · " + choice.nextLevel + "级";
     const description = document.createElement("span");
     description.className = "upgrade-description";
@@ -646,6 +693,14 @@ async function start(action: () => Promise<void>): Promise<void> {
 }
 create.addEventListener("click", () => { void start(() => connection.create(nickname.value)); });
 join.addEventListener("click", () => { void start(() => connection.join(roomInput.value, nickname.value)); });
+confirmLoadout.addEventListener("click", () => {
+  const view = displayedView;
+  if (!view || view.ruleset !== "dual_v2" || view.phase !== "LOBBY") return;
+  const ids = [loadoutOne.value, loadoutTwo.value];
+  if (ids[0] !== ids[1]) connection.selectLoadout(ids);
+});
+loadoutOne.addEventListener("change", refreshControls);
+loadoutTwo.addEventListener("change", refreshControls);
 readyRoom.addEventListener("click", () => {
   const view = displayedView;
   const player = view?.players.get(view.sessionId);

@@ -347,3 +347,12 @@ button:focus-visible, input:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .bar-fill, .gold-button, .panel-body input { transition: none; }
 }
+
+/* V2 dual-weapon selection, shown only when the authoritative ruleset enables it. */
+.dual-loadout { display:grid; gap:7px; margin:12px 0; padding:12px; background:rgba(34,26,52,.7); border:1px solid rgba(174,140,235,.35); border-radius:8px; }
+.dual-loadout[hidden] { display:none; }
+.dual-loadout h4 { margin:0 0 3px; color:#e9d6ff; font-size:14px; }
+.dual-loadout h4 small { font-weight:400; font-size:10px; color:#bcb1cf; }
+.dual-loadout label { color:#e3d3f4; font-size:11px; }
+.dual-loadout select { min-height:31px; padding:6px 8px; background:#151a2a; border:1px solid #665379; border-radius:5px; color:#fff; }
+.dual-loadout p { font-size:11px; line-height:1.4; color:#c3b3d7; margin:3px 0; }
