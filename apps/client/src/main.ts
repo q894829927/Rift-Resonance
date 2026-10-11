@@ -450,7 +450,7 @@ new Phaser.Game({
   scale: { mode: Phaser.Scale.RESIZE, width: WORLD_VIEW_WIDTH, height: WORLD_VIEW_HEIGHT, expandParent: false },
   // Pixel-art assets use nearest-neighbor sampling, not bilinear blur.
   // Keep the shared world-fit camera so CSS nameplates, server edges and
-  // multiplayer predictions stay aligned on every desktop viewport.
+  // multiplayer predictions stay aligned on desktop, tablets and phones.
   pixelArt: true,
   antialias: false,
   roundPixels: true,
@@ -463,6 +463,9 @@ function element<T extends HTMLElement>(id: string): T {
   return e as T;
 }
 const uiShell = element<HTMLElement>("game-shell");
+// Room controls are a modal above the game, not confined to the arena's
+// clipping and layout containment. This keeps small-screen forms scrollable.
+uiShell.append(element<HTMLElement>("lobby-panel"));
 const startSoloButton = element<HTMLButtonElement>("start-solo");
 const startMultiButton = element<HTMLButtonElement>("start-multi");
 const backToMenuButton = element<HTMLButtonElement>("back-to-menu");
@@ -761,16 +764,61 @@ function updateMatchBanner(view: LobbyView | null): void {
 }
 /** Keyboard state is sampled at the independent 20 Hz input sender. */
 const heldKeys = new Set<string>();
+type TouchDirection = "left" | "right" | "up" | "down";
+const heldTouchPointers = new Map<number, TouchDirection>();
+function touchHeld(direction: TouchDirection): boolean {
+  return [...heldTouchPointers.values()].includes(direction);
+}
 function updateMovement(): void {
   connection.setMoveDirection({
-    moveX: movementAxis(heldKeys.has("KeyA") || heldKeys.has("ArrowLeft"), heldKeys.has("KeyD") || heldKeys.has("ArrowRight")),
-    moveY: movementAxis(heldKeys.has("KeyW") || heldKeys.has("ArrowUp"), heldKeys.has("KeyS") || heldKeys.has("ArrowDown"))
+    moveX: movementAxis(heldKeys.has("KeyA") || heldKeys.has("ArrowLeft") || touchHeld("left"),
+      heldKeys.has("KeyD") || heldKeys.has("ArrowRight") || touchHeld("right")),
+    moveY: movementAxis(heldKeys.has("KeyW") || heldKeys.has("ArrowUp") || touchHeld("up"),
+      heldKeys.has("KeyS") || heldKeys.has("ArrowDown") || touchHeld("down"))
   });
 }
 function releaseKeys(): void {
   heldKeys.clear();
+  heldTouchPointers.clear();
+  document.querySelectorAll(".touch-key.is-pressed").forEach(button => button.classList.remove("is-pressed"));
   updateMovement();
 }
+// One active direction per pointer; supports diagonal D-pad touches and an
+// independent dash finger. Releases are handled even after leaving a button.
+document.querySelectorAll<HTMLButtonElement>("[data-touch-dir]").forEach(button => {
+  const direction = button.dataset.touchDir as TouchDirection;
+  button.addEventListener("pointerdown", event => {
+    if (!connection.connected || displayedView?.phase !== "RUNNING") return;
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    heldTouchPointers.set(event.pointerId, direction);
+    button.classList.add("is-pressed");
+    updateMovement();
+  });
+  const release = (event: PointerEvent): void => {
+    if (!heldTouchPointers.has(event.pointerId)) return;
+    event.preventDefault();
+    heldTouchPointers.delete(event.pointerId);
+    button.classList.toggle("is-pressed",
+      [...heldTouchPointers.values()].includes(direction));
+    updateMovement();
+  };
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("lostpointercapture", release);
+  button.addEventListener("contextmenu", event => event.preventDefault());
+});
+document.getElementById("touch-dash")?.addEventListener("pointerdown", event => {
+  if (!connection.connected || displayedView?.phase !== "RUNNING") return;
+  event.preventDefault();
+  connection.queueDash();
+});
+window.addEventListener("pointerup", event => {
+  if (heldTouchPointers.delete(event.pointerId)) {
+    document.querySelectorAll(".touch-key.is-pressed").forEach(button => button.classList.remove("is-pressed"));
+    updateMovement();
+  }
+});
 window.addEventListener("keydown", event => {
   if (!connection.connected || event.repeat && heldKeys.has(event.code)) return;
   if (document.activeElement instanceof HTMLInputElement) return;
