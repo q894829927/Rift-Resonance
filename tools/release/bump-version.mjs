@@ -52,7 +52,7 @@ export function insertChangelogEntry(changelog, version, notes, date) {
   const cleanedNotes = validateNotes(notes);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("日期格式应为 YYYY-MM-DD");
   if (!changelog.startsWith("# 更新日志（CHANGELOG）\n")) throw new Error("CHANGELOG.md 缺少规定标题");
-  if (new RegExp(`^## \\[\${version.replaceAll(".", "\\.")}\\]`, "m").test(changelog)) {
+  if (changelog.split("\n").some(line => line.startsWith(`## [${version}] - `))) {
     throw new Error(`CHANGELOG.md 已存在版本 ${version}，请勿重复创建`);
   }
   const heading = `## [${version}] - ${date}`;
