@@ -31,6 +31,7 @@ import {
   type ProjectileVisualTrack
 } from "./art/m2ProjectileInterpolation.js";
 import { createV2VoidFlight, createV2VoidCore, updateV2VoidCore } from "./art/v2VoidVisuals.js";
+import {retargetV2FireballVisual,v2FireballVisualPosition,type V2FireballVisualTrack} from "./art/v2FireballPresentation.js";
 import {createV2Ember,updateV2Ember} from "./art/v2EmberVisuals.js";
 import "./style.css";
 
@@ -234,11 +235,22 @@ class LobbyScene extends Phaser.Scene {
             duration:95,ease:"Linear"});
         }
         entity.setAlpha(projectile.phase === "returning" ? 0.88 : 1);
+      } else if (projectile.weaponId === "weapon.fireball" &&
+          this.latestView?.ruleset === "dual_v2" &&
+          Math.hypot(projectile.directionX,projectile.directionY)>0.01) {
+        // V2 is direction-driven: avoid deriving the flame heading from the
+        // interpolation correction, which previously made it look backward.
+        const previous = entity.getData("v2FireballTrack") as V2FireballVisualTrack | undefined;
+        const track=retargetV2FireballVisual(previous,projectile,this.time.now);
+        if(track!==previous)entity.setData("v2FireballTrack",track);
+        updateM1FireballFacing(entity,track.directionX,track.directionY);
+        if(this.latestView?.phase === "RUNNING"){
+          const visual=v2FireballVisualPosition(track,this.time.now);
+          entity.setPosition(visual.x,visual.y);
+        }
       } else {
-        // Fireballs previously snapped straight to the 10Hz server position
-        // every render frame. Keep a per-projectile visual track: a new server
-        // coordinate retargets from the current rendered position, while
-        // subsequent RAF frames advance it smoothly without restarting.
+        // Legacy bolts and new flying void orbs keep the existing render-only
+        // positional smoothing; no client code affects collision or damage.
         const previous = entity.getData("projectileVisualTrack") as ProjectileVisualTrack | undefined;
         const nowMs = this.time.now;
         const track = retargetProjectileVisual(previous, projectile.x, projectile.y, nowMs);
