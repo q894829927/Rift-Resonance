@@ -300,9 +300,8 @@ test("shared XP enters upgrading only after the combat tick and pauses match tim
   assert.equal(world.pendingUpgrade, null);
 });
 
-test("upgrade timeout auto-selects deterministically and departure cannot block the team", () => {
+test("upgrade pauses indefinitely until every connected player chooses manually", () => {
   const world = createCombatWorld();
-  world.config.upgradeTimeoutTicks = 2;
   const alice = addCombatPlayer(world, "player-a", "Alice");
   const bob = addCombatPlayer(world, "player-b", "Bob");
   alice.weaponIds.length = 0;
@@ -311,13 +310,41 @@ test("upgrade timeout auto-selects deterministically and departure cannot block 
   world.upgradeReady = true;
   stepCombatWorld(world, 50);
   assert.equal(world.phase, "UPGRADING");
-  const firstChoice = world.pendingUpgrade.choicesByPlayer.get(alice.sessionId)[0];
-  handleCombatPlayerLeft(world, bob.sessionId);
-  world.players.delete(bob.sessionId);
-  stepCombatWorld(world, 50);
+  const pending = world.pendingUpgrade;
+  const elapsed = world.matchElapsedTicks;
+  const aliceChoice = pending.choicesByPlayer.get(alice.sessionId)[0];
+  const bobChoice = pending.choicesByPlayer.get(bob.sessionId)[0];
+  assert.equal(selectCombatUpgrade(world, alice.sessionId, aliceChoice.id), true);
+  for (let i = 0; i < 300; i++) stepCombatWorld(world, 50);
+  assert.equal(world.phase, "UPGRADING");
+  assert.equal(world.pendingUpgrade, pending);
+  assert.equal(world.matchElapsedTicks, elapsed);
+  assert.equal(pending.selections.has(bob.sessionId), false);
+  assert.equal(bob.weaponIds.length, 0);
+  assert.equal(selectCombatUpgrade(world, bob.sessionId, bobChoice.id), true);
   stepCombatWorld(world, 50);
   assert.equal(world.phase, "RUNNING");
-  assert.equal(alice.weaponIds[0], firstChoice.weaponId ?? alice.weaponIds[0]);
+  assert.equal(world.pendingUpgrade, null);
+});
+
+test("disconnect removes the pending player but does not auto-select for remaining players", () => {
+  const world = createCombatWorld();
+  const alice = addCombatPlayer(world, "player-a", "Alice");
+  const bob = addCombatPlayer(world, "player-b", "Bob");
+  alice.weaponIds.length = 0;
+  bob.weaponIds.length = 0;
+  begin(world, alice, bob);
+  world.upgradeReady = true;
+  stepCombatWorld(world, 50);
+  const aliceChoice = world.pendingUpgrade.choicesByPlayer.get(alice.sessionId)[0];
+  handleCombatPlayerLeft(world, bob.sessionId);
+  world.players.delete(bob.sessionId);
+  for (let i = 0; i < 240; i++) stepCombatWorld(world, 50);
+  assert.equal(world.phase, "UPGRADING");
+  assert.equal(alice.weaponIds.length, 0);
+  assert.equal(selectCombatUpgrade(world, alice.sessionId, aliceChoice.id), true);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RUNNING");
 });
 
 test("processed actions and transient events remain bounded over time", () => {

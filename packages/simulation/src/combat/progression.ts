@@ -4,7 +4,7 @@ import {
 import {
   COMBAT_MAX_PASSIVE_LEVEL, COMBAT_MAX_WEAPON_LEVEL,
   COMBAT_PLAYER_MAX_HEALTH, COMBAT_PLAYER_WEAPON_SLOTS,
-  COMBAT_UPGRADE_TIMEOUT_TICKS, ENEMY_DEFINITIONS,
+  ENEMY_DEFINITIONS,
   PASSIVE_FORTITUDE_ID, PASSIVE_RAGE_ID, PASSIVE_SWIFT_CAST_ID,
   emitCombatEvent,
   type CombatEnemy, type CombatPlayer, type CombatUpgradeChoice,
@@ -184,7 +184,6 @@ export function maybeStartCombatUpgrade(world: CombatWorld): boolean {
   }
   const pending: CombatUpgradeState = {
     id, level: world.teamLevel, startedTick: world.tick,
-    deadlineTick: world.tick + (world.config.upgradeTimeoutTicks || COMBAT_UPGRADE_TIMEOUT_TICKS),
     choicesByPlayer, selections: new Map()
   };
   world.pendingUpgrade = pending;
@@ -232,15 +231,16 @@ export function advanceCombatUpgrade(world: CombatWorld): void {
     const choices = pending.choicesByPlayer.get(player.sessionId) ?? [];
     return choices.length === 0 || pending.selections.has(player.sessionId);
   });
-  const timedOut = world.tick >= pending.deadlineTick;
-  if (!complete && !timedOut) return;
+  // All eligible connected players must explicitly submit a choice.
+  // Disconnects are removed from world.players; there is no timeout fallback.
+  if (!complete) return;
   for (const player of activePlayers) {
     const choices = pending.choicesByPlayer.get(player.sessionId) ?? [];
     if (choices.length === 0) continue;
-    const selectedId = pending.selections.get(player.sessionId) ?? choices[0]!.id;
-    const selected = choices.find(choice => choice.id === selectedId) ?? choices[0]!;
+    const selectedId = pending.selections.get(player.sessionId);
+    const selected = choices.find(choice => choice.id === selectedId);
+    if (!selected) return; // Defensive: never silently choose a fallback card.
     applyCombatUpgrade(player, selected);
-    pending.selections.set(player.sessionId, selected.id);
   }
   emitCombatEvent(world, {
     type: "upgrade.resolved", sourceId: "team", targetId: pending.id,

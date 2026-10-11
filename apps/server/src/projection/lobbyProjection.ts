@@ -136,7 +136,8 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
   state.teamExperience = world.teamExperience;
   state.teamNextLevelExperience = world.teamNextLevelExperience;
   state.upgradeId = world.pendingUpgrade?.id ?? "";
-  state.upgradeDeadlineTick = world.pendingUpgrade?.deadlineTick ?? 0;
+  // Kept as an always-zero wire field for older clients; upgrades never time out.
+  state.upgradeDeadlineTick = 0;
   for (const member of world.players.values()) {
     const target = state.players.get(member.sessionId);
     if (!target) continue;

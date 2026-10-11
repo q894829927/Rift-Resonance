@@ -22,7 +22,6 @@ import {
   COMBAT_MATCH_DURATION_TICKS,
   COMBAT_MAX_ACTIVE_ENEMIES,
   COMBAT_RESULT_HOLD_TICKS,
-  COMBAT_UPGRADE_TIMEOUT_TICKS,
   emitCombatEvent,
   COMBAT_PLAYER_SPAWNS,
   type CombatPhase,
@@ -65,7 +64,6 @@ export function createCombatWorld(ruleset: CombatRuleset = "legacy"): CombatWorl
       actionRetentionTicks: COMBAT_ACTION_RETENTION_TICKS,
       matchDurationTicks: COMBAT_MATCH_DURATION_TICKS,
       resultHoldTicks: COMBAT_RESULT_HOLD_TICKS,
-      upgradeTimeoutTicks: COMBAT_UPGRADE_TIMEOUT_TICKS,
       experiencePlayerScale: 0.25,
       difficultyStages: [
         { startElapsedTicks: 1200, spawnIntervalTicks: 20, berserkerEvery: 6 },

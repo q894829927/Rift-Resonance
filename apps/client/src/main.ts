@@ -533,8 +533,8 @@ function updateUpgradePanel(view: LobbyView | null): void {
     return;
   }
   upgradeStatus.textContent = local.upgradeSelected
-    ? "已提交选择，等待队友（超时由服务器自动选择）"
-    : "请选择一项强化；升级阶段战斗计时暂停";
+    ? "已提交选择，等待其他玩家手动确认"
+    : "请选择一项强化；没有倒计时，战斗将在所有玩家确认后继续";
   upgradeReroll.disabled = local.upgradeSelected || local.upgradeRerollUsed ||
     local.upgradeChoices.length === 0;
   upgradeReroll.textContent = local.upgradeRerollUsed ? "本局已重抽" : "重新抽取（1 次机会）";

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   createCombatWorld, addCombatPlayer, setCombatPlayerLoadout, setCombatPlayerReady,
   startCombatMatch, resetCombatMatch, stepCombatWorld,
-  getCombatUpgradeChoices, draftCombatUpgradeChoices, applyCombatUpgrade
+  getCombatUpgradeChoices, draftCombatUpgradeChoices, applyCombatUpgrade, selectCombatUpgrade
 } from "../packages/simulation/dist/index.js";
 import { createEnemy } from "../packages/simulation/dist/combat/types.js";
 
@@ -21,6 +21,29 @@ test("V2 chooses exactly two different server-approved weapons before ready", ()
   assert.equal(setCombatPlayerLoadout(world, "p", ["weapon.void_orb", "weapon.fireball"]), false);
   assert.equal(startCombatMatch(world), true);
   assert.equal(setCombatPlayerLoadout(world, "p", ["weapon.fireball", "weapon.void_orb"]), false);
+});
+
+test("V2 upgrade waits for every player's explicit selection, with reroll not confirming", () => {
+  const world = createCombatWorld("dual_v2");
+  for (const id of ["a", "b"]) {
+    addCombatPlayer(world, id, id);
+    assert.equal(setCombatPlayerLoadout(world, id, ["weapon.fireball", "weapon.void_orb"]), true);
+    assert.equal(setCombatPlayerReady(world, id, true), true);
+  }
+  assert.equal(startCombatMatch(world), true);
+  world.upgradeReady = true;
+  stepCombatWorld(world, 50);
+  const pending = world.pendingUpgrade;
+  assert.equal(world.phase, "UPGRADING");
+  const first = pending.choicesByPlayer.get("a")[0];
+  const second = pending.choicesByPlayer.get("b")[0];
+  assert.equal(selectCombatUpgrade(world, "a", first.id), true);
+  for (let i = 0; i < 240; i++) stepCombatWorld(world, 50);
+  assert.equal(world.phase, "UPGRADING");
+  assert.equal(pending.selections.has("b"), false);
+  assert.equal(selectCombatUpgrade(world, "b", second.id), true);
+  stepCombatWorld(world, 50);
+  assert.equal(world.phase, "RUNNING");
 });
 
 test("V2 branch upgrade gates collapse inferno, reroll drafts remain deterministic", () => {

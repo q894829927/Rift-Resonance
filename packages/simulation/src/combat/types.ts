@@ -113,7 +113,6 @@ export const PASSIVE_SWIFT_CAST_ID = "passive.swift_cast" as const;
 export const PASSIVE_FORTITUDE_ID = "passive.fortitude" as const;
 export const COMBAT_MAX_WEAPON_LEVEL = 3;
 export const COMBAT_MAX_PASSIVE_LEVEL = 2;
-export const COMBAT_UPGRADE_TIMEOUT_TICKS = 20 * 10;
 
 export type CombatRuleset = "legacy" | "dual_v2";
 export type CombatPhase = "LOBBY" | "RUNNING" | "UPGRADING" | "WON" | "LOST" | "RESULT";
@@ -134,7 +133,6 @@ export interface CombatConfig {
   actionRetentionTicks: number;
   matchDurationTicks: number;
   resultHoldTicks: number;
-  upgradeTimeoutTicks: number;
   experiencePlayerScale: number;
   difficultyStages: readonly SpawnDifficultyStage[];
 }
@@ -305,7 +303,6 @@ export interface CombatUpgradeState {
   readonly id: string;
   readonly level: number;
   readonly startedTick: number;
-  readonly deadlineTick: number;
   readonly choicesByPlayer: Map<string, readonly CombatUpgradeChoice[]>;
   readonly selections: Map<string, string>;
 }
