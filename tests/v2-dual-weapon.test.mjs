@@ -190,6 +190,33 @@ test("V2 space anchor redirects at most once per friendly fireball", () => {
   assert.equal(w.voidFields.get("anchor").redirectsUsed,1);
 });
 
+test("V2 level III anchor briefly orbits the projectile before releasing it", () => {
+  const w=createCombatWorld("dual_v2"),p=addCombatPlayer(w,"p","Player");
+  setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
+  applyCombatUpgrade(p,getCombatUpgradeChoices(p,w).find(c=>c.branchId==="anchor"));
+  p.weaponLevels.set("weapon.void_orb",3);
+  setCombatPlayerReady(w,"p",true);startCombatMatch(w);
+  p.weaponIds.length=0;
+  const n=w.matchElapsedTicks,x=p.x+35,y=p.y;
+  w.voidFields.set("anchor",{
+    id:"anchor",ownerId:"p",x,y,radius:114,kind:"anchor",
+    startedTick:n,startedWorldTick:w.tick,collapseTick:n+32,expireTick:n+32,
+    phase:"active",absorbedEmbers:0,essenceCharges:0,redirectsUsed:0
+  });
+  w.enemies.set("old",createEnemy("old","rift_swarm",x+190,y));
+  w.enemies.set("new",createEnemy("new","rift_swarm",x+15,y+50));
+  w.projectiles.set("fire",{
+    id:"fire",weaponId:"weapon.fireball",sourcePlayerId:"p",targetEnemyId:"old",
+    damage:20,speed:0,radius:7,x,y
+  });
+  stepCombatWorld(w,50);
+  assert.equal(w.projectiles.get("fire")?.voidAnchorOrbit?.remainingTicks,4);
+  for(let i=0;i<4;i++)stepCombatWorld(w,50);
+  assert.equal(w.projectiles.get("fire")?.voidAnchorOrbit,undefined);
+  assert.equal(w.voidFields.get("anchor")?.redirectsUsed,1);
+  assert.equal(w.events.filter(e=>e.type==="weapon.void_redirect").length,1);
+});
+
 test("V2 level III collapse gets a distinct finite secondary shockwave", () => {
   const w=createCombatWorld("dual_v2"),p=addCombatPlayer(w,"p","Player");
   setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
