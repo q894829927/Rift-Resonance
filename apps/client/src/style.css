@@ -356,3 +356,7 @@ button:focus-visible, input:focus-visible {
 .dual-loadout label { color:#e3d3f4; font-size:11px; }
 .dual-loadout select { min-height:31px; padding:6px 8px; background:#151a2a; border:1px solid #665379; border-radius:5px; color:#fff; }
 .dual-loadout p { font-size:11px; line-height:1.4; color:#c3b3d7; margin:3px 0; }
+
+/* Small, always-visible game build identifier; no hardcoded version in CSS. */
+.app-version { display: inline-block; font-size: 10px; letter-spacing: .045em; color: #dcc59d; border: 1px solid rgba(207, 170, 116, .4); background: rgba(25, 19, 34, .85); padding: 3px 6px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+@media (max-width: 650px) { .app-version { font-size: 8px; padding: 2px 4px; } }
