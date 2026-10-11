@@ -6,6 +6,8 @@
 **目标平台：** Windows、macOS 桌面浏览器；移动端后续适配  
 **目标服务器：** 阿里云 ECS，2 vCPU / 2 GiB / 40 GiB
 
+> **V2.4 火球与火种可读性优化（待浏览器验收）：** [有限转向追踪、火种寿命和立体火焰祭印表现](./design/V2.4-FIREBALL-EMBER-READABILITY.md)。
+>
 > **V2.3 虚空法球重做（原型已实现，待浏览器验收）：** [飞行→吞噬充能→收缩坍缩与空间锚点](./design/V2.3-VOID-ORB-REWORK.md)。该规则在 V2 独立分支替代旧版“目标位置直接出现范围圈”，并继续保留 V1 历史参考。
 >
 > **V2.2 开局双武器（分阶段实施）：** [全部 15 种武器组合、12 分支与开发路线](./design/V2.2-ALL-15-DUAL-WEAPON-BUILD-PLAN.md)；[第一套火焰弹 + 虚空法球实施记录](./technical/V2.2-FIRST-TWO-WEAPONS-IMPLEMENTATION.md)。目前在独立功能分支中，以环境开关启用 V2 原型；其余四把武器与高级祝福仍为计划内容。
