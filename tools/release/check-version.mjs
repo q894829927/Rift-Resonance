@@ -89,9 +89,16 @@ function main() {
         after.slice(changed + 1).some(n => n !== 0)) {
       throw new Error("版本号必须递增且低位归零：" + oldVersion + " -> " + version);
     }
-    const priorChangelog = git(["show", lastVersionCommit + "^:" + CHANGELOG]);
+    const predecessor = git(["rev-parse", lastVersionCommit + "^"]);
+    const priorChangelog = git(["show", predecessor + ":" + CHANGELOG]);
     if (priorChangelog.includes("## [" + version + "] - ")) {
-      throw new Error("版本 " + version + " 的日志必须在本次升级时新增，不能使用历史条目");
+      // GitHub Contents API writes one file per commit; allow CHANGELOG and
+      // APP_VERSION as two *adjacent* commits, but reject reused old entries.
+      const changedInPredecessor = git(["diff-tree", "--no-commit-id", "--name-only", "-r", predecessor]).split("\n");
+      const olderChangelog = git(["show", predecessor + "^:" + CHANGELOG]);
+      if (!changedInPredecessor.includes(CHANGELOG) || olderChangelog.includes("## [" + version + "] - ")) {
+        throw new Error("版本 " + version + " 的日志必须与版本升级同时或紧邻新增，不能复用历史条目");
+      }
     }
   }
   console.log("版本 " + version + "、CHANGELOG.md 与游戏代码同步检查通过。");
