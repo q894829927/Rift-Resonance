@@ -11,6 +11,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -20,5 +22,17 @@ jobs:
         run: npm run typecheck && npm run build
       - name: Unit tests (legacy and V2)
         run: npm test
+      - name: Start integration server
+        run: |
+          npm run start -w @rift/server > /tmp/rift-v2-server.log 2>&1 &
+          for i in $(seq 1 50); do
+            if curl -fsS http://127.0.0.1:2567/health > /dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          cat /tmp/rift-v2-server.log
+          exit 1
       - name: Two-client integration regression
         run: npm run test:integration
+      - name: Print server log on failure
+        if: failure()
+        run: cat /tmp/rift-v2-server.log || true
