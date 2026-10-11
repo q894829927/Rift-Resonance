@@ -8,6 +8,7 @@ import {
   getWeaponDamage,
   clampCombatPosition,
   type CombatProjectile,
+  type CombatVoidField,
   emitCombatEvent,
   distanceSquared,
   type CombatEnemy,
@@ -28,10 +29,6 @@ export interface DamageRequest {
 }
 
 /** Server-only collision, damage, health and death resolution. */
-function getVoidBurstDamage(owner: CombatPlayer, embers: number): number {
-  return getWeaponDamage(owner, VOID_ORB_WEAPON_ID) + Math.min(3, embers) * 18;
-}
-
 export class DamageSystem {
   applyPlayerDamage(world: CombatWorld, request: DamageRequest): boolean {
     if (world.phase !== "RUNNING") return false;
@@ -53,6 +50,10 @@ export class DamageSystem {
     for (const [projectileId, projectile] of world.projectiles) {
       if (projectile.weaponId === SPIN_BLADE_WEAPON_ID && projectile.returningBlade) {
         this.advanceReturningBlade(world, projectile, dtSeconds);
+        continue;
+      }
+      if (projectile.weaponId === VOID_ORB_WEAPON_ID && projectile.voidOrbFlight) {
+        this.advanceVoidOrbFlight(world, projectile, dtSeconds);
         continue;
       }
       const target = world.enemies.get(projectile.targetEnemyId);
@@ -84,7 +85,7 @@ export class DamageSystem {
           const emberId = "ember:" + world.nextFieldSequence++;
           world.embers.set(emberId, {
             id: emberId, ownerId: projectile.sourcePlayerId, x: impactX, y: impactY,
-            expireTick: world.tick + 40
+            expireTick: world.matchElapsedTicks + 40
           });
           const owned = [...world.embers.values()].filter(e => e.ownerId === projectile.sourcePlayerId);
           if (owned.length > 5) world.embers.delete(owned[0]!.id);
@@ -132,59 +133,189 @@ export class DamageSystem {
     if (world.ruleset === "dual_v2") this.advanceVoidFields(world);
   }
 
-  private advanceVoidFields(world: CombatWorld): void {
-    for (const [id, ember] of world.embers) {
-      if (world.tick >= ember.expireTick) world.embers.delete(id);
+  /**
+   * A real server projectile travels to its chosen point before forming a core.
+   * The endpoint is fixed at launch, so killing the target cannot cancel the spell.
+   */
+  private advanceVoidOrbFlight(world: CombatWorld, projectile: CombatProjectile, dtSeconds: number): void {
+    const flight = projectile.voidOrbFlight!;
+    const owner = world.players.get(projectile.sourcePlayerId);
+    if (!owner?.alive) { world.projectiles.delete(projectile.id); return; }
+    const startX = projectile.x, startY = projectile.y;
+    const dx = flight.targetX - startX, dy = flight.targetY - startY;
+    const distance = Math.hypot(dx, dy);
+    const travel = projectile.speed * dtSeconds;
+    const arrived = distance <= travel;
+    const ratio = distance === 0 ? 0 : Math.min(1, travel / distance);
+    projectile.x = startX + dx * ratio;
+    projectile.y = startY + dy * ratio;
+    for (const enemy of [...world.enemies.values()].filter(e => e.alive).sort((a,b)=>a.id.localeCompare(b.id))) {
+      if (flight.hitEnemies.has(enemy.id) || !segmentHitsCircle(startX, startY, projectile.x, projectile.y,
+        enemy.x, enemy.y, enemy.collisionRadius + projectile.radius)) continue;
+      flight.hitEnemies.add(enemy.id);
+      this.applyEnemyDamage(world, {
+        actionId: "void-flight:" + projectile.id + ":" + enemy.id,
+        sourceId: owner.sessionId, targetId: enemy.id, amount: projectile.damage,
+        assetId: VOID_ORB_WEAPON_ID, x: enemy.x, y: enemy.y
+      });
     }
-    const fields = [...world.voidFields.values()].sort((a, b) => a.id.localeCompare(b.id));
+    if (!arrived) return;
+    world.projectiles.delete(projectile.id);
+    const def = WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID];
+    const branch = owner.weaponBranches.get(VOID_ORB_WEAPON_ID);
+    const level = owner.weaponLevels.get(VOID_ORB_WEAPON_ID) ?? 1;
+    const kind = branch === "anchor" ? "anchor" : "collapse";
+    const radius = kind === "anchor"
+      ? (level >= 3 ? 114 : 100)
+      : def.radius + (branch === "collapse" && level >= 3 ? 12 : 0);
+    const startTick = world.matchElapsedTicks;
+    const activeTicks = kind === "anchor" ? 32 : def.durationTicks;
+    const id = "void-field:" + world.nextFieldSequence++;
+    world.voidFields.set(id, {
+      id, ownerId: owner.sessionId, x: projectile.x, y: projectile.y,
+      radius, kind, startedTick:startTick, startedWorldTick:world.tick,
+      collapseTick:startTick + activeTicks,
+      expireTick:startTick + activeTicks + (kind === "anchor" ? 0 : def.collapseWindupTicks),
+      phase:"active", absorbedEmbers:0, essenceCharges:0, redirectsUsed:0
+    });
+    emitCombatEvent(world, {
+      type:"weapon.void_spawned", sourceId:owner.sessionId, targetId:id,
+      assetId:VOID_ORB_WEAPON_ID, x:projectile.x, y:projectile.y, amount:radius,
+      weaponLevel:level
+    });
+  }
+
+  private advanceVoidFields(world: CombatWorld): void {
+    const now = world.matchElapsedTicks;
+    for (const [id, ember] of world.embers) if (now >= ember.expireTick) world.embers.delete(id);
+    // Each enemy death fuels at most one core; removed corpses no longer retain claims.
+    for (const id of world.claimedVoidEssences) if (!world.enemies.has(id)) world.claimedVoidEssences.delete(id);
+    const fields = [...world.voidFields.values()].sort((a,b)=>a.id.localeCompare(b.id));
     for (const field of fields) {
       const owner = world.players.get(field.ownerId);
-      if (!owner || !owner.alive) { world.voidFields.delete(field.id); continue; }
-      if (world.tick >= field.expireTick) {
-        const empowered = owner.dualBoonId === "collapse_inferno" && field.absorbedEmbers > 0;
-        const damage = getVoidBurstDamage(owner, field.absorbedEmbers);
-        for (const enemy of [...world.enemies.values()].filter(e => e.alive &&
-          distanceSquared(e, field) <= (field.radius + e.collisionRadius) ** 2)
-          .sort((a, b) => a.id.localeCompare(b.id))) {
-          this.applyEnemyDamage(world, {
-            actionId: "void-burst:" + field.id + ":" + enemy.id,
-            sourceId: owner.sessionId, targetId: enemy.id, amount: damage,
-            assetId: VOID_ORB_WEAPON_ID, x: enemy.x, y: enemy.y
+      if (!owner?.alive) {world.voidFields.delete(field.id);continue;}
+      if (field.phase === "aftershock") {
+        if (now >= (field.aftershockTick ?? Number.POSITIVE_INFINITY)) {
+          const original = getWeaponDamage(owner, VOID_ORB_WEAPON_ID);
+          this.damageVoidArea(world, field, Math.max(1, Math.round(original * 0.35)),
+            field.radius + 24, "void-aftershock:");
+          emitCombatEvent(world, {
+            type:"weapon.void_aftershock", sourceId:owner.sessionId, targetId:field.id,
+            assetId:VOID_ORB_WEAPON_ID, x:field.x,y:field.y,amount:field.radius+24
           });
+          world.voidFields.delete(field.id);
         }
-        emitCombatEvent(world, {
-          type: empowered ? "boon.collapse_inferno" : "weapon.void_pulse",
-          sourceId: owner.sessionId, targetId: field.id, assetId: VOID_ORB_WEAPON_ID,
-          x: field.x, y: field.y, amount: field.radius
-        });
-        world.voidFields.delete(field.id);
         continue;
       }
-      if (owner.dualBoonId === "collapse_inferno" && field.absorbedEmbers < 3) {
-        for (const [emberId, ember] of world.embers) {
-          if (field.absorbedEmbers >= 3) break;
-          if (distanceSquared(field, ember) > field.radius ** 2) continue;
-          world.embers.delete(emberId);
-          field.absorbedEmbers++;
-          emitCombatEvent(world, {
-            type: "weapon.ember_absorbed", sourceId: owner.sessionId,
-            targetId: field.id, assetId: VOID_ORB_WEAPON_ID,
-            x: field.x, y: field.y, amount: field.absorbedEmbers
-          });
-        }
+      if (now >= field.expireTick) {
+        const empowered = field.kind === "collapse" &&
+          owner.dualBoonId === "collapse_inferno" && field.absorbedEmbers > 0;
+        const base = getWeaponDamage(owner, VOID_ORB_WEAPON_ID);
+        const total = field.kind === "anchor" ? Math.max(1, Math.round(base * 0.4))
+          : base + Math.min(4,field.essenceCharges)*5 + (empowered ? field.absorbedEmbers*16 : 0);
+        this.damageVoidArea(world, field, total, field.radius, "void-burst:");
+        emitCombatEvent(world, {
+          type:empowered ? "boon.collapse_inferno" : "weapon.void_pulse",
+          sourceId:owner.sessionId,targetId:field.id,assetId:VOID_ORB_WEAPON_ID,
+          x:field.x,y:field.y,amount:field.radius,weaponLevel:Math.min(4,field.essenceCharges)
+        });
+        if (field.kind === "collapse" && owner.weaponBranches.get(VOID_ORB_WEAPON_ID) === "collapse" &&
+          (owner.weaponLevels.get(VOID_ORB_WEAPON_ID) ?? 1) >= 3) {
+          field.phase = "aftershock";
+          field.aftershockTick = now + 3;
+        } else world.voidFields.delete(field.id);
+        continue;
       }
+      if (field.phase === "active" && now >= field.collapseTick) {
+        field.phase = "collapsing";
+        emitCombatEvent(world, {
+          type:"weapon.void_collapse_started",sourceId:owner.sessionId,targetId:field.id,
+          assetId:VOID_ORB_WEAPON_ID,x:field.x,y:field.y,amount:field.radius
+        });
+      }
+      if (field.phase !== "active") continue;
+      if (field.kind === "collapse") {
+        this.chargeVoidEssence(world, field);
+        if (owner.dualBoonId === "collapse_inferno") this.absorbVoidEmbers(world,field);
+      } else this.redirectVoidProjectiles(world,field,owner);
+      const enemies = [...world.enemies.values()].filter(e=>e.alive && e.behavior === "chase" &&
+        distanceSquared(e,field) <= field.radius**2).sort((a,b)=>a.id.localeCompare(b.id));
+      const maxTargets = field.kind === "anchor" ? 4 : WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxTargets;
       let affected = 0;
-      for (const enemy of [...world.enemies.values()].filter(e => e.alive && e.behavior === "chase" &&
-          distanceSquared(e, field) <= field.radius ** 2).sort((a, b) => a.id.localeCompare(b.id))) {
-        if (affected >= 10) break;
-        affected++;
-        const dx = field.x - enemy.x, dy = field.y - enemy.y;
-        const length = Math.hypot(dx, dy);
-        if (length < 4) continue;
-        const shift = Math.min(2.5, length - 4);
-        enemy.x += dx / length * shift;
-        enemy.y += dy / length * shift;
+      for (const enemy of enemies) {
+        if (affected++ >= maxTargets) break;
+        const dx = field.x-enemy.x,dy=field.y-enemy.y;
+        const d=Math.hypot(dx,dy);
+        if(d<=12)continue;
+        const strength = field.kind === "anchor" ? 2.2
+          : WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].pullPerTick*(0.7+0.3*(1-d/field.radius));
+        const shift = Math.min(strength, d-12);
+        const swirl = field.kind === "collapse" ? Math.min(1.1, shift*0.15) : 0;
+        const next=clampCombatPosition(enemy.x+dx/d*shift-dy/d*swirl,
+          enemy.y+dy/d*shift+dx/d*swirl,enemy.collisionRadius);
+        enemy.x=next.x; enemy.y=next.y;
       }
+    }
+  }
+
+  private chargeVoidEssence(world: CombatWorld, field: CombatVoidField): void {
+    const max = WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxEssence;
+    if(field.essenceCharges >= max)return;
+    for(const enemy of [...world.enemies.values()].filter(e=>!e.alive && e.deathTick !== null &&
+      e.deathTick >= field.startedWorldTick && !world.claimedVoidEssences.has(e.id) &&
+      distanceSquared(e,field) <= field.radius**2).sort((a,b)=>a.id.localeCompare(b.id))) {
+      if(field.essenceCharges>=max)break;
+      field.essenceCharges++;
+      world.claimedVoidEssences.add(enemy.id);
+      emitCombatEvent(world,{
+        type:"weapon.void_essence",sourceId:field.ownerId,targetId:field.id,
+        assetId:VOID_ORB_WEAPON_ID,x:enemy.x,y:enemy.y,amount:field.essenceCharges
+      });
+    }
+  }
+
+  private absorbVoidEmbers(world: CombatWorld,field:CombatVoidField): void {
+    const max=WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxEmbers;
+    for(const [id,ember] of world.embers){
+      if(field.absorbedEmbers>=max)break;
+      if(distanceSquared(ember,field)>field.radius**2)continue;
+      world.embers.delete(id);
+      field.absorbedEmbers++;
+      emitCombatEvent(world,{
+        type:"weapon.ember_absorbed",sourceId:field.ownerId,targetId:field.id,
+        assetId:VOID_ORB_WEAPON_ID,x:field.x,y:field.y,amount:field.absorbedEmbers
+      });
+    }
+  }
+
+  private redirectVoidProjectiles(world: CombatWorld,field:CombatVoidField,owner:CombatPlayer): void {
+    const max=(owner.weaponLevels.get(VOID_ORB_WEAPON_ID)??1)>=3?8:5;
+    for (const projectile of world.projectiles.values()) {
+      if(field.redirectsUsed>=max)break;
+      if(projectile.weaponId!==FIREBALL_WEAPON_ID||projectile.voidRedirected ||
+        distanceSquared(projectile,field)>field.radius**2)continue;
+      const candidates=[...world.enemies.values()].filter(enemy=>enemy.alive &&
+        enemy.id!==projectile.targetEnemyId && distanceSquared(enemy,field)<=320**2)
+        .sort((a,b)=>distanceSquared(a,field)-distanceSquared(b,field)||a.id.localeCompare(b.id));
+      const next=candidates[0];
+      if(!next)continue;
+      projectile.targetEnemyId=next.id;
+      projectile.voidRedirected=true;
+      field.redirectsUsed++;
+      emitCombatEvent(world,{
+        type:"weapon.void_redirect",sourceId:field.ownerId,targetId:projectile.id,
+        assetId:VOID_ORB_WEAPON_ID,x:field.x,y:field.y,amount:field.redirectsUsed
+      });
+    }
+  }
+
+  private damageVoidArea(world:CombatWorld,field:CombatVoidField,amount:number,radius:number,prefix:string):void {
+    for(const enemy of [...world.enemies.values()].filter(e=>e.alive &&
+      distanceSquared(e,field)<=(radius+e.collisionRadius)**2).sort((a,b)=>a.id.localeCompare(b.id))){
+      this.applyEnemyDamage(world,{
+        actionId:prefix+field.id+":"+enemy.id,
+        sourceId:field.ownerId,targetId:enemy.id,amount,assetId:VOID_ORB_WEAPON_ID,x:enemy.x,y:enemy.y
+      });
     }
   }
 

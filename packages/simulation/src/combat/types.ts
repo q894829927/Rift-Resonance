@@ -255,6 +255,8 @@ export interface CombatVoidField {
   readonly kind: "collapse" | "anchor";
   /** All transient lifetimes use matchElapsedTicks, not wall clock or the always-running world.tick. */
   readonly startedTick: number;
+  /** World tick where this core appeared, used to reject earlier deaths. */
+  readonly startedWorldTick: number;
   readonly collapseTick: number;
   readonly expireTick: number;
   phase: "active" | "collapsing" | "aftershock";
