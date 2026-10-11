@@ -5,6 +5,7 @@ export const ENEMY_BERSERKER_BEAST_ASSET_ID = "enemy.berserker_beast" as const;
 export const ARCANE_BOLT_WEAPON_ID = "weapon.arcane_bolt" as const;
 export const FIREBALL_WEAPON_ID = "weapon.fireball" as const;
 export const SPIN_BLADE_WEAPON_ID = "weapon.spin_blade" as const;
+export const VOID_ORB_WEAPON_ID = "weapon.void_orb" as const;
 export const ARCANE_BOLT_PROJECTILE_ASSET_ID = "weapon.arcane_bolt" as const;
 export const FIREBALL_PROJECTILE_ASSET_ID = "weapon.fireball" as const;
 export const SPIN_BLADE_ASSET_ID = "weapon.spin_blade" as const;
@@ -15,7 +16,8 @@ export type EnemyAssetId = typeof ENEMY_SLIME_ASSET_ID
   | typeof ENEMY_BERSERKER_BEAST_ASSET_ID;
 export type WeaponId = typeof ARCANE_BOLT_WEAPON_ID
   | typeof FIREBALL_WEAPON_ID
-  | typeof SPIN_BLADE_WEAPON_ID;
+  | typeof SPIN_BLADE_WEAPON_ID
+  | typeof VOID_ORB_WEAPON_ID;
 export type CombatProjectileAssetId = typeof ARCANE_BOLT_PROJECTILE_ASSET_ID
   | typeof FIREBALL_PROJECTILE_ASSET_ID;
 
@@ -23,6 +25,11 @@ export type CombatEventType =
   | "weapon.fired"
   | "weapon.explosion"
   | "weapon.returning"
+  | "weapon.void_spawned"
+  | "weapon.void_pulse"
+  | "weapon.ember_spawned"
+  | "weapon.ember_absorbed"
+  | "boon.collapse_inferno"
   | "damage.applied"
   | "enemy.died"
   | "player.died"

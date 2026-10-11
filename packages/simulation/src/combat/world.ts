@@ -1,5 +1,6 @@
 import {
   FIREBALL_WEAPON_ID,
+  VOID_ORB_WEAPON_ID,
   PLAYER_DASH_ASSET_ID,
   SIMULATION_TICK_HZ,
   advanceDeterministicMovement,
@@ -27,7 +28,8 @@ import {
   type CombatPhase,
   type CombatPlayer,
   type CombatStats,
-  type CombatWorld
+  type CombatWorld,
+  type CombatRuleset
 } from "./types.js";
 
 const FIXED_STEP_MS = 1000 / SIMULATION_TICK_HZ;
@@ -36,8 +38,9 @@ const SPAWN_SYSTEM = new SpawnSystem();
 const ENEMY_SYSTEM = new EnemySystem(DAMAGE_SYSTEM);
 const WEAPON_SYSTEM = new WeaponSystem(DAMAGE_SYSTEM);
 
-export function createCombatWorld(): CombatWorld {
+export function createCombatWorld(ruleset: CombatRuleset = "legacy"): CombatWorld {
   return {
+    ruleset,
     tick: 0,
     elapsedMs: 0,
     phase: "LOBBY",
@@ -73,29 +76,53 @@ export function createCombatWorld(): CombatWorld {
     stats: new Map(),
     enemies: new Map(),
     projectiles: new Map(),
+    embers: new Map(),
+    voidFields: new Map(),
     events: [],
     processedActionIds: new Map(),
     initialEnemySpawned: false,
     nextEnemySequence: 1,
     nextEnemySpawnTick: 1,
     nextProjectileSequence: 1,
+    nextFieldSequence: 1,
     nextEventSequence: 1
   };
 }
 
 export { addCombatPlayer, removeCombatPlayer };
 
+export function setCombatPlayerLoadout(world: CombatWorld, sessionId: string, ids: readonly string[]): boolean {
+  if (world.ruleset !== "dual_v2" || world.phase !== "LOBBY") return false;
+  const player = world.players.get(sessionId);
+  if (!player || player.ready || ids.length !== 2 || ids[0] === ids[1] ||
+      !ids.includes(FIREBALL_WEAPON_ID) || !ids.includes(VOID_ORB_WEAPON_ID)) return false;
+  // V2 first slice exposes only two implemented weapons. Widen this allow-list after D6.
+  player.weaponIds.splice(0, player.weaponIds.length, ids[0] as typeof FIREBALL_WEAPON_ID | typeof VOID_ORB_WEAPON_ID,
+    ids[1] as typeof FIREBALL_WEAPON_ID | typeof VOID_ORB_WEAPON_ID);
+  player.weaponLevels.clear();
+  player.weaponBranches.clear();
+  player.dualBoonId = "";
+  player.nextWeaponTicks.clear();
+  for (const id of player.weaponIds) {
+    player.weaponLevels.set(id, 1);
+    player.nextWeaponTicks.set(id, 0);
+  }
+  player.loadoutConfirmed = true;
+  return true;
+}
+
 export function setCombatPlayerReady(world: CombatWorld, sessionId: string, ready: boolean): boolean {
   if (world.phase !== "LOBBY") return false;
   const player = world.players.get(sessionId);
-  if (!player) return false;
+  if (!player || (ready && world.ruleset === "dual_v2" && !player.loadoutConfirmed)) return false;
   player.ready = ready;
   return true;
 }
 
 export function startCombatMatch(world: CombatWorld): boolean {
   if (world.phase !== "LOBBY" || world.players.size === 0 ||
-      [...world.players.values()].some(player => !player.ready)) return false;
+      [...world.players.values()].some(player => !player.ready ||
+        (world.ruleset === "dual_v2" && (!player.loadoutConfirmed || player.weaponIds.length !== 2)))) return false;
   world.teamLevel = 1;
   world.teamExperience = 0;
   world.teamNextLevelExperience = experienceThresholdForLevel(world, world.teamLevel);
@@ -124,12 +151,15 @@ export function resetCombatMatch(world: CombatWorld): boolean {
   if (world.phase !== "RESULT") return false;
   world.enemies.clear();
   world.projectiles.clear();
+  world.embers.clear();
+  world.voidFields.clear();
   world.events.length = 0;
   world.processedActionIds.clear();
   world.initialEnemySpawned = false;
   world.nextEnemySequence = 1;
   world.nextEnemySpawnTick = world.tick + 1;
   world.nextProjectileSequence = 1;
+  world.nextFieldSequence = 1;
   world.phase = "LOBBY";
   world.winner = "NONE";
   world.matchElapsedTicks = 0;
@@ -161,11 +191,15 @@ export function resetCombatMatch(world: CombatWorld): boolean {
     player.hitProtectionRemainingTicks = 0;
     player.maxHealth = 100;
     player.health = player.maxHealth;
-    player.weaponIds.splice(0, player.weaponIds.length, FIREBALL_WEAPON_ID);
+    if (world.ruleset === "legacy") player.weaponIds.splice(0, player.weaponIds.length, FIREBALL_WEAPON_ID);
     player.nextWeaponTicks.clear();
-    player.nextWeaponTicks.set(FIREBALL_WEAPON_ID, 0);
     player.weaponLevels.clear();
-    player.weaponLevels.set(FIREBALL_WEAPON_ID, 1);
+    for (const id of player.weaponIds) {
+      player.nextWeaponTicks.set(id, 0);
+      player.weaponLevels.set(id, 1);
+    }
+    player.weaponBranches.clear();
+    player.dualBoonId = "";
     player.passiveLevels.clear();
     player.upgradeRerollUsed = false;
     ensureStats(world, player.sessionId);

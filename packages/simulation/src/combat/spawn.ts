@@ -68,6 +68,7 @@ export function addCombatPlayer(world: CombatWorld, sessionId: string, nickname:
   if (slot < 0) throw new Error("No spawn slot");
   const spawn = COMBAT_PLAYER_SPAWNS[slot]!;
   const player = createCombatPlayer(sessionId, nickname, spawn.x, spawn.y, slot);
+  if (world.ruleset === "dual_v2") player.loadoutConfirmed = false;
   world.players.set(sessionId, player);
   const stats: CombatStats = { kills: 0, totalDamage: 0, damageTaken: 0, survivalTicks: 0 };
   world.stats.set(sessionId, stats);

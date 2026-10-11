@@ -10,6 +10,7 @@ import {
   PLAYER_HIT_PROTECTION_TICKS,
   SPIN_BLADE_ASSET_ID,
   SPIN_BLADE_WEAPON_ID,
+  VOID_ORB_WEAPON_ID,
   type CombatEvent,
   type EnemyAssetId,
   WORLD_VIEW_HEIGHT,
@@ -41,7 +42,7 @@ export const ENEMY_DEFINITIONS = {
 
 export type EnemyKind = keyof typeof ENEMY_DEFINITIONS;
 export type CombatEnemyAssetId = typeof ENEMY_RIFT_SWARM_ASSET_ID | typeof ENEMY_BERSERKER_BEAST_ASSET_ID;
-export type CombatWeaponId = typeof FIREBALL_WEAPON_ID | typeof SPIN_BLADE_WEAPON_ID;
+export type CombatWeaponId = typeof FIREBALL_WEAPON_ID | typeof SPIN_BLADE_WEAPON_ID | typeof VOID_ORB_WEAPON_ID;
 
 export const WEAPON_DEFINITIONS = {
   [FIREBALL_WEAPON_ID]: {
@@ -61,6 +62,16 @@ export const WEAPON_DEFINITIONS = {
     fanHalfAngleCos: Math.cos(Math.PI / 4),
     knockback: 26,
     projectileAssetId: SPIN_BLADE_ASSET_ID
+  },
+  [VOID_ORB_WEAPON_ID]: {
+    id: VOID_ORB_WEAPON_ID,
+    cooldownTicks: 28,
+    damage: 12,
+    range: 420,
+    radius: 85,
+    durationTicks: 28,
+    pullPerTick: 2.5,
+    maxTargets: 10
   }
 } as const;
 
@@ -104,6 +115,7 @@ export const COMBAT_MAX_WEAPON_LEVEL = 3;
 export const COMBAT_MAX_PASSIVE_LEVEL = 2;
 export const COMBAT_UPGRADE_TIMEOUT_TICKS = 20 * 10;
 
+export type CombatRuleset = "legacy" | "dual_v2";
 export type CombatPhase = "LOBBY" | "RUNNING" | "UPGRADING" | "WON" | "LOST" | "RESULT";
 export type CombatWinner = "NONE" | "TEAM";
 
@@ -148,6 +160,9 @@ export interface CombatPlayer {
   readonly weaponIds: CombatWeaponId[];
   readonly nextWeaponTicks: Map<CombatWeaponId, number>;
   readonly weaponLevels: Map<CombatWeaponId, number>;
+  readonly weaponBranches: Map<CombatWeaponId, string>;
+  dualBoonId: string;
+  loadoutConfirmed: boolean;
   readonly passiveLevels: Map<string, number>;
   upgradeRerollUsed: boolean;
   facingX: number;
@@ -218,7 +233,26 @@ export interface CombatProjectile {
   readonly returningBlade?: CombatReturningBladeFlight;
 }
 
+export interface CombatEmber {
+  readonly id: string;
+  readonly ownerId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly expireTick: number;
+}
+
+export interface CombatVoidField {
+  readonly id: string;
+  readonly ownerId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly expireTick: number;
+  absorbedEmbers: number;
+}
+
 export interface CombatWorld {
+  readonly ruleset: CombatRuleset;
   tick: number;
   elapsedMs: number;
   phase: CombatPhase;
@@ -240,6 +274,8 @@ export interface CombatWorld {
   readonly stats: Map<string, CombatStats>;
   readonly enemies: Map<string, CombatEnemy>;
   readonly projectiles: Map<string, CombatProjectile>;
+  readonly embers: Map<string, CombatEmber>;
+  readonly voidFields: Map<string, CombatVoidField>;
   readonly events: CombatEvent[];
   /** Recently accepted action IDs with their tick; pruned to a finite window. */
   readonly processedActionIds: Map<string, number>;
@@ -247,10 +283,11 @@ export interface CombatWorld {
   nextEnemySequence: number;
   nextEnemySpawnTick: number;
   nextProjectileSequence: number;
+  nextFieldSequence: number;
   nextEventSequence: number;
 }
 
-export type CombatUpgradeKind = "weapon_unlock" | "weapon_power" | "passive";
+export type CombatUpgradeKind = "weapon_unlock" | "weapon_power" | "passive" | "weapon_branch" | "dual_boon";
 
 export interface CombatUpgradeChoice {
   readonly id: string;
@@ -260,6 +297,8 @@ export interface CombatUpgradeChoice {
   readonly nextLevel: number;
   readonly weaponId?: CombatWeaponId;
   readonly passiveId?: string;
+  readonly branchId?: string;
+  readonly boonId?: string;
 }
 
 export interface CombatUpgradeState {
@@ -373,6 +412,9 @@ export function createCombatPlayer(
       [FIREBALL_WEAPON_ID, 0]
     ]),
     weaponLevels: new Map([[FIREBALL_WEAPON_ID, 1]]),
+    weaponBranches: new Map(),
+    dualBoonId: "",
+    loadoutConfirmed: true,
     passiveLevels: new Map(),
     upgradeRerollUsed: false,
     facingX: 1,

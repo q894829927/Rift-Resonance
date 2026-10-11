@@ -17,6 +17,7 @@ export {
   addCombatPlayer,
   removeCombatPlayer,
   setCombatPlayerReady,
+  setCombatPlayerLoadout,
   startCombatMatch,
   resetCombatMatch,
   finishCombatMatch,
