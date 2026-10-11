@@ -19,7 +19,7 @@ test("V2 fireball cannot U-turn when moving target runs behind it",()=>{
     assert.ok(next.headingX>0.30);
     position=next;
   }
-  assert.equal(flight.remainingTicks,18);
+  assert.equal(flight.remainingTicks,10); // V2 24-tick lifespan after fourteen steps
 });
 
 test("V2 steering has bounded angular velocity and remains in initial forward cone",()=>{
