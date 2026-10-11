@@ -33,6 +33,19 @@ jobs:
           exit 1
       - name: Two-client integration regression
         run: npm run test:integration
+      - name: Start V2 authoritative room
+        run: |
+          PORT=2570 RIFT_V2_DUAL_WEAPONS=1 npm run start -w @rift/server > /tmp/rift-v2-newroom.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:2570/health > /dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          cat /tmp/rift-v2-newroom.log
+          exit 1
+      - name: Verify V2 networked gravity core
+        run: TEST_SERVER_URL=http://127.0.0.1:2570 node --test tests/v2-network/*.test.mjs
       - name: Print server log on failure
         if: failure()
-        run: cat /tmp/rift-v2-server.log || true
+        run: |
+          cat /tmp/rift-v2-server.log || true
+          cat /tmp/rift-v2-newroom.log || true
