@@ -65,13 +65,18 @@ export const WEAPON_DEFINITIONS = {
   },
   [VOID_ORB_WEAPON_ID]: {
     id: VOID_ORB_WEAPON_ID,
-    cooldownTicks: 28,
-    damage: 12,
+    cooldownTicks: 38, // 1.9 seconds between launches
+    damage: 22,
     range: 420,
-    radius: 85,
-    durationTicks: 28,
-    pullPerTick: 2.5,
-    maxTargets: 10
+    projectileSpeed: 520,
+    projectileRadius: 12,
+    radius: 104,
+    durationTicks: 22, // 1.1s active gravity; four-tick collapse windup follows
+    collapseWindupTicks: 4,
+    pullPerTick: 6.2, // 124 world units per second at 20 Hz
+    maxTargets: 10,
+    maxEssence: 4,
+    maxEmbers: 3
   }
 } as const;
 
@@ -222,13 +227,15 @@ export interface CombatProjectile {
   readonly id: string;
   readonly weaponId: CombatWeaponId;
   readonly sourcePlayerId: string;
-  readonly targetEnemyId: string;
+  targetEnemyId: string;
   readonly damage: number;
   readonly speed: number;
   readonly radius: number;
   x: number;
   y: number;
   readonly returningBlade?: CombatReturningBladeFlight;
+  readonly voidOrbFlight?: {readonly targetX: number; readonly targetY: number; readonly hitEnemies: Set<string>};
+  voidRedirected?: boolean;
 }
 
 export interface CombatEmber {
@@ -245,8 +252,16 @@ export interface CombatVoidField {
   readonly x: number;
   readonly y: number;
   readonly radius: number;
+  readonly kind: "collapse" | "anchor";
+  /** All transient lifetimes use matchElapsedTicks, not wall clock or the always-running world.tick. */
+  readonly startedTick: number;
+  readonly collapseTick: number;
   readonly expireTick: number;
+  phase: "active" | "collapsing" | "aftershock";
   absorbedEmbers: number;
+  essenceCharges: number;
+  redirectsUsed: number;
+  aftershockTick?: number;
 }
 
 export interface CombatWorld {
@@ -274,6 +289,7 @@ export interface CombatWorld {
   readonly projectiles: Map<string, CombatProjectile>;
   readonly embers: Map<string, CombatEmber>;
   readonly voidFields: Map<string, CombatVoidField>;
+  readonly claimedVoidEssences: Set<string>;
   readonly events: CombatEvent[];
   /** Recently accepted action IDs with their tick; pruned to a finite window. */
   readonly processedActionIds: Map<string, number>;

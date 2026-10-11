@@ -58,15 +58,22 @@ export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorl
       const level = player.weaponLevels.get(id) ?? 1;
       const branch = player.weaponBranches.get(id);
       if (level === 1 && !branch) {
-        const branchId = id === FIREBALL_WEAPON_ID ? "ember" : "collapse";
-        choices.push({id:"upgrade.branch." + id + "." + branchId,
-          kind:"weapon_branch", weaponId:id, branchId, nextLevel:2,
-          label:id === FIREBALL_WEAPON_ID ? "余烬火种" : "坍缩奇点",
-          description:id === FIREBALL_WEAPON_ID ? "火球命中留下火种，供引力场吸收" : "引力场牵引敌人，结束时造成坍缩伤害"});
+        const branches = id === FIREBALL_WEAPON_ID
+          ? [{key:"ember", name:"余烬火种", text:"命中留下可被奇点吸收的火种"}]
+          : [
+              {key:"collapse", name:"坍缩奇点", text:"强化吞噬聚怪，III 级追加二段空间冲击"},
+              {key:"anchor", name:"空间锚点", text:"弱牵引、持续空间枢纽，重定向经过的友方火球"}
+            ];
+        for (const branch of branches) choices.push({
+          id:"upgrade.branch." + id + "." + branch.key,
+          kind:"weapon_branch", weaponId:id, branchId:branch.key, nextLevel:2,
+          label:branch.name, description:branch.text
+        });
       } else if (level === 2 && branch) {
         choices.push({id:"upgrade.power." + id, kind:"weapon_power", weaponId:id,
           nextLevel:3, label:id === FIREBALL_WEAPON_ID ? "火种强化 III" : "奇点强化 III",
-          description:"加强当前分支的基础伤害与效果"});
+          description:id === VOID_ORB_WEAPON_ID && branch === "anchor"
+          ? "扩大空间锚点范围与弹体改向次数" : "加强当前分支的基础伤害与效果"});
       }
     }
     if (player.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember" &&
@@ -260,7 +267,8 @@ export function applyCombatUpgrade(player: CombatPlayer, choice: CombatUpgradeCh
       player.weaponIds.includes(choice.weaponId) && (player.weaponLevels.get(choice.weaponId) ?? 1) === 1 &&
       !player.weaponBranches.has(choice.weaponId) &&
       ((choice.weaponId === FIREBALL_WEAPON_ID && choice.branchId === "ember") ||
-        (choice.weaponId === VOID_ORB_WEAPON_ID && choice.branchId === "collapse"))) {
+        (choice.weaponId === VOID_ORB_WEAPON_ID &&
+          (choice.branchId === "collapse" || choice.branchId === "anchor")))) {
     player.weaponBranches.set(choice.weaponId, choice.branchId);
     player.weaponLevels.set(choice.weaponId, 2);
     return true;

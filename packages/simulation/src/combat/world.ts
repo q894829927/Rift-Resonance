@@ -76,6 +76,7 @@ export function createCombatWorld(ruleset: CombatRuleset = "legacy"): CombatWorl
     projectiles: new Map(),
     embers: new Map(),
     voidFields: new Map(),
+    claimedVoidEssences: new Set(),
     events: [],
     processedActionIds: new Map(),
     initialEnemySpawned: false,
@@ -151,6 +152,7 @@ export function resetCombatMatch(world: CombatWorld): boolean {
   world.projectiles.clear();
   world.embers.clear();
   world.voidFields.clear();
+  world.claimedVoidEssences.clear();
   world.events.length = 0;
   world.processedActionIds.clear();
   world.initialEnemySpawned = false;

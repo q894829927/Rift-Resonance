@@ -47,25 +47,40 @@ export class WeaponSystem {
 
   private voidOrb(world: CombatWorld, player: CombatPlayer): void {
     const definition = WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID];
+    const owned = [...world.voidFields.values()].filter(f => f.ownerId === player.sessionId).length;
+    const flying = [...world.projectiles.values()].filter(p =>
+      p.weaponId === VOID_ORB_WEAPON_ID && p.sourcePlayerId === player.sessionId).length;
+    if (owned + flying >= 2) {
+      player.nextWeaponTicks.set(VOID_ORB_WEAPON_ID, world.tick + 3);
+      return;
+    }
     const candidates = [...world.enemies.values()].filter(e => e.alive &&
       distanceSquared(player, e) <= definition.range ** 2)
       .sort((a, b) => a.id.localeCompare(b.id));
     if (candidates.length === 0) return;
+    // Choose the densest nearby group with deterministic tie-breaking.
     const target = candidates.reduce((best, e) => {
-      const score = candidates.filter(other => distanceSquared(e, other) <= definition.radius ** 2).length;
-      const bestScore = candidates.filter(other => distanceSquared(best, other) <= definition.radius ** 2).length;
-      return score > bestScore ? e : best;
+      const count = (candidate: CombatEnemy) =>
+        candidates.filter(other => distanceSquared(candidate, other) <= definition.radius ** 2).length;
+      return count(e) > count(best) ? e : best;
     }, candidates[0]!);
-    const id = "void-field:" + world.nextFieldSequence++;
-    world.voidFields.set(id, {
-      id, ownerId: player.sessionId, x: target.x, y: target.y,
-      radius: definition.radius, expireTick: world.tick + definition.durationTicks,
-      absorbedEmbers: 0
+    const projectileId = "projectile:void-orb:" + world.nextProjectileSequence++;
+    world.projectiles.set(projectileId, {
+      id: projectileId,
+      weaponId: VOID_ORB_WEAPON_ID,
+      sourcePlayerId: player.sessionId,
+      targetEnemyId: target.id,
+      damage: Math.max(1, Math.round(getWeaponDamage(player, VOID_ORB_WEAPON_ID) * 0.25)),
+      speed: definition.projectileSpeed,
+      radius: definition.projectileRadius,
+      x: player.x, y: player.y,
+      voidOrbFlight: { targetX: target.x, targetY: target.y, hitEnemies: new Set() }
     });
-    player.nextWeaponTicks.set(VOID_ORB_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, VOID_ORB_WEAPON_ID));
+    player.nextWeaponTicks.set(VOID_ORB_WEAPON_ID,
+      world.tick + getWeaponCooldownTicks(player, VOID_ORB_WEAPON_ID));
     emitCombatEvent(world, {
-      type: "weapon.void_spawned", sourceId: player.sessionId, targetId: id,
-      assetId: VOID_ORB_WEAPON_ID, x: target.x, y: target.y, amount: definition.radius
+      type: "weapon.void_launched", sourceId: player.sessionId, targetId: projectileId,
+      assetId: VOID_ORB_WEAPON_ID, x: player.x, y: player.y, amount: definition.projectileSpeed
     });
   }
 
