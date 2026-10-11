@@ -123,6 +123,9 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
   target.phase = projectile.returningBlade?.phase ?? "";
   target.outwardDistance = projectile.returningBlade?.outwardDistance ?? 0;
   target.maxDistance = projectile.returningBlade?.maxDistance ?? 0;
+  target.directionX = projectile.fireballFlight?.headingX ?? 0;
+  target.directionY = projectile.fireballFlight?.headingY ?? 0;
+  target.speed = projectile.fireballFlight ? projectile.speed : 0;
   target.x = projectile.x;
   target.y = projectile.y;
 }

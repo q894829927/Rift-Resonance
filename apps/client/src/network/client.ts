@@ -64,6 +64,9 @@ export interface ProjectileView {
   phase: string;
   outwardDistance: number;
   maxDistance: number;
+  directionX: number;
+  directionY: number;
+  speed: number;
   x: number;
   y: number;
 }
@@ -409,6 +412,9 @@ export class LobbyConnection {
         phase: projectile.phase ?? "",
         outwardDistance: Number(projectile.outwardDistance ?? 0),
         maxDistance: Number(projectile.maxDistance ?? 0),
+        directionX: Number(projectile.directionX ?? 0),
+        directionY: Number(projectile.directionY ?? 0),
+        speed: Number(projectile.speed ?? 0),
         x: projectile.x,
         y: projectile.y
       });

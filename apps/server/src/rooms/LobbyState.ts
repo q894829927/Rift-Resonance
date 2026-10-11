@@ -55,6 +55,9 @@ export const ProjectileNetworkState = schema({
   phase: t.string().default(""),
   outwardDistance: t.number().default(0),
   maxDistance: t.number().default(0),
+  directionX: t.number().default(0),
+  directionY: t.number().default(0),
+  speed: t.number().default(0),
   x: t.number().default(0),
   y: t.number().default(0)
 }, "RiftProjectileNetworkState");
