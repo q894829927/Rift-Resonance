@@ -236,6 +236,8 @@ export interface CombatProjectile {
   readonly returningBlade?: CombatReturningBladeFlight;
   readonly voidOrbFlight?: {readonly targetX: number; readonly targetY: number; readonly hitEnemies: Set<string>};
   voidRedirected?: boolean;
+  /** III-level anchor briefly curves the projectile around its fixed center. */
+  voidAnchorOrbit?: { readonly centerX:number; readonly centerY:number; angle:number; remainingTicks:number };
 }
 
 export interface CombatEmber {

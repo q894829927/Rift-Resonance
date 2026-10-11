@@ -56,6 +56,15 @@ export class DamageSystem {
         this.advanceVoidOrbFlight(world, projectile, dtSeconds);
         continue;
       }
+      if (projectile.voidAnchorOrbit && projectile.voidAnchorOrbit.remainingTicks > 0) {
+        const orbit=projectile.voidAnchorOrbit;
+        orbit.angle += Math.PI/6;
+        orbit.remainingTicks--;
+        projectile.x = orbit.centerX + Math.cos(orbit.angle)*28;
+        projectile.y = orbit.centerY + Math.sin(orbit.angle)*28;
+        if (orbit.remainingTicks === 0) projectile.voidAnchorOrbit = undefined;
+        continue; // Orbit is motion only; no hidden teleport damage.
+      }
       const target = world.enemies.get(projectile.targetEnemyId);
       if (!target || !target.alive) {
         world.projectiles.delete(projectileId);
@@ -248,7 +257,8 @@ export class DamageSystem {
         const d=Math.hypot(dx,dy);
         if(d<=12)continue;
         const strength = field.kind === "anchor" ? 2.2
-          : WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].pullPerTick*(0.7+0.3*(1-d/field.radius));
+          : WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].pullPerTick*(0.7+0.3*(1-d/field.radius)) *
+            (owner.weaponBranches.get(VOID_ORB_WEAPON_ID)==="collapse" ? 1.2 : 1);
         const shift = Math.min(strength, d-12);
         const swirl = field.kind === "collapse" ? Math.min(1.1, shift*0.15) : 0;
         const next=clampCombatPosition(enemy.x+dx/d*shift-dy/d*swirl,
@@ -259,7 +269,9 @@ export class DamageSystem {
   }
 
   private chargeVoidEssence(world: CombatWorld, field: CombatVoidField): void {
-    const max = WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxEssence;
+    const owner = world.players.get(field.ownerId);
+    const max = owner?.weaponBranches.get(VOID_ORB_WEAPON_ID)==="collapse"
+      ? WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID].maxEssence : 2;
     if(field.essenceCharges >= max)return;
     for(const enemy of [...world.enemies.values()].filter(e=>!e.alive && e.deathTick !== null &&
       e.deathTick >= field.startedWorldTick && !world.claimedVoidEssences.has(e.id) &&
@@ -301,6 +313,10 @@ export class DamageSystem {
       if(!next)continue;
       projectile.targetEnemyId=next.id;
       projectile.voidRedirected=true;
+      if ((owner.weaponLevels.get(VOID_ORB_WEAPON_ID)??1)>=3) {
+        const angle=Math.atan2(projectile.y-field.y,projectile.x-field.x);
+        projectile.voidAnchorOrbit={centerX:field.x,centerY:field.y,angle,remainingTicks:4};
+      }
       field.redirectsUsed++;
       emitCombatEvent(world,{
         type:"weapon.void_redirect",sourceId:field.ownerId,targetId:projectile.id,
