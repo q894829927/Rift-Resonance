@@ -34,6 +34,9 @@ export function projectMemberJoined(state: LobbyNetworkState, player: CombatPlay
     hitProtectionRemainingTicks: player.hitProtectionRemainingTicks,
     weaponIds: JSON.stringify(player.weaponIds),
     weaponLevels: JSON.stringify(Object.fromEntries(player.weaponLevels)),
+    weaponBranches: JSON.stringify(Object.fromEntries(player.weaponBranches)),
+    dualBoonId: player.dualBoonId,
+    loadoutConfirmed: player.loadoutConfirmed,
     passiveLevels: JSON.stringify(Object.fromEntries(player.passiveLevels)),
     upgradeChoices: "[]",
     upgradeSelectionId: "",
@@ -124,6 +127,7 @@ function projectProjectile(state: LobbyNetworkState, projectile: CombatProjectil
 
 /** Projects combat snapshots and stable event IDs at the existing 10 Hz patch rate. */
 export function projectCombatState(state: LobbyNetworkState, world: CombatWorld): void {
+  state.ruleset = world.ruleset;
   state.phase = world.phase;
   state.matchElapsedTicks = world.matchElapsedTicks;
   state.matchDurationTicks = world.config.matchDurationTicks;
@@ -160,6 +164,9 @@ export function projectCombatState(state: LobbyNetworkState, world: CombatWorld)
     target.hitProtectionRemainingTicks = member.hitProtectionRemainingTicks;
     target.weaponIds = JSON.stringify(member.weaponIds);
     target.weaponLevels = JSON.stringify(Object.fromEntries(member.weaponLevels));
+    target.weaponBranches = JSON.stringify(Object.fromEntries(member.weaponBranches));
+    target.dualBoonId = member.dualBoonId;
+    target.loadoutConfirmed = member.loadoutConfirmed;
     target.passiveLevels = JSON.stringify(Object.fromEntries(member.passiveLevels));
     const choices = world.pendingUpgrade?.choicesByPlayer.get(member.sessionId) ?? [];
     target.upgradeChoices = JSON.stringify(choices);

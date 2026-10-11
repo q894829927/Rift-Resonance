@@ -26,6 +26,9 @@ export const PlayerNetworkState = schema({
   hitProtectionRemainingTicks: t.number().default(0),
   weaponIds: t.string().default("[\"weapon.fireball\"]"),
   weaponLevels: t.string().default("{\"weapon.fireball\":1}"),
+  weaponBranches: t.string().default("{}"),
+  dualBoonId: t.string().default(""),
+  loadoutConfirmed: t.boolean().default(true),
   passiveLevels: t.string().default("{}"),
   upgradeChoices: t.string().default("[]"),
   upgradeSelectionId: t.string().default(""),
@@ -74,6 +77,7 @@ export const CombatEventNetworkState = schema({
 export type CombatEventNetworkState = SchemaType<typeof CombatEventNetworkState>;
 
 export const CombatNetworkState = schema({
+  ruleset: t.string().default("legacy"),
   phase: t.string().default("LOBBY"),
   serverTick: t.number().default(0),
   matchElapsedTicks: t.number().default(0),

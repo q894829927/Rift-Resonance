@@ -28,6 +28,9 @@ export interface LobbyPlayerView {
   hitProtectionRemainingTicks: number;
   weaponIds: readonly string[];
   weaponLevels: Readonly<Record<string, number>>;
+  weaponBranches: Readonly<Record<string, string>>;
+  dualBoonId: string;
+  loadoutConfirmed: boolean;
   passiveLevels: Readonly<Record<string, number>>;
   upgradeChoices: readonly UpgradeChoiceView[];
   upgradeSelectionId: string;
@@ -42,6 +45,8 @@ export interface UpgradeChoiceView {
   nextLevel: number;
   weaponId?: string;
   passiveId?: string;
+  branchId?: string;
+  boonId?: string;
 }
 export interface EnemyView {
   assetId: string;
@@ -85,6 +90,7 @@ export interface CombatRenderState {
   events: readonly CombatEventView[];
 }
 export interface LobbyView {
+  ruleset: string;
   roomId: string;
   sessionId: string;
   phase: string;
@@ -100,6 +106,7 @@ export interface LobbyView {
   players: Map<string, LobbyPlayerView>;
 }
 export interface MatchSnapshot {
+  ruleset: string;
   phase: string;
   matchElapsedTicks: number;
   matchDurationTicks: number;
@@ -221,6 +228,10 @@ export class LobbyConnection {
   /** The input is edge-triggered; server cooldown and timing remain authoritative. */
   queueDash(): void {
     if (this.room) this.dashQueued = true;
+  }
+
+  selectLoadout(weaponIds: readonly string[]): void {
+    this.room?.send("loadout.select", {weaponIds});
   }
 
   setReady(ready: boolean): void {

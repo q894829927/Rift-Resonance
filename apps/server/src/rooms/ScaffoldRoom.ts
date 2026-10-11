@@ -7,6 +7,7 @@ import {
   removeCombatPlayer,
   resetCombatMatch,
   setCombatPlayerReady,
+  setCombatPlayerLoadout,
   startCombatMatch,
   handleCombatPlayerLeft,
   selectCombatUpgrade,
@@ -26,7 +27,9 @@ import { registerRoom, unregisterRoom, recordRoomTick, recordRoomClients } from 
 export class ScaffoldRoom extends Room {
   maxClients = MAX_ROOM_PLAYERS;
   state = new LobbyNetworkState();
-  private readonly world: CombatWorld = createCombatWorld();
+  private readonly world: CombatWorld = createCombatWorld(
+    process.env.RIFT_V2_DUAL_WEAPONS === "1" ? "dual_v2" : "legacy"
+  );
   private hostSessionId = "";
   // Colyseus owns the per-session buffered stream and acknowledgement sequence.
   inputs = this.defineInput(MoveInput, {
@@ -39,6 +42,14 @@ export class ScaffoldRoom extends Room {
   onCreate(): void {
     registerRoom(this.roomId);
     this.patchRate = 1000 / NETWORK_PATCH_HZ;
+    this.onMessage("loadout.select", (client, payload: unknown) => {
+      const ids = typeof payload === "object" && payload !== null && "weaponIds" in payload
+        ? (payload as {weaponIds?: unknown}).weaponIds : undefined;
+      if (Array.isArray(ids) && ids.every(id => typeof id === "string")) {
+        setCombatPlayerLoadout(this.world, client.sessionId, ids);
+      }
+      this.projectState();
+    });
     this.onMessage("match.ready", (client, payload: unknown) => {
       const requested = typeof payload === "object" && payload !== null && "ready" in payload
         ? Boolean(payload.ready) : true;
