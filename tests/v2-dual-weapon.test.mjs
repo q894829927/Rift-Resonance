@@ -75,6 +75,9 @@ test("V2 void orb travels as a server projectile before forming a gravity core",
   setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
   setCombatPlayerReady(w,"p",true);
   assert.equal(startCombatMatch(w),true);
+  // Exclude the default (80,80) spawn so the target point is the known 90-unit flight.
+  w.initialEnemySpawned=true;
+  w.nextEnemySpawnTick=9999;
   const enemy=createEnemy("victim","rift_swarm",p.x+90,p.y);
   w.enemies.set(enemy.id,enemy);
   stepCombatWorld(w,50);
@@ -94,7 +97,8 @@ test("V2 pull visibly opposes normal chase, is bounded and ignores locked charge
   setCombatPlayerLoadout(w,"p",["weapon.fireball","weapon.void_orb"]);
   setCombatPlayerReady(w,"p",true);startCombatMatch(w);
   p.weaponIds.length=0;
-  const e=createEnemy("pulled","rift_swarm",p.x+65,p.y);
+  const e=createEnemy("pulled","berserker_beast",p.x+65,p.y);
+  e.nextChargeTick=99999;
   w.enemies.set(e.id,e);
   const now=w.matchElapsedTicks;
   w.voidFields.set("f",{
@@ -213,7 +217,6 @@ test("V2 cross-player ember is consumed only once by the qualifying owner", () =
     const p=addCombatPlayer(w,id,id);
     setCombatPlayerLoadout(w,id,["weapon.fireball","weapon.void_orb"]);
     setCombatPlayerReady(w,id,true);
-    p.weaponIds.length=0;
   }
   startCombatMatch(w);
   const owner=w.players.get("a");
@@ -222,6 +225,7 @@ test("V2 cross-player ember is consumed only once by the qualifying owner", () =
     assert.equal(applyCombatUpgrade(owner,choice),true);
   }
   applyCombatUpgrade(owner,getCombatUpgradeChoices(owner,w).find(c=>c.kind==="dual_boon"));
+  for (const player of w.players.values()) player.weaponIds.length=0;
   const n=w.matchElapsedTicks;
   w.voidFields.set("f",{
     id:"f",ownerId:"a",x:owner.x,y:owner.y,radius:104,kind:"collapse",
