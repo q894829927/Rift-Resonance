@@ -9,7 +9,7 @@ test("menu uses a full-width stage with accessible single and multiplayer entry"
   const html = readFileSync(new URL("../apps/client/index.html", import.meta.url), "utf8");
   const css = readFileSync(new URL("../apps/client/src/style.css", import.meta.url), "utf8");
   const main = readFileSync(new URL("../apps/client/src/main.ts", import.meta.url), "utf8");
-  for (const id of ["start-solo", "start-multi", "back-to-menu", "lobby-panel", "loadout-panel", "app-version"]) {
+  for (const id of ["start-solo", "start-multi", "solo-panel", "solo-start", "solo-weapon-one", "solo-weapon-two", "room-tab-create", "room-tab-join", "back-to-menu", "lobby-panel", "loadout-panel", "app-version"]) {
     assert.ok(html.includes(`id="${id}"`), id);
   }
   assert.match(html, /单人游戏/);
@@ -18,7 +18,7 @@ test("menu uses a full-width stage with accessible single and multiplayer entry"
   assert.match(css, /\.game-shell\[data-ui-screen="lobby"\] #lobby-panel/);
   assert.match(css, /\.game-shell\[data-ui-screen="menu"\] \.lobby-hero/);
   assert.match(main, /autoStartSolo\(view\)/);
-  assert.match(main, /connection\.selectLoadout\(\["weapon\.fireball", "weapon\.void_orb"\]\)/);
+  assert.match(main, /connection\.selectLoadout\(soloSelectedWeapons\)/);
 });
 
 test("arena grows in logical world area, not only CSS camera zoom", () => {
