@@ -1,5 +1,5 @@
 import {
-  FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID
+  FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID, VOID_ORB_WEAPON_ID
 } from "@rift/shared";
 import {
   COMBAT_MAX_PASSIVE_LEVEL, COMBAT_MAX_WEAPON_LEVEL,
@@ -20,6 +20,10 @@ export function teamSizeMultiplier(world: CombatWorld): number {
   return 1 + Math.max(0, players - 1) * world.config.experiencePlayerScale;
 }
 export function experienceThresholdForLevel(world: CombatWorld, level: number): number {
+  if (world.ruleset === "dual_v2") {
+    const thresholds = [30, 45, 60, 85, 110, 140, 165, 185, 210] as const;
+    return Math.round(thresholds[Math.min(Math.max(0, level - 1), thresholds.length - 1)]! * teamSizeMultiplier(world));
+  }
   const index = Math.max(0, Math.min(TEAM_XP_THRESHOLDS.length - 1, level - 1));
   return Math.round(TEAM_XP_THRESHOLDS[index]! * teamSizeMultiplier(world));
 }
@@ -46,8 +50,39 @@ const passiveEntries = [
 ] as const;
 
 /** Full legal upgrade pool. The draft draws at most three options from it. */
-export function getCombatUpgradeChoices(player: CombatPlayer): readonly CombatUpgradeChoice[] {
+export function getCombatUpgradeChoices(player: CombatPlayer, world?: CombatWorld): readonly CombatUpgradeChoice[] {
   const choices: CombatUpgradeChoice[] = [];
+  if (world?.ruleset === "dual_v2") {
+    for (const id of [FIREBALL_WEAPON_ID, VOID_ORB_WEAPON_ID] as const) {
+      if (!player.weaponIds.includes(id)) continue;
+      const level = player.weaponLevels.get(id) ?? 1;
+      const branch = player.weaponBranches.get(id);
+      if (level === 1 && !branch) {
+        const branchId = id === FIREBALL_WEAPON_ID ? "ember" : "collapse";
+        choices.push({id:"upgrade.branch." + id + "." + branchId,
+          kind:"weapon_branch", weaponId:id, branchId, nextLevel:2,
+          label:id === FIREBALL_WEAPON_ID ? "余烬火种" : "坍缩奇点",
+          description:id === FIREBALL_WEAPON_ID ? "火球命中留下火种，供引力场吸收" : "引力场牵引敌人，结束时造成坍缩伤害"});
+      } else if (level === 2 && branch) {
+        choices.push({id:"upgrade.power." + id, kind:"weapon_power", weaponId:id,
+          nextLevel:3, label:id === FIREBALL_WEAPON_ID ? "火种强化 III" : "奇点强化 III",
+          description:"加强当前分支的基础伤害与效果"});
+      }
+    }
+    if (player.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember" &&
+        player.weaponBranches.get(VOID_ORB_WEAPON_ID) === "collapse" && !player.dualBoonId) {
+      choices.push({id:"upgrade.boon.collapse_inferno", kind:"dual_boon",
+        boonId:"collapse_inferno", nextLevel:1, label:"坍缩爆炎",
+        description:"引力场吸入火种，终点释放强化爆炎（最多3枚）"});
+    }
+    for (const [passiveId, name, descriptions] of passiveEntries) {
+      const level = player.passiveLevels.get(passiveId) ?? 0;
+      if (level < COMBAT_MAX_PASSIVE_LEVEL) choices.push({id:passiveId, kind:"passive",
+        label:level === 0 ? "获得" + name : "强化" + name,
+        description:descriptions[level]!, nextLevel:level+1, passiveId});
+    }
+    return choices;
+  }
   if (!player.weaponIds.includes(SPIN_BLADE_WEAPON_ID) &&
       player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS) {
     choices.push({
@@ -97,10 +132,19 @@ export function draftCombatUpgradeChoices(
   world: CombatWorld, player: CombatPlayer,
   previous: readonly CombatUpgradeChoice[] = []
 ): readonly CombatUpgradeChoice[] {
-  const pool = [...getCombatUpgradeChoices(player)];
+  const pool = [...getCombatUpgradeChoices(player, world)];
   const selected: CombatUpgradeChoice[] = [];
+  if (world.ruleset === "dual_v2") {
+    const priority = pool.find(c => c.kind === "dual_boon") ??
+      pool.find(c => c.kind === "weapon_branch" && c.weaponId === FIREBALL_WEAPON_ID) ??
+      pool.find(c => c.kind === "weapon_branch" && c.weaponId === VOID_ORB_WEAPON_ID);
+    if (priority) {
+      selected.push(priority);
+      pool.splice(pool.indexOf(priority), 1);
+    }
+  }
   // First & third upgrade guarantee at least one free weapon slot option.
-  const needsWeapon = world.teamLevel <= 4 && player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS;
+  const needsWeapon = world.ruleset === "legacy" && world.teamLevel <= 4 && player.weaponIds.length < COMBAT_PLAYER_WEAPON_SLOTS;
   if (needsWeapon) {
     const unlock = pool.find(option => option.kind === "weapon_unlock");
     if (unlock) {
@@ -125,7 +169,7 @@ export function draftCombatUpgradeChoices(
 export function maybeStartCombatUpgrade(world: CombatWorld): boolean {
   if (world.phase !== "RUNNING" || !world.upgradeReady || world.pendingUpgrade || world.players.size === 0) return false;
   const ordered = [...world.players.values()].sort((a, b) => a.sessionId.localeCompare(b.sessionId));
-  if (!ordered.some(player => getCombatUpgradeChoices(player).length > 0)) {
+  if (!ordered.some(player => getCombatUpgradeChoices(player, world).length > 0)) {
     world.upgradeReady = false;
     return false;
   }
@@ -212,6 +256,21 @@ export function handleCombatPlayerLeft(world: CombatWorld, sessionId: string): v
 }
 
 export function applyCombatUpgrade(player: CombatPlayer, choice: CombatUpgradeChoice): boolean {
+  if (choice.kind === "weapon_branch" && choice.weaponId && choice.branchId &&
+      player.weaponIds.includes(choice.weaponId) && (player.weaponLevels.get(choice.weaponId) ?? 1) === 1 &&
+      !player.weaponBranches.has(choice.weaponId) &&
+      ((choice.weaponId === FIREBALL_WEAPON_ID && choice.branchId === "ember") ||
+        (choice.weaponId === VOID_ORB_WEAPON_ID && choice.branchId === "collapse"))) {
+    player.weaponBranches.set(choice.weaponId, choice.branchId);
+    player.weaponLevels.set(choice.weaponId, 2);
+    return true;
+  }
+  if (choice.kind === "dual_boon" && choice.boonId === "collapse_inferno" && !player.dualBoonId &&
+      player.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember" &&
+      player.weaponBranches.get(VOID_ORB_WEAPON_ID) === "collapse") {
+    player.dualBoonId = "collapse_inferno";
+    return true;
+  }
   if (choice.kind === "weapon_unlock" && choice.weaponId === SPIN_BLADE_WEAPON_ID) {
     if (player.weaponIds.includes(choice.weaponId) || player.weaponIds.length >= COMBAT_PLAYER_WEAPON_SLOTS) return false;
     player.weaponIds.push(choice.weaponId);

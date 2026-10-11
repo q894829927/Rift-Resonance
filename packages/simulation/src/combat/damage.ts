@@ -1,10 +1,11 @@
-import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID } from "@rift/shared";
+import { WORLD_VIEW_HEIGHT, WORLD_VIEW_WIDTH, FIREBALL_WEAPON_ID, SPIN_BLADE_WEAPON_ID, VOID_ORB_WEAPON_ID } from "@rift/shared";
 import {
   COMBAT_HIT_PROTECTION_TICKS,
   COMBAT_FIREBALL_EXPLOSION_RADIUS,
   COMBAT_FIREBALL_EXPLOSION_DAMAGE_RATIO,
   COMBAT_SPIN_BLADE_RETURN_DAMAGE_RATIO,
   WEAPON_DEFINITIONS,
+  getWeaponDamage,
   clampCombatPosition,
   type CombatProjectile,
   emitCombatEvent,
@@ -27,6 +28,10 @@ export interface DamageRequest {
 }
 
 /** Server-only collision, damage, health and death resolution. */
+function getVoidBurstDamage(owner: CombatPlayer, embers: number): number {
+  return getWeaponDamage(owner, VOID_ORB_WEAPON_ID) + Math.min(3, embers) * 18;
+}
+
 export class DamageSystem {
   applyPlayerDamage(world: CombatWorld, request: DamageRequest): boolean {
     if (world.phase !== "RUNNING") return false;
@@ -74,6 +79,20 @@ export class DamageSystem {
           x: impactX,
           y: impactY
         });
+        if (hit && world.ruleset === "dual_v2" && projectile.weaponId === FIREBALL_WEAPON_ID &&
+            world.players.get(projectile.sourcePlayerId)?.weaponBranches.get(FIREBALL_WEAPON_ID) === "ember") {
+          const emberId = "ember:" + world.nextFieldSequence++;
+          world.embers.set(emberId, {
+            id: emberId, ownerId: projectile.sourcePlayerId, x: impactX, y: impactY,
+            expireTick: world.tick + 40
+          });
+          const owned = [...world.embers.values()].filter(e => e.ownerId === projectile.sourcePlayerId);
+          if (owned.length > 5) world.embers.delete(owned[0]!.id);
+          emitCombatEvent(world, {
+            type: "weapon.ember_spawned", sourceId: projectile.sourcePlayerId,
+            targetId: emberId, assetId: FIREBALL_WEAPON_ID, x: impactX, y: impactY, amount: 0
+          });
+        }
         // Level-III fireball hits the primary target once and splashes distinct
         // nearby enemies once each. IDs include projectile+enemy to be idempotent.
         if (hit && projectile.weaponId === FIREBALL_WEAPON_ID &&
@@ -108,6 +127,63 @@ export class DamageSystem {
       if (projectile.x < -32 || projectile.x > WORLD_VIEW_WIDTH + 32 ||
           projectile.y < -32 || projectile.y > WORLD_VIEW_HEIGHT + 32) {
         world.projectiles.delete(projectileId);
+      }
+    }
+    if (world.ruleset === "dual_v2") this.advanceVoidFields(world);
+  }
+
+  private advanceVoidFields(world: CombatWorld): void {
+    for (const [id, ember] of world.embers) {
+      if (world.tick >= ember.expireTick) world.embers.delete(id);
+    }
+    const fields = [...world.voidFields.values()].sort((a, b) => a.id.localeCompare(b.id));
+    for (const field of fields) {
+      const owner = world.players.get(field.ownerId);
+      if (!owner || !owner.alive) { world.voidFields.delete(field.id); continue; }
+      if (world.tick >= field.expireTick) {
+        const empowered = owner.dualBoonId === "collapse_inferno" && field.absorbedEmbers > 0;
+        const damage = getVoidBurstDamage(owner, field.absorbedEmbers);
+        for (const enemy of [...world.enemies.values()].filter(e => e.alive &&
+          distanceSquared(e, field) <= (field.radius + e.collisionRadius) ** 2)
+          .sort((a, b) => a.id.localeCompare(b.id))) {
+          this.applyEnemyDamage(world, {
+            actionId: "void-burst:" + field.id + ":" + enemy.id,
+            sourceId: owner.sessionId, targetId: enemy.id, amount: damage,
+            assetId: VOID_ORB_WEAPON_ID, x: enemy.x, y: enemy.y
+          });
+        }
+        emitCombatEvent(world, {
+          type: empowered ? "boon.collapse_inferno" : "weapon.void_pulse",
+          sourceId: owner.sessionId, targetId: field.id, assetId: VOID_ORB_WEAPON_ID,
+          x: field.x, y: field.y, amount: field.radius
+        });
+        world.voidFields.delete(field.id);
+        continue;
+      }
+      if (owner.dualBoonId === "collapse_inferno" && field.absorbedEmbers < 3) {
+        for (const [emberId, ember] of world.embers) {
+          if (field.absorbedEmbers >= 3) break;
+          if (distanceSquared(field, ember) > field.radius ** 2) continue;
+          world.embers.delete(emberId);
+          field.absorbedEmbers++;
+          emitCombatEvent(world, {
+            type: "weapon.ember_absorbed", sourceId: owner.sessionId,
+            targetId: field.id, assetId: VOID_ORB_WEAPON_ID,
+            x: field.x, y: field.y, amount: field.absorbedEmbers
+          });
+        }
+      }
+      let affected = 0;
+      for (const enemy of [...world.enemies.values()].filter(e => e.alive && e.behavior === "chase" &&
+          distanceSquared(e, field) <= field.radius ** 2).sort((a, b) => a.id.localeCompare(b.id))) {
+        if (affected >= 10) break;
+        affected++;
+        const dx = field.x - enemy.x, dy = field.y - enemy.y;
+        const length = Math.hypot(dx, dy);
+        if (length < 4) continue;
+        const shift = Math.min(2.5, length - 4);
+        enemy.x += dx / length * shift;
+        enemy.y += dy / length * shift;
       }
     }
   }

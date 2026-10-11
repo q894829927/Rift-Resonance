@@ -2,7 +2,8 @@ import {
   FIREBALL_PROJECTILE_ASSET_ID,
   FIREBALL_WEAPON_ID,
   SPIN_BLADE_ASSET_ID,
-  SPIN_BLADE_WEAPON_ID
+  SPIN_BLADE_WEAPON_ID,
+  VOID_ORB_WEAPON_ID
 } from "@rift/shared";
 import { DamageSystem } from "./damage.js";
 import { chooseFixedRangeBladeDirection } from "./boomerang.js";
@@ -37,9 +38,35 @@ export class WeaponSystem {
           this.fireball(world, player);
         } else if (weaponId === SPIN_BLADE_WEAPON_ID) {
           this.spinBlade(world, player);
+        } else if (weaponId === VOID_ORB_WEAPON_ID && world.ruleset === "dual_v2") {
+          this.voidOrb(world, player);
         }
       }
     }
+  }
+
+  private voidOrb(world: CombatWorld, player: CombatPlayer): void {
+    const definition = WEAPON_DEFINITIONS[VOID_ORB_WEAPON_ID];
+    const candidates = [...world.enemies.values()].filter(e => e.alive &&
+      distanceSquared(player, e) <= definition.range ** 2)
+      .sort((a, b) => a.id.localeCompare(b.id));
+    if (candidates.length === 0) return;
+    const target = candidates.reduce((best, e) => {
+      const score = candidates.filter(other => distanceSquared(e, other) <= definition.radius ** 2).length;
+      const bestScore = candidates.filter(other => distanceSquared(best, other) <= definition.radius ** 2).length;
+      return score > bestScore ? e : best;
+    }, candidates[0]!);
+    const id = "void-field:" + world.nextFieldSequence++;
+    world.voidFields.set(id, {
+      id, ownerId: player.sessionId, x: target.x, y: target.y,
+      radius: definition.radius, expireTick: world.tick + definition.durationTicks,
+      absorbedEmbers: 0
+    });
+    player.nextWeaponTicks.set(VOID_ORB_WEAPON_ID, world.tick + getWeaponCooldownTicks(player, VOID_ORB_WEAPON_ID));
+    emitCombatEvent(world, {
+      type: "weapon.void_spawned", sourceId: player.sessionId, targetId: id,
+      assetId: VOID_ORB_WEAPON_ID, x: target.x, y: target.y, amount: definition.radius
+    });
   }
 
   private fireball(world: CombatWorld, player: CombatPlayer): void {
