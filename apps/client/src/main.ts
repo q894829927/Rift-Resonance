@@ -30,12 +30,15 @@ import {
   retargetProjectileVisual, projectileVisualPosition,
   type ProjectileVisualTrack
 } from "./art/m2ProjectileInterpolation.js";
+import { createV2VoidFlight, createV2VoidCore, updateV2VoidCore } from "./art/v2VoidVisuals.js";
 import "./style.css";
 
 class LobbyScene extends Phaser.Scene {
   private readonly avatars = new Map<string, Phaser.GameObjects.Container>();
   private readonly enemies = new Map<string, Phaser.GameObjects.Container>();
   private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
+  private readonly voidFields = new Map<string, Phaser.GameObjects.Container>();
+  private readonly voidEmbers = new Map<string, Phaser.GameObjects.Arc>();
   private readonly handledCombatEventIds = new Set<string>();
   private readonly nameLabels = new Map<string, HTMLSpanElement>();
   private nameLayer: HTMLElement | null = null;
@@ -74,9 +77,15 @@ class LobbyScene extends Phaser.Scene {
       for (const obj of this.avatars.values()) obj.destroy();
       for (const obj of this.enemies.values()) obj.destroy();
       for (const obj of this.projectiles.values()) obj.destroy();
+      for (const obj of this.voidFields.values()) obj.destroy();
+      for (const obj of this.voidEmbers.values()) obj.destroy();
       this.avatars.clear();
       this.enemies.clear();
       this.projectiles.clear();
+      for (const obj of this.voidFields.values()) obj.destroy();
+      for (const obj of this.voidEmbers.values()) obj.destroy();
+      this.voidFields.clear();
+      this.voidEmbers.clear();
       this.handledCombatEventIds.clear();
       this.nameLayer?.replaceChildren();
       this.nameLabels.clear();
@@ -124,6 +133,10 @@ class LobbyScene extends Phaser.Scene {
       for (const entity of this.projectiles.values()) entity.destroy();
       this.enemies.clear();
       this.projectiles.clear();
+      for (const obj of this.voidFields.values()) obj.destroy();
+      for (const obj of this.voidEmbers.values()) obj.destroy();
+      this.voidFields.clear();
+      this.voidEmbers.clear();
       this.handledCombatEventIds.clear();
       return;
     }
@@ -203,7 +216,10 @@ class LobbyScene extends Phaser.Scene {
     }
     for (const [id, projectile] of combat.projectiles) {
       let entity = this.projectiles.get(id);
-      if (!entity && (projectile.weaponId === "weapon.arcane_bolt" || projectile.weaponId === "weapon.fireball" || projectile.weaponId === "weapon.spin_blade")) {
+      if (!entity && projectile.weaponId === "weapon.void_orb") {
+        entity = createV2VoidFlight(this, projectile.x, projectile.y);
+        this.projectiles.set(id, entity);
+      } else if (!entity && (projectile.weaponId === "weapon.arcane_bolt" || projectile.weaponId === "weapon.fireball" || projectile.weaponId === "weapon.spin_blade")) {
         entity = createM1Projectile(this, projectile.weaponId, projectile.x, projectile.y);
         this.projectiles.set(id, entity);
       }
@@ -231,9 +247,43 @@ class LobbyScene extends Phaser.Scene {
         const smooth = projectileVisualPosition(track, nowMs);
         if (projectile.weaponId === "weapon.fireball") {
           updateM1FireballFacing(entity, smooth.x - entity.x, smooth.y - entity.y);
+        } else if (projectile.weaponId === "weapon.void_orb" && this.latestView?.phase === "RUNNING") {
+          const halo = entity.getData("v2FlightHalo") as Phaser.GameObjects.Ellipse | undefined;
+          if (halo) halo.rotation += 0.13;
         }
         entity.setPosition(smooth.x, smooth.y);
       }
+    }
+
+    // Authoritative area objects, not fixed-lifetime local circles: pausing
+    // for a manual upgrade keeps the exact visual state until play resumes.
+    for (const [id, entity] of this.voidFields) {
+      if (combat.voidFields.has(id)) continue;
+      entity.destroy();
+      this.voidFields.delete(id);
+    }
+    for (const [id, field] of combat.voidFields) {
+      let entity = this.voidFields.get(id);
+      if (!entity) {
+        entity = createV2VoidCore(this, field.x, field.y, field.kind, field.radius);
+        this.voidFields.set(id, entity);
+      }
+      entity.setPosition(field.x, field.y);
+      updateV2VoidCore(entity, field, this.latestView?.phase === "RUNNING");
+    }
+    for (const [id, entity] of this.voidEmbers) {
+      if (combat.embers.has(id)) continue;
+      entity.destroy();
+      this.voidEmbers.delete(id);
+    }
+    for (const [id, ember] of combat.embers) {
+      let entity = this.voidEmbers.get(id);
+      if (!entity) {
+        entity = this.add.circle(ember.x, ember.y, 7, 0xffa044, 0.89)
+          .setStrokeStyle(2, 0xffd1a0, 0.95).setDepth(960);
+        this.voidEmbers.set(id, entity);
+      }
+      entity.setPosition(ember.x, ember.y);
     }
 
     if (this.bladeDebug) {
@@ -250,26 +300,60 @@ class LobbyScene extends Phaser.Scene {
     for (const event of combat.events) {
       if (this.handledCombatEventIds.has(event.id)) continue;
       this.handledCombatEventIds.add(event.id);
-      if (event.type === "weapon.void_spawned") {
-        const vortex = this.add.circle(event.x, event.y, event.amount, 0x633ca8, 0.16)
-          .setStrokeStyle(2, 0xc8a0ff, 0.78).setDepth(940);
-        this.tweens.add({targets:vortex, scale:0.93, alpha:0, duration:1400,
-          onComplete:()=>vortex.destroy()});
-      } else if (event.type === "weapon.ember_spawned") {
-        const ember = this.add.circle(event.x, event.y, 10, 0xff973f, 0.75)
-          .setStrokeStyle(2, 0xffd38c, 0.9).setDepth(975);
-        this.tweens.add({targets:ember, alpha:0, scale:0.6, duration:2000,
-          onComplete:()=>ember.destroy()});
-      } else if (event.type === "boon.collapse_inferno" || event.type === "weapon.void_pulse") {
-        const empowered = event.type === "boon.collapse_inferno";
-        const pulse = this.add.circle(event.x, event.y, event.amount, empowered ? 0xff712e : 0x8858d3, 0.32)
-          .setStrokeStyle(3, empowered ? 0xffd08a : 0xbba1fd, 0.9).setDepth(1200);
-        this.tweens.add({targets:pulse, alpha:0, scale:1.4, duration:340,
+      if (event.type === "weapon.void_launched") {
+        const pulse = this.add.circle(event.x, event.y, 12, 0xbb88fb, 0.4)
+          .setStrokeStyle(2, 0xe9d5ff, 0.9).setDepth(1200);
+        this.tweens.add({targets:pulse, scale:2.2, alpha:0, duration:220,
           onComplete:()=>pulse.destroy()});
+      } else if (event.type === "weapon.void_spawned") {
+        const birth = this.add.circle(event.x, event.y, 30, 0xad86ef, 0.35)
+          .setStrokeStyle(3, 0xe2c8ff, 0.95).setDepth(1170);
+        this.tweens.add({targets:birth, alpha:0, scale:0.25, duration:310,
+          onComplete:()=>birth.destroy()});
+      } else if (event.type === "weapon.void_essence") {
+        // Server says which corpse was devoured. Visual interpolation alone
+        // moves the mote toward the server-projected core.
+        const core = combat.voidFields.get(event.targetId);
+        const essence = this.add.circle(event.x, event.y, 5, 0xc5a3ff, 0.95)
+          .setStrokeStyle(1, 0xffffff, 0.9).setDepth(1280);
+        if (core) {
+          this.tweens.add({targets:essence, x:core.x,y:core.y,scale:0.45,alpha:0,
+            duration:260,ease:"Cubic.easeIn",onComplete:()=>essence.destroy()});
+        } else {
+          this.tweens.add({targets:essence,alpha:0,duration:240,
+            onComplete:()=>essence.destroy()});
+        }
+      } else if (event.type === "weapon.void_collapse_started") {
+        const implode = this.add.circle(event.x,event.y,event.amount,0x583283,0.12)
+          .setStrokeStyle(3,0xd6a8ff,0.8).setDepth(1200);
+        this.tweens.add({targets:implode,scale:0.2,alpha:0,duration:190,
+          ease:"Cubic.easeIn",onComplete:()=>implode.destroy()});
+      } else if (event.type === "weapon.ember_spawned") {
+        // Persistent ember is drawn from synchronized world.embers.
+        const spark = this.add.circle(event.x,event.y,12,0xff9147,0.2).setDepth(970);
+        this.tweens.add({targets:spark,scale:1.6,alpha:0,duration:200,
+          onComplete:()=>spark.destroy()});
+      } else if (event.type === "boon.collapse_inferno" ||
+          event.type === "weapon.void_pulse" || event.type === "weapon.void_aftershock") {
+        const flame = event.type === "boon.collapse_inferno";
+        const secondary = event.type === "weapon.void_aftershock";
+        const color = flame ? 0xff9142 : secondary ? 0xd2b2ff : 0x9569e6;
+        const ring = this.add.circle(event.x,event.y,Math.max(30,event.amount*0.5),
+          color,0.27).setStrokeStyle(4,color,0.95).setDepth(1200);
+        const flash = this.add.circle(event.x,event.y,19,color,0.75).setDepth(1220);
+        this.tweens.add({targets:ring,scale:2.3,alpha:0,duration:360,
+          ease:"Cubic.easeOut",onComplete:()=>ring.destroy()});
+        this.tweens.add({targets:flash,scale:3.1,alpha:0,duration:270,
+          onComplete:()=>flash.destroy()});
+      } else if (event.type === "weapon.void_redirect") {
+        const refraction = this.add.circle(event.x,event.y,25,0x8ed8ff,0.1)
+          .setStrokeStyle(2,0xabeeff,0.9).setDepth(1200);
+        this.tweens.add({targets:refraction,scale:1.4,alpha:0,duration:200,
+          onComplete:()=>refraction.destroy()});
       } else if (event.type === "weapon.ember_absorbed") {
-        const absorbed = this.add.circle(event.x, event.y, 18 + event.amount * 8, 0xffb258, 0.28)
-          .setStrokeStyle(2, 0xffdaa2, 0.9).setDepth(1200);
-        this.tweens.add({targets:absorbed, alpha:0, scale:1.4, duration:210,
+        const absorbed = this.add.circle(event.x, event.y, 12 + event.amount * 5,
+          0xffa75c, 0.32).setStrokeStyle(2, 0xffdaa2, 0.9).setDepth(1200);
+        this.tweens.add({targets:absorbed, alpha:0, scale:0.35, duration:210,
           onComplete:()=>absorbed.destroy()});
       } else if (event.type === "weapon.returning" && event.assetId === "weapon.spin_blade") {
         // Distinct apex marker from the authoritative 168-unit turnaround.
