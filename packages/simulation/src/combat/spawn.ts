@@ -1,4 +1,4 @@
-import { MAX_ROOM_PLAYERS } from "@rift/shared";
+import { MAX_ROOM_PLAYERS, WORLD_VIEW_WIDTH, WORLD_VIEW_HEIGHT } from "@rift/shared";
 import {
   COMBAT_BERSERKER_EVERY,
   COMBAT_PLAYER_SPAWNS,
@@ -53,9 +53,9 @@ function spawnPosition(sequence: number): { x: number; y: number } {
   const inset = Math.min(110, ring * 28);
   return [
     { x: 80 + inset, y: 80 + inset },
-    { x: 880 - inset, y: 80 + inset },
-    { x: 80 + inset, y: 520 - inset },
-    { x: 880 - inset, y: 520 - inset }
+    { x: WORLD_VIEW_WIDTH - 80 - inset, y: 80 + inset },
+    { x: 80 + inset, y: WORLD_VIEW_HEIGHT - 80 - inset },
+    { x: WORLD_VIEW_WIDTH - 80 - inset, y: WORLD_VIEW_HEIGHT - 80 - inset }
   ][lane]!;
 }
 
