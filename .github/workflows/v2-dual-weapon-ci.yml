@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - name: Validate ECS deployer shell syntax
+        run: bash -n ops/ecs/rift-deploy.sh
       - run: npm ci
       - name: Verify version and changelog coverage
         run: npm run version:check
