@@ -125,7 +125,7 @@ sudo -u rift -H env \
 
 # 从指定提交只读取仓库内新脚本，不切换分支或改动 live 软链接
 candidate="$(mktemp /opt/rift/bin/.deploy-candidate.XXXXXX)"
-git -C /opt/rift/source show FETCH_HEAD:ops/ecs/rift-deploy.sh > "$candidate"
+sudo -u rift -H git -C /opt/rift/source show FETCH_HEAD:ops/ecs/rift-deploy.sh > "$candidate"
 bash -n "$candidate"
 
 # 在无在线对局的时间窗口执行以下步骤
