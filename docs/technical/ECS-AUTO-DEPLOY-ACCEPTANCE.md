@@ -124,17 +124,18 @@ sudo -u rift -H env \
   refs/heads/codex/v2-dual-weapon-foundation
 
 # 从指定提交只读取仓库内新脚本，不切换分支或改动 live 软链接
-git -C /opt/rift/source show FETCH_HEAD:ops/ecs/rift-deploy.sh > /tmp/rift-deploy-reviewed.sh
-bash -n /tmp/rift-deploy-reviewed.sh
+candidate="$(mktemp /opt/rift/bin/.deploy-candidate.XXXXXX)"
+git -C /opt/rift/source show FETCH_HEAD:ops/ecs/rift-deploy.sh > "$candidate"
+bash -n "$candidate"
 
 # 在无在线对局的时间窗口执行以下步骤
 systemctl stop rift-deploy.timer
 while systemctl is-active --quiet rift-deploy.service; do sleep 2; done
 backup="/opt/rift/bin/deploy.sh.before-ssh-$(date +%Y%m%d-%H%M%S)"
 cp -p /opt/rift/bin/deploy.sh "$backup"
-install -o rift -g rift -m 0755 /tmp/rift-deploy-reviewed.sh /opt/rift/bin/deploy.sh.next
+install -o rift -g rift -m 0755 "$candidate" /opt/rift/bin/deploy.sh.next
 mv -f /opt/rift/bin/deploy.sh.next /opt/rift/bin/deploy.sh
-rm -f /tmp/rift-deploy-reviewed.sh
+rm -f "$candidate"
 echo "旧版备份: $backup"
 
 systemctl reset-failed rift-deploy.service
